@@ -1,11 +1,12 @@
 -- ============================================================================
 -- Story 1.4: Advanced Query Processor - Database Schema
 -- ============================================================================
--- This schema defines 4 tables for the Advanced Query Processor:
+-- This schema defines 5 tables for the Advanced Query Processor:
 -- 1. protocols - Protocol metadata
 -- 2. protocol_tvl - Protocol TVL data by chain and timestamp
 -- 3. token_prices - Token price data with historical changes
 -- 4. protocol_stats - Aggregated protocol statistics
+-- 5. query_logs - Query execution logs for monitoring and analytics
 -- ============================================================================
 
 -- ============================================================================
@@ -275,6 +276,34 @@ COMMENT ON VIEW protocol_summary IS 'Protocol summary with latest stats';
 
 COMMENT ON FUNCTION update_protocol_stats IS 'Update aggregated stats for a specific protocol';
 COMMENT ON FUNCTION update_all_protocol_stats IS 'Update aggregated stats for all protocols';
+
+-- ============================================================================
+-- Table: query_logs
+-- ============================================================================
+-- Stores query execution logs for monitoring, analytics, and debugging
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS query_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id VARCHAR(255),
+  query_hash VARCHAR(64) NOT NULL,
+  query_params JSONB NOT NULL,
+  execution_time_ms INTEGER NOT NULL,
+  result_count INTEGER NOT NULL,
+  cache_hit BOOLEAN NOT NULL DEFAULT FALSE,
+  error_message TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Indexes for query_logs table
+CREATE INDEX IF NOT EXISTS idx_query_logs_user_id ON query_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_query_logs_query_hash ON query_logs(query_hash);
+CREATE INDEX IF NOT EXISTS idx_query_logs_created_at ON query_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_query_logs_cache_hit ON query_logs(cache_hit);
+CREATE INDEX IF NOT EXISTS idx_query_logs_execution_time ON query_logs(execution_time_ms DESC);
+
+-- Comment
+COMMENT ON TABLE query_logs IS 'Query execution logs for monitoring and analytics';
 
 -- ============================================================================
 -- End of Schema
