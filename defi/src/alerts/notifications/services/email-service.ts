@@ -84,9 +84,33 @@ async function sendEmailMock(notification: EmailNotification): Promise<void> {
 }
 
 /**
+ * Validate email address
+ */
+export function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
  * Send email notification
  */
 export async function sendEmail(notification: EmailNotification): Promise<void> {
+  // Validate email
+  if (!isValidEmail(notification.to)) {
+    throw new Error('Invalid email address');
+  }
+
+  // Validate subject
+  if (!notification.subject || notification.subject.trim() === '') {
+    throw new Error('Subject is required');
+  }
+
+  // Validate body
+  if ((!notification.htmlBody || notification.htmlBody.trim() === '') &&
+      (!notification.textBody || notification.textBody.trim() === '')) {
+    throw new Error('Email body is required');
+  }
+
   const sendFn = USE_REAL_SES ? sendEmailViaSES : sendEmailMock;
 
   await retryWithBackoff(
@@ -134,14 +158,6 @@ export async function batchSendEmails(
   );
 
   return results;
-}
-
-/**
- * Validate email address
- */
-export function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
 }
 
 /**
