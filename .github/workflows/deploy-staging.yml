@@ -7,86 +7,144 @@ on:
       - master
   workflow_dispatch:
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
+  DEPLOY_USER: ${{ secrets.STAGING_USER }}
+  DEPLOY_PATH: /opt/defillama
+
 jobs:
   test:
     name: Run Tests
     uses: ./.github/workflows/test.yml
 
+  build:
+    name: Build Docker Images
+    uses: ./.github/workflows/build.yml
+    needs: test
+
   deploy:
     name: Deploy to Staging
     runs-on: ubuntu-latest
-    needs: test
+    needs: build
     timeout-minutes: 30
     environment:
       name: staging
-      url: https://staging-api.llama.fi
+      url: https://staging.defillama.com
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
         with:
-          node-version: '20'
+          ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-
-      - name: Install dependencies
-        working-directory: ./defi
-        run: pnpm install --frozen-lockfile
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-central-1
-
-      - name: Install Serverless Framework
-        run: npm install -g serverless@3
-
-      - name: Build application
-        working-directory: ./defi
-        run: pnpm run build || npx tsc || echo "Build completed"
-
-      - name: Deploy infrastructure
-        working-directory: ./defi
-        env:
-          STAGE: staging
-          AWS_REGION: eu-central-1
+      - name: Add staging host to known_hosts
         run: |
-          serverless deploy --stage staging --verbose
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ env.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create deployment directory
+        run: |
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "mkdir -p ${{ env.DEPLOY_PATH }}"
+
+      - name: Copy docker-compose files
+        run: |
+          scp docker-compose.yml ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/
+          scp docker-compose.supabase.yml ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/
+          scp docker-compose.monitoring.yml ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/
+          scp -r monitoring ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/
+          scp -r nginx ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/
+          scp -r supabase ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/
+
+      - name: Copy environment files
+        run: |
+          scp defi/.env.staging ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/defi/.env
+
+      - name: Pull latest images
+        run: |
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "cd ${{ env.DEPLOY_PATH }} && docker-compose pull"
+
+      - name: Backup current deployment
+        run: |
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            cd ${{ env.DEPLOY_PATH }}
+            BACKUP_DIR=backups/\$(date +%Y%m%d-%H%M%S)
+            mkdir -p \$BACKUP_DIR
+            docker-compose ps -q | xargs -I {} docker inspect {} > \$BACKUP_DIR/containers.json
+            cp docker-compose.yml \$BACKUP_DIR/
+            echo \$BACKUP_DIR > .last_backup
+          "
+
+      - name: Deploy with Docker Compose
+        run: |
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            cd ${{ env.DEPLOY_PATH }}
+            docker-compose -f docker-compose.yml \
+                          -f docker-compose.supabase.yml \
+                          -f docker-compose.monitoring.yml \
+                          up -d --remove-orphans
+          "
+
+      - name: Wait for services to be healthy
+        run: |
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            cd ${{ env.DEPLOY_PATH }}
+            echo 'Waiting for services to be healthy...'
+            for i in {1..30}; do
+              UNHEALTHY=\$(docker-compose ps | grep -v 'Up' | grep -v 'NAME' | wc -l)
+              if [ \$UNHEALTHY -eq 0 ]; then
+                echo '✅ All services are healthy'
+                exit 0
+              fi
+              echo \"Attempt \$i/30: \$UNHEALTHY services not healthy yet\"
+              sleep 10
+            done
+            echo '❌ Services failed to become healthy'
+            exit 1
+          "
 
       - name: Run smoke tests
-        working-directory: ./defi
-        env:
-          API_ENDPOINT: https://staging-api.llama.fi
-          WEBSOCKET_ENDPOINT: wss://staging-ws.llama.fi
         run: |
-          # Wait for deployment to be ready
-          sleep 30
-          
-          # Test health endpoint
-          curl -f $API_ENDPOINT/health || echo "Health check failed"
-          
-          # Test WebSocket connection
-          echo "WebSocket smoke test completed"
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            cd ${{ env.DEPLOY_PATH }}
+
+            # Test PostgreSQL
+            docker exec defillama-postgres pg_isready -U postgres || exit 1
+
+            # Test Redis
+            docker exec defillama-redis redis-cli ping || exit 1
+
+            # Test Kong API Gateway
+            curl -f http://localhost:8000/health || exit 1
+
+            # Test Prometheus
+            curl -f http://localhost:9090/-/healthy || exit 1
+
+            # Test Grafana
+            curl -f http://localhost:3002/api/health || exit 1
+
+            echo '✅ All smoke tests passed'
+          "
 
       - name: Verify deployment
-        working-directory: ./defi
         run: |
-          # Check Lambda functions
-          aws lambda list-functions --region eu-central-1 | grep defillama-staging || echo "No functions found"
-          
-          # Check API Gateway
-          aws apigatewayv2 get-apis --region eu-central-1 | grep defillama-staging || echo "No APIs found"
-          
-          # Check CloudWatch alarms
-          aws cloudwatch describe-alarms --region eu-central-1 --alarm-name-prefix defillama-staging || echo "No alarms found"
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            cd ${{ env.DEPLOY_PATH }}
+            echo '=== Deployment Verification ==='
+            echo ''
+            echo 'Running containers:'
+            docker-compose ps
+            echo ''
+            echo 'Container health:'
+            docker ps --format 'table {{.Names}}\t{{.Status}}'
+            echo ''
+            echo 'Disk usage:'
+            docker system df
+          "
 
       - name: Tag deployment
         run: |
@@ -105,7 +163,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Staging Deployment Successful* ✅\n\n*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Commit:* ${{ github.sha }}\n*Author:* ${{ github.actor }}\n*Environment:* Staging\n*URL:* https://staging-api.llama.fi"
+                    "text": "*Staging Deployment Successful* ✅\n\n*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Commit:* ${{ github.sha }}\n*Author:* ${{ github.actor }}\n*Environment:* Staging\n*URL:* https://staging.defillama.com"
                   }
                 }
               ]
@@ -143,75 +201,73 @@ jobs:
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Author**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **URL**: https://staging-api.llama.fi" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: https://staging.defillama.com" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Resources Deployed" >> $GITHUB_STEP_SUMMARY
-          echo "- Lambda Functions" >> $GITHUB_STEP_SUMMARY
-          echo "- API Gateway" >> $GITHUB_STEP_SUMMARY
-          echo "- CloudWatch Dashboards" >> $GITHUB_STEP_SUMMARY
-          echo "- CloudWatch Alarms" >> $GITHUB_STEP_SUMMARY
-          echo "- X-Ray Tracing" >> $GITHUB_STEP_SUMMARY
+          echo "### Services Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- PostgreSQL Database" >> $GITHUB_STEP_SUMMARY
+          echo "- Redis Cache" >> $GITHUB_STEP_SUMMARY
+          echo "- Kong API Gateway" >> $GITHUB_STEP_SUMMARY
+          echo "- Supabase Services" >> $GITHUB_STEP_SUMMARY
+          echo "- Prometheus Monitoring" >> $GITHUB_STEP_SUMMARY
+          echo "- Grafana Dashboards" >> $GITHUB_STEP_SUMMARY
 
-  monitor:
-    name: Monitor Deployment
+  rollback:
+    name: Rollback on Failure
     runs-on: ubuntu-latest
     needs: deploy
-    timeout-minutes: 15
+    if: failure()
+    timeout-minutes: 10
 
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-central-1
+          ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
 
-      - name: Monitor for 10 minutes
+      - name: Rollback deployment
         run: |
-          echo "Monitoring deployment for 10 minutes..."
-          
-          for i in {1..10}; do
-            echo "Minute $i/10"
-            
-            # Check CloudWatch alarms
-            ALARMS=$(aws cloudwatch describe-alarms \
-              --region eu-central-1 \
-              --alarm-name-prefix defillama-staging \
-              --state-value ALARM \
-              --query 'MetricAlarms[*].AlarmName' \
-              --output text)
-            
-            if [ ! -z "$ALARMS" ]; then
-              echo "⚠️ Alarms triggered: $ALARMS"
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            cd ${{ env.DEPLOY_PATH }}
+            echo '❌ Deployment failed, initiating rollback...'
+
+            # Get last backup directory
+            BACKUP_DIR=\$(cat .last_backup)
+
+            if [ -z \"\$BACKUP_DIR\" ]; then
+              echo 'No backup found, cannot rollback'
               exit 1
             fi
-            
-            # Check Lambda errors
-            ERRORS=$(aws cloudwatch get-metric-statistics \
-              --region eu-central-1 \
-              --namespace AWS/Lambda \
-              --metric-name Errors \
-              --dimensions Name=FunctionName,Value=defillama-staging-websocketConnect \
-              --start-time $(date -u -d '1 minute ago' +%Y-%m-%dT%H:%M:%S) \
-              --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
-              --period 60 \
-              --statistics Sum \
-              --query 'Datapoints[0].Sum' \
-              --output text)
-            
-            if [ "$ERRORS" != "None" ] && [ "$ERRORS" -gt 0 ]; then
-              echo "⚠️ Lambda errors detected: $ERRORS"
-            fi
-            
-            sleep 60
-          done
-          
-          echo "✅ Monitoring completed successfully"
 
-      - name: Rollback on failure
-        if: failure()
-        run: |
-          echo "❌ Deployment monitoring failed, initiating rollback..."
-          # Rollback logic would go here
-          echo "Rollback completed"
+            echo \"Rolling back to: \$BACKUP_DIR\"
+
+            # Stop current containers
+            docker-compose down
+
+            # Restore backup
+            cp \$BACKUP_DIR/docker-compose.yml ./
+
+            # Start previous version
+            docker-compose up -d
+
+            echo '✅ Rollback completed'
+          "
+
+      - name: Notify Slack - Rollback
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "🔄 Staging Deployment Rolled Back",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Staging Deployment Rolled Back* 🔄\n\n*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Commit:* ${{ github.sha }}\n*Author:* ${{ github.actor }}\n*Reason:* Deployment failed health checks"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 

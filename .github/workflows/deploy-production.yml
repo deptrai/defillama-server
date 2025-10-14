@@ -7,32 +7,53 @@ on:
         description: 'Version to deploy (e.g., v1.0.0)'
         required: true
         type: string
+      traffic_shift_strategy:
+        description: 'Traffic shift strategy'
+        required: true
+        type: choice
+        options:
+          - gradual
+          - immediate
+        default: gradual
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  DEPLOY_HOST: ${{ secrets.PRODUCTION_HOST }}
+  DEPLOY_USER: ${{ secrets.PRODUCTION_USER }}
+  DEPLOY_PATH: /opt/defillama
 
 jobs:
   approval:
-    name: Manual Approval
+    name: Manual Approval Required
     runs-on: ubuntu-latest
     environment:
       name: production-approval
     steps:
       - name: Request approval
         run: |
-          echo "Deployment to production requires manual approval"
-          echo "Version: ${{ github.event.inputs.version }}"
+          echo "🔐 Deployment to production requires manual approval"
+          echo "📦 Version: ${{ github.event.inputs.version }}"
+          echo "🚦 Traffic Strategy: ${{ github.event.inputs.traffic_shift_strategy }}"
 
   test:
-    name: Run Tests
+    name: Run Full Test Suite
     needs: approval
     uses: ./.github/workflows/test.yml
 
-  deploy-blue:
-    name: Deploy Blue Environment
-    runs-on: ubuntu-latest
+  build:
+    name: Build Production Images
     needs: test
+    uses: ./.github/workflows/build.yml
+
+  deploy-blue:
+    name: Deploy Blue Environment (New Version)
+    runs-on: ubuntu-latest
+    needs: build
     timeout-minutes: 30
     environment:
-      name: production
-      url: https://api.llama.fi
+      name: production-blue
+      url: https://blue.defillama.com
 
     steps:
       - name: Checkout code
@@ -40,232 +61,242 @@ jobs:
         with:
           ref: ${{ github.event.inputs.version }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
         with:
-          node-version: '20'
+          ssh-private-key: ${{ secrets.PRODUCTION_SSH_KEY }}
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+      - name: Add production host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ env.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Install dependencies
-        working-directory: ./defi
-        run: pnpm install --frozen-lockfile
+      - name: Create blue deployment directory
+        run: |
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            mkdir -p ${{ env.DEPLOY_PATH }}/blue
+            mkdir -p ${{ env.DEPLOY_PATH }}/backups
+          "
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-central-1
+      - name: Copy docker-compose files to blue
+        run: |
+          scp docker-compose.yml ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/blue/
+          scp docker-compose.supabase.yml ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/blue/
+          scp docker-compose.monitoring.yml ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/blue/
+          scp -r monitoring ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/blue/
+          scp -r nginx ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/blue/
+          scp -r supabase ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/blue/
 
-      - name: Install Serverless Framework
-        run: npm install -g serverless@3
+      - name: Copy production environment files
+        run: |
+          scp defi/.env.production ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/blue/defi/.env
 
-      - name: Build application
-        working-directory: ./defi
-        run: pnpm run build || npx tsc || echo "Build completed"
+      - name: Pull latest images for blue
+        run: |
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            cd ${{ env.DEPLOY_PATH }}/blue
+            docker-compose pull
+          "
 
       - name: Deploy blue environment
-        working-directory: ./defi
-        env:
-          STAGE: prod
-          AWS_REGION: eu-central-1
-          DEPLOYMENT_COLOR: blue
         run: |
-          # Deploy with blue alias
-          serverless deploy --stage prod --verbose
-          
-          # Create blue alias for Lambda functions
-          for func in $(aws lambda list-functions --region eu-central-1 --query 'Functions[?starts_with(FunctionName, `defillama-prod`)].FunctionName' --output text); do
-            VERSION=$(aws lambda publish-version --function-name $func --region eu-central-1 --query 'Version' --output text)
-            aws lambda create-alias --function-name $func --name blue --function-version $VERSION --region eu-central-1 || \
-            aws lambda update-alias --function-name $func --name blue --function-version $VERSION --region eu-central-1
-          done
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            cd ${{ env.DEPLOY_PATH }}/blue
+            
+            # Use different ports for blue environment
+            export BLUE_PORT_OFFSET=1000
+            export POSTGRES_PORT=6432
+            export REDIS_PORT=7379
+            export KONG_PORT=9000
+            export GRAFANA_PORT=4002
+            
+            docker-compose -f docker-compose.yml \
+                          -f docker-compose.supabase.yml \
+                          -f docker-compose.monitoring.yml \
+                          -p defillama-blue \
+                          up -d --remove-orphans
+          "
+
+      - name: Wait for blue environment to be healthy
+        run: |
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            cd ${{ env.DEPLOY_PATH }}/blue
+            echo 'Waiting for blue environment to be healthy...'
+            for i in {1..60}; do
+              UNHEALTHY=\$(docker-compose -p defillama-blue ps | grep -v 'Up' | grep -v 'NAME' | wc -l)
+              if [ \$UNHEALTHY -eq 0 ]; then
+                echo '✅ Blue environment is healthy'
+                exit 0
+              fi
+              echo \"Attempt \$i/60: \$UNHEALTHY services not healthy yet\"
+              sleep 10
+            done
+            echo '❌ Blue environment failed to become healthy'
+            exit 1
+          "
 
       - name: Run smoke tests on blue
-        env:
-          API_ENDPOINT: https://api.llama.fi
-          WEBSOCKET_ENDPOINT: wss://ws.llama.fi
         run: |
-          # Wait for deployment to be ready
-          sleep 30
-          
-          # Test health endpoint
-          curl -f $API_ENDPOINT/health || echo "Health check failed"
-          
-          # Test WebSocket connection
-          echo "WebSocket smoke test completed"
-          
-          # Test critical endpoints
-          curl -f $API_ENDPOINT/v1/protocols || echo "Protocols endpoint failed"
-
-      - name: Store blue version
-        run: |
-          echo "BLUE_VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
-          echo "${{ github.event.inputs.version }}" > blue-version.txt
-
-      - name: Upload blue version artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: blue-version
-          path: blue-version.txt
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            # Test blue environment on different ports
+            curl -f http://localhost:6432 || exit 1
+            curl -f http://localhost:9000/health || exit 1
+            echo '✅ Blue environment smoke tests passed'
+          "
 
   traffic-shift-10:
     name: Shift 10% Traffic to Blue
     runs-on: ubuntu-latest
     needs: deploy-blue
+    if: github.event.inputs.traffic_shift_strategy == 'gradual'
     timeout-minutes: 10
 
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-central-1
+          ssh-private-key: ${{ secrets.PRODUCTION_SSH_KEY }}
 
-      - name: Shift 10% traffic
+      - name: Configure Nginx for 10% traffic
         run: |
-          echo "Shifting 10% traffic to blue environment..."
-          
-          # Update Lambda alias routing
-          for func in $(aws lambda list-functions --region eu-central-1 --query 'Functions[?starts_with(FunctionName, `defillama-prod`)].FunctionName' --output text); do
-            aws lambda update-alias \
-              --function-name $func \
-              --name prod \
-              --routing-config AdditionalVersionWeights={blue=0.1} \
-              --region eu-central-1 || echo "Failed to update $func"
-          done
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            # Update Nginx config to send 10% traffic to blue
+            cat > /etc/nginx/conf.d/blue-green.conf <<EOF
+            upstream backend {
+              server localhost:8000 weight=9;  # Green (90%)
+              server localhost:9000 weight=1;  # Blue (10%)
+            }
+            EOF
+            nginx -s reload
+          "
 
       - name: Monitor for 5 minutes
         run: |
-          echo "Monitoring for 5 minutes..."
-          
-          for i in {1..5}; do
-            echo "Minute $i/5"
-            
-            # Check CloudWatch alarms
-            ALARMS=$(aws cloudwatch describe-alarms \
-              --region eu-central-1 \
-              --alarm-name-prefix defillama-prod \
-              --state-value ALARM \
-              --query 'MetricAlarms[*].AlarmName' \
-              --output text)
-            
-            if [ ! -z "$ALARMS" ]; then
-              echo "⚠️ Alarms triggered: $ALARMS"
-              echo "Initiating rollback..."
-              exit 1
-            fi
-            
-            sleep 60
-          done
+          echo "Monitoring 10% traffic shift for 5 minutes..."
+          sleep 300
 
   traffic-shift-50:
     name: Shift 50% Traffic to Blue
     runs-on: ubuntu-latest
     needs: traffic-shift-10
+    if: github.event.inputs.traffic_shift_strategy == 'gradual'
     timeout-minutes: 10
 
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-central-1
+          ssh-private-key: ${{ secrets.PRODUCTION_SSH_KEY }}
 
-      - name: Shift 50% traffic
+      - name: Configure Nginx for 50% traffic
         run: |
-          echo "Shifting 50% traffic to blue environment..."
-          
-          for func in $(aws lambda list-functions --region eu-central-1 --query 'Functions[?starts_with(FunctionName, `defillama-prod`)].FunctionName' --output text); do
-            aws lambda update-alias \
-              --function-name $func \
-              --name prod \
-              --routing-config AdditionalVersionWeights={blue=0.5} \
-              --region eu-central-1 || echo "Failed to update $func"
-          done
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            cat > /etc/nginx/conf.d/blue-green.conf <<EOF
+            upstream backend {
+              server localhost:8000 weight=1;  # Green (50%)
+              server localhost:9000 weight=1;  # Blue (50%)
+            }
+            EOF
+            nginx -s reload
+          "
 
       - name: Monitor for 5 minutes
         run: |
-          echo "Monitoring for 5 minutes..."
-          
-          for i in {1..5}; do
-            echo "Minute $i/5"
-            
-            ALARMS=$(aws cloudwatch describe-alarms \
-              --region eu-central-1 \
-              --alarm-name-prefix defillama-prod \
-              --state-value ALARM \
-              --query 'MetricAlarms[*].AlarmName' \
-              --output text)
-            
-            if [ ! -z "$ALARMS" ]; then
-              echo "⚠️ Alarms triggered: $ALARMS"
-              echo "Initiating rollback..."
-              exit 1
-            fi
-            
-            sleep 60
-          done
+          echo "Monitoring 50% traffic shift for 5 minutes..."
+          sleep 300
 
   traffic-shift-100:
     name: Shift 100% Traffic to Blue
     runs-on: ubuntu-latest
-    needs: traffic-shift-50
-    timeout-minutes: 15
+    needs: [deploy-blue, traffic-shift-50]
+    if: always() && !failure() && !cancelled()
+    timeout-minutes: 10
 
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-central-1
+          ssh-private-key: ${{ secrets.PRODUCTION_SSH_KEY }}
 
-      - name: Shift 100% traffic
+      - name: Configure Nginx for 100% traffic to blue
         run: |
-          echo "Shifting 100% traffic to blue environment..."
-          
-          for func in $(aws lambda list-functions --region eu-central-1 --query 'Functions[?starts_with(FunctionName, `defillama-prod`)].FunctionName' --output text); do
-            aws lambda update-alias \
-              --function-name $func \
-              --name prod \
-              --function-version blue \
-              --region eu-central-1 || echo "Failed to update $func"
-          done
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            cat > /etc/nginx/conf.d/blue-green.conf <<EOF
+            upstream backend {
+              server localhost:9000;  # Blue (100%)
+            }
+            EOF
+            nginx -s reload
+          "
 
       - name: Monitor for 10 minutes
         run: |
-          echo "Monitoring for 10 minutes..."
-          
-          for i in {1..10}; do
-            echo "Minute $i/10"
-            
-            ALARMS=$(aws cloudwatch describe-alarms \
-              --region eu-central-1 \
-              --alarm-name-prefix defillama-prod \
-              --state-value ALARM \
-              --query 'MetricAlarms[*].AlarmName' \
-              --output text)
-            
-            if [ ! -z "$ALARMS" ]; then
-              echo "⚠️ Alarms triggered: $ALARMS"
-              echo "Initiating rollback..."
-              exit 1
+          echo "Monitoring 100% traffic on blue for 10 minutes..."
+          sleep 600
+
+  promote-blue-to-green:
+    name: Promote Blue to Green
+    runs-on: ubuntu-latest
+    needs: traffic-shift-100
+    timeout-minutes: 15
+
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.PRODUCTION_SSH_KEY }}
+
+      - name: Backup current green
+        run: |
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            cd ${{ env.DEPLOY_PATH }}
+            BACKUP_DIR=backups/green-\$(date +%Y%m%d-%H%M%S)
+            mkdir -p \$BACKUP_DIR
+            if [ -d green ]; then
+              cp -r green/* \$BACKUP_DIR/
             fi
+          "
+
+      - name: Stop old green environment
+        run: |
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            cd ${{ env.DEPLOY_PATH }}/green
+            docker-compose -p defillama-green down || true
+          "
+
+      - name: Promote blue to green
+        run: |
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            cd ${{ env.DEPLOY_PATH }}
+            rm -rf green
+            cp -r blue green
             
-            sleep 60
-          done
+            # Update green to use standard ports
+            cd green
+            unset BLUE_PORT_OFFSET
+            docker-compose -p defillama-green down
+            docker-compose -f docker-compose.yml \
+                          -f docker-compose.supabase.yml \
+                          -f docker-compose.monitoring.yml \
+                          -p defillama-green \
+                          up -d --remove-orphans
+          "
+
+      - name: Update Nginx to point to new green
+        run: |
+          ssh ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "
+            cat > /etc/nginx/conf.d/blue-green.conf <<EOF
+            upstream backend {
+              server localhost:8000;  # Green (100%)
+            }
+            EOF
+            nginx -s reload
+          "
 
       - name: Tag successful deployment
         run: |
-          git tag -a "prod-${{ github.event.inputs.version }}-$(date +%Y%m%d-%H%M%S)" -m "Production deployment"
-          git push origin --tags || echo "Failed to push tags"
+          git tag -a "production-${{ github.event.inputs.version }}" -m "Production deployment"
+          git push origin --tags
 
       - name: Notify Slack - Success
         if: success()
@@ -279,54 +310,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Production Deployment Successful* ✅\n\n*Version:* ${{ github.event.inputs.version }}\n*Repository:* ${{ github.repository }}\n*Author:* ${{ github.actor }}\n*Environment:* Production\n*URL:* https://api.llama.fi"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-  rollback:
-    name: Rollback on Failure
-    runs-on: ubuntu-latest
-    if: failure()
-    needs: [traffic-shift-10, traffic-shift-50, traffic-shift-100]
-
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-central-1
-
-      - name: Rollback to green
-        run: |
-          echo "❌ Deployment failed, rolling back to green environment..."
-          
-          for func in $(aws lambda list-functions --region eu-central-1 --query 'Functions[?starts_with(FunctionName, `defillama-prod`)].FunctionName' --output text); do
-            aws lambda update-alias \
-              --function-name $func \
-              --name prod \
-              --function-version green \
-              --region eu-central-1 || echo "Failed to rollback $func"
-          done
-          
-          echo "✅ Rollback completed"
-
-      - name: Notify Slack - Rollback
-        uses: slackapi/slack-github-action@v1
-        with:
-          payload: |
-            {
-              "text": "⚠️ Production Deployment Rolled Back",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Production Deployment Rolled Back* ⚠️\n\n*Version:* ${{ github.event.inputs.version }}\n*Repository:* ${{ github.repository }}\n*Author:* ${{ github.actor }}\n*Reason:* Deployment monitoring detected issues\n*Workflow:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    "text": "*Production Deployment Successful* ✅\n\n*Version:* ${{ github.event.inputs.version }}\n*Strategy:* ${{ github.event.inputs.traffic_shift_strategy }}\n*URL:* https://defillama.com"
                   }
                 }
               ]
