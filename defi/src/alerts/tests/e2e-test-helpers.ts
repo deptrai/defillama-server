@@ -153,20 +153,38 @@ export function generateE2EAlertRule(userId: string, overrides?: Partial<AlertRu
 // Event Generators
 // ============================================================================
 
-export function generatePriceChangeEvent(overrides?: Partial<PriceChangeEvent>): PriceChangeEvent {
+export function generatePriceChangeEvent(overrides?: Partial<any>): any {
+  const tokenId = overrides?.token_id || 'ethereum:0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
+  const currentPrice = overrides?.new_price || 2100;
+  const previousPrice = overrides?.old_price || 1800;
+  const changeAbsolute = currentPrice - previousPrice;
+  const changePercent = ((changeAbsolute / previousPrice) * 100);
+
   return {
-    event_type: 'price_change',
+    eventId: `test-event-${Date.now()}`,
+    eventType: 'price_update',
     timestamp: Date.now(),
-    protocol_id: 'ethereum',
-    token_id: 'ethereum',
-    token_symbol: 'ETH',
-    chain: 'ethereum',
-    old_price: 1800,
-    new_price: 2100,
-    change_percent: 16.67,
-    volume_24h: 15000000000,
-    market_cap: 250000000000,
-    ...overrides,
+    source: 'manual',
+    version: '1.0',
+    metadata: {
+      correlationId: `test-correlation-${Date.now()}`,
+      confidence: 1.0,
+      processingTime: 100,
+      retryCount: 0,
+      tags: ['test', 'e2e'],
+    },
+    data: {
+      tokenId,
+      symbol: overrides?.token_symbol || 'ETH',
+      chain: overrides?.chain || 'ethereum',
+      previousPrice,
+      currentPrice,
+      changePercent,
+      changeAbsolute,
+      volume24h: overrides?.volume_24h || 15000000000,
+      marketCap: overrides?.market_cap || 250000000000,
+      decimals: 18,
+    },
   };
 }
 

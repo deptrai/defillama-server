@@ -122,15 +122,15 @@ describe('E2E Alert Workflow Tests', () => {
     it('should process event through alert engine to notification delivery', async () => {
       // Step 1: Create alert rule
       const sql = getAlertsDBConnection();
+      const tokenId = 'ethereum:0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
       const rule = generateE2EAlertRule(testUserId, {
         alert_type: 'price_change',
+        token_id: tokenId,
+        protocol_id: null,
         condition: {
           metric: 'price',
-          operator: 'greater_than',
+          operator: '>',
           threshold: 2000,
-          target: {
-            protocol_id: 'ethereum',
-          },
         },
         channels: ['email', 'webhook'],
         webhook_url: 'http://localhost:3335/webhook',
@@ -159,7 +159,7 @@ describe('E2E Alert Workflow Tests', () => {
 
       // Step 2: Trigger event (price change)
       const event = generatePriceChangeEvent({
-        protocol_id: 'ethereum',
+        token_id: tokenId,
         new_price: 2100, // Above threshold
       });
 
@@ -204,7 +204,7 @@ describe('E2E Alert Workflow Tests', () => {
       expect(alert).toBeDefined();
       expect(alert!.alert_rule_id).toBe(testRuleId);
       expect(alert!.user_id).toBe(testUserId);
-      expect(alert!.triggered_value).toBeGreaterThan(2000);
+      expect(Number(alert!.triggered_value)).toBeGreaterThan(2000);
 
       console.log('✅ E2E Test: Alert created successfully', {
         alert_id: alert!.id,
@@ -218,35 +218,39 @@ describe('E2E Alert Workflow Tests', () => {
     it('should trigger multiple rules for single event', async () => {
       // Create 3 rules with different thresholds
       const sql = getAlertsDBConnection();
+      const tokenId = 'ethereum:0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
       const rules = [
         generateE2EAlertRule(testUserId, {
           name: 'Rule 1: Price > 2000',
+          token_id: tokenId,
+          protocol_id: null,
           condition: {
             metric: 'price',
-            operator: 'greater_than',
+            operator: '>',
             threshold: 2000,
-            target: { protocol_id: 'ethereum' },
           },
           channels: ['email'],
         }),
         generateE2EAlertRule(testUserId, {
           name: 'Rule 2: Price > 2050',
+          token_id: tokenId,
+          protocol_id: null,
           condition: {
             metric: 'price',
-            operator: 'greater_than',
+            operator: '>',
             threshold: 2050,
-            target: { protocol_id: 'ethereum' },
           },
           channels: ['webhook'],
           webhook_url: 'http://localhost:3335/webhook',
         }),
         generateE2EAlertRule(testUserId, {
           name: 'Rule 3: Price > 2100',
+          token_id: tokenId,
+          protocol_id: null,
           condition: {
             metric: 'price',
-            operator: 'greater_than',
+            operator: '>',
             threshold: 2100,
-            target: { protocol_id: 'ethereum' },
           },
           channels: ['push'],
         }),
@@ -276,7 +280,7 @@ describe('E2E Alert Workflow Tests', () => {
 
       // Trigger event with price = 2150 (should trigger all 3 rules)
       const event = generatePriceChangeEvent({
-        protocol_id: 'ethereum',
+        token_id: tokenId,
         new_price: 2150,
       });
 
