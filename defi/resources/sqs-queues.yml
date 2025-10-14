@@ -104,6 +104,175 @@ Resources:
           Value: !GetAtt EventsQueue.QueueName
       TreatMissingData: notBreaching
 
+  # Alert Evaluation Queue
+  AlertEvaluationQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:service}-alert-evaluation-queue-${self:provider.stage}
+      VisibilityTimeout: 60
+      MessageRetentionPeriod: 345600  # 4 days
+      ReceiveMessageWaitTimeSeconds: 20  # Long polling
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt AlertEvaluationDLQ.Arn
+        maxReceiveCount: 3
+      Tags:
+        - Key: Service
+          Value: ${self:service}
+        - Key: Stage
+          Value: ${self:provider.stage}
+        - Key: Component
+          Value: alert-evaluation-queue
+
+  # Alert Evaluation Dead Letter Queue
+  AlertEvaluationDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:service}-alert-evaluation-dlq-${self:provider.stage}
+      MessageRetentionPeriod: 1209600  # 14 days
+      Tags:
+        - Key: Service
+          Value: ${self:service}
+        - Key: Stage
+          Value: ${self:provider.stage}
+        - Key: Component
+          Value: alert-evaluation-dlq
+
+  # Alert Notification Queue
+  AlertNotificationQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:service}-alert-notification-queue-${self:provider.stage}
+      VisibilityTimeout: 120
+      MessageRetentionPeriod: 345600  # 4 days
+      ReceiveMessageWaitTimeSeconds: 20  # Long polling
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt AlertNotificationDLQ.Arn
+        maxReceiveCount: 3
+      Tags:
+        - Key: Service
+          Value: ${self:service}
+        - Key: Stage
+          Value: ${self:provider.stage}
+        - Key: Component
+          Value: alert-notification-queue
+
+  # Alert Notification Dead Letter Queue
+  AlertNotificationDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:service}-alert-notification-dlq-${self:provider.stage}
+      MessageRetentionPeriod: 1209600  # 14 days
+      Tags:
+        - Key: Service
+          Value: ${self:service}
+        - Key: Stage
+          Value: ${self:provider.stage}
+        - Key: Component
+          Value: alert-notification-dlq
+
+  # Queue Policies
+  AlertEvaluationQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref AlertEvaluationQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - sqs:SendMessage
+              - sqs:SendMessageBatch
+            Resource: !GetAtt AlertEvaluationQueue.Arn
+
+  AlertNotificationQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref AlertNotificationQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - sqs:SendMessage
+              - sqs:SendMessageBatch
+            Resource: !GetAtt AlertNotificationQueue.Arn
+
+  # CloudWatch Alarms for Alert Evaluation Queue
+  AlertEvaluationQueueDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: ${self:service}-alert-evaluation-queue-depth-${self:provider.stage}
+      AlarmDescription: Alert when alert evaluation queue has too many messages
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 500
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt AlertEvaluationQueue.QueueName
+      TreatMissingData: notBreaching
+
+  AlertEvaluationDLQDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: ${self:service}-alert-evaluation-dlq-depth-${self:provider.stage}
+      AlarmDescription: Alert when alert evaluation DLQ has messages
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt AlertEvaluationDLQ.QueueName
+      TreatMissingData: notBreaching
+
+  # CloudWatch Alarms for Alert Notification Queue
+  AlertNotificationQueueDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: ${self:service}-alert-notification-queue-depth-${self:provider.stage}
+      AlarmDescription: Alert when alert notification queue has too many messages
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 500
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt AlertNotificationQueue.QueueName
+      TreatMissingData: notBreaching
+
+  AlertNotificationDLQDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: ${self:service}-alert-notification-dlq-depth-${self:provider.stage}
+      AlarmDescription: Alert when alert notification DLQ has messages
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt AlertNotificationDLQ.QueueName
+      TreatMissingData: notBreaching
+
 Outputs:
   EventsQueueUrl:
     Description: URL of the Events Queue
@@ -128,4 +297,28 @@ Outputs:
     Value: !GetAtt EventsDLQ.Arn
     Export:
       Name: ${self:service}-events-dlq-arn-${self:provider.stage}
+
+  AlertEvaluationQueueUrl:
+    Description: URL of the Alert Evaluation Queue
+    Value: !Ref AlertEvaluationQueue
+    Export:
+      Name: ${self:service}-alert-evaluation-queue-url-${self:provider.stage}
+
+  AlertEvaluationQueueArn:
+    Description: ARN of the Alert Evaluation Queue
+    Value: !GetAtt AlertEvaluationQueue.Arn
+    Export:
+      Name: ${self:service}-alert-evaluation-queue-arn-${self:provider.stage}
+
+  AlertNotificationQueueUrl:
+    Description: URL of the Alert Notification Queue
+    Value: !Ref AlertNotificationQueue
+    Export:
+      Name: ${self:service}-alert-notification-queue-url-${self:provider.stage}
+
+  AlertNotificationQueueArn:
+    Description: ARN of the Alert Notification Queue
+    Value: !GetAtt AlertNotificationQueue.Arn
+    Export:
+      Name: ${self:service}-alert-notification-queue-arn-${self:provider.stage}
 

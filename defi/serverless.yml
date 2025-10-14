@@ -800,6 +800,27 @@ functions:
       ALERTS_DB: ${self:provider.environment.ALERTS_DB}
       JWT_SECRET: ${self:provider.environment.JWT_SECRET}
 
+  # Alert Engine (Story 1.3)
+  alertEngine:
+    handler: src/alerts/engine/alert-engine.handler
+    timeout: 30
+    memorySize: 512
+    reservedConcurrency: 10
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - AlertEvaluationQueue
+              - Arn
+          batchSize: 10
+          maximumBatchingWindowInSeconds: 5
+    environment:
+      REDIS_URL: ${self:provider.environment.REDIS_URL}
+      ALERTS_DB: ${self:provider.environment.ALERTS_DB}
+      NOTIFICATION_QUEUE_URL:
+        Ref: AlertNotificationQueue
+      AWS_REGION: ${self:provider.region}
+
   # depositedContracts:
   #   handler: src/getDepositedContracts.default
   #   timeout: 30
