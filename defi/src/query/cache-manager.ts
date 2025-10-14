@@ -35,14 +35,47 @@ export class CacheManager {
    * Generate cache key from query
    */
   generateCacheKey(query: QueryRequest): string {
-    // Normalize query (sort keys)
-    const normalized = JSON.stringify(query, Object.keys(query).sort());
+    // Normalize query (deep sort all keys)
+    const normalized = this.normalizeQuery(query);
 
     // Generate SHA-256 hash
     const hash = crypto.createHash('sha256').update(normalized).digest('hex');
 
     // Prefix with table name for easier debugging
     return `query:${query.table}:${hash}`;
+  }
+
+  /**
+   * Normalize query by deep sorting all keys
+   */
+  private normalizeQuery(obj: any): string {
+    if (obj === null || obj === undefined) {
+      return JSON.stringify(obj);
+    }
+
+    if (typeof obj !== 'object') {
+      return JSON.stringify(obj);
+    }
+
+    if (Array.isArray(obj)) {
+      return JSON.stringify(obj.map(item => this.normalizeQuery(item)));
+    }
+
+    // Sort object keys recursively
+    const sorted: any = {};
+    Object.keys(obj).sort().forEach(key => {
+      sorted[key] = obj[key];
+    });
+
+    return JSON.stringify(sorted, (key, value) => {
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        return Object.keys(value).sort().reduce((result: any, k) => {
+          result[k] = value[k];
+          return result;
+        }, {});
+      }
+      return value;
+    });
   }
 
   /**
@@ -124,19 +157,43 @@ export class CacheManager {
   }
 
   /**
+   * Invalidate cache by pattern
+   */
+  async invalidate(pattern: string): Promise<number> {
+    if (!this.redis) {
+      await this.init();
+    }
+
+    try {
+      return await this.scanAndDelete(pattern);
+    } catch (error) {
+      console.error('Cache invalidation error:', error);
+      return 0;
+    }
+  }
+
+  /**
    * Invalidate cache by table
    */
-  async invalidateByTable(table: string): Promise<void> {
+  async invalidateTable(table: string): Promise<number> {
     if (!this.redis) {
       await this.init();
     }
 
     try {
       const pattern = `query:${table}:*`;
-      await this.scanAndDelete(pattern);
+      return await this.scanAndDelete(pattern);
     } catch (error) {
       console.error('Cache invalidation error:', error);
+      return 0;
     }
+  }
+
+  /**
+   * Invalidate cache by table (alias for backward compatibility)
+   */
+  async invalidateByTable(table: string): Promise<void> {
+    await this.invalidateTable(table);
   }
 
   /**
@@ -157,9 +214,11 @@ export class CacheManager {
 
   /**
    * Scan and delete keys matching pattern (uses SCAN instead of KEYS)
+   * Returns the number of keys deleted
    */
-  private async scanAndDelete(pattern: string): Promise<void> {
+  private async scanAndDelete(pattern: string): Promise<number> {
     let cursor = '0';
+    let deletedCount = 0;
 
     do {
       const result = await this.redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
@@ -168,8 +227,11 @@ export class CacheManager {
 
       if (keys.length > 0) {
         await this.redis.del(...keys);
+        deletedCount += keys.length;
       }
     } while (cursor !== '0');
+
+    return deletedCount;
   }
 
   /**

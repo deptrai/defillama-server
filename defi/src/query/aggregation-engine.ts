@@ -5,7 +5,7 @@
 
 import { QueryRequest, QueryResponse, Aggregation } from './types';
 import { buildQuery, buildCountQuery } from './query-builder';
-import getDBConnection from '../utils/shared/getDBConnection';
+import getDBConnection from './db/connection';
 
 // ============================================================================
 // Aggregation Engine Class
@@ -21,30 +21,30 @@ export class AggregationEngine {
 
     try {
       // Set query timeout (30 seconds)
-      await db.query('SET statement_timeout = 30000');
+      await db.unsafe('SET statement_timeout = 30000');
 
       // Build SQL query
       const builtQuery = buildQuery(query);
 
-      // Execute query
-      const result = await db.query(builtQuery.sql, builtQuery.params);
+      // Execute query using unsafe with parameters
+      const result = await db.unsafe(builtQuery.sql, builtQuery.params);
 
       // Get total count for pagination
-      let totalCount = result.rows.length;
+      let totalCount = result.length;
       let totalPages: number | undefined;
 
       if (query.pagination) {
         const countQuery = buildCountQuery(query);
-        const countResult = await db.query(countQuery.sql, countQuery.params);
-        totalCount = parseInt(countResult.rows[0].count, 10);
+        const countResult = await db.unsafe(countQuery.sql, countQuery.params);
+        totalCount = parseInt(countResult[0].count, 10);
         totalPages = Math.ceil(totalCount / query.pagination.limit);
       }
 
       const executionTime = Date.now() - startTime;
 
       return {
-        data: result.rows,
-        count: result.rows.length,
+        data: result,
+        count: result.length,
         page: query.pagination?.page,
         limit: query.pagination?.limit,
         totalPages,
@@ -56,7 +56,7 @@ export class AggregationEngine {
     } finally {
       // Reset query timeout
       try {
-        await db.query('SET statement_timeout = 0');
+        await db.unsafe('SET statement_timeout = 0');
       } catch (e) {
         // Ignore error if connection is already closed
       }
