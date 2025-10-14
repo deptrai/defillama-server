@@ -1,0 +1,186 @@
+# Docker Compose for DeFiLlama Monitoring Stack
+# Prometheus + Grafana + Loki + Alertmanager + Exporters
+
+version: '3.8'
+
+services:
+  # Prometheus - Metrics collection and alerting
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: defillama-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - ./monitoring/recording-rules.yml:/etc/prometheus/recording-rules.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - monitoring
+    depends_on:
+      - alertmanager
+
+  # Alertmanager - Alert routing and notification
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: defillama-alertmanager
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    networks:
+      - monitoring
+    environment:
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_FROM=${SMTP_FROM:-alerts@defillama.com}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - PAGERDUTY_SERVICE_KEY=${PAGERDUTY_SERVICE_KEY}
+      - ALERT_EMAIL_CRITICAL=${ALERT_EMAIL_CRITICAL:-ops@defillama.com}
+      - ALERT_EMAIL_HIGH=${ALERT_EMAIL_HIGH:-ops@defillama.com}
+
+  # Grafana - Visualization and dashboards
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: defillama-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    networks:
+      - monitoring
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+    depends_on:
+      - prometheus
+      - loki
+
+  # Loki - Log aggregation
+  loki:
+    image: grafana/loki:2.9.3
+    container_name: defillama-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki.yml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    networks:
+      - monitoring
+
+  # Promtail - Log shipper for Loki
+  promtail:
+    image: grafana/promtail:2.9.3
+    container_name: defillama-promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/promtail.yml
+    volumes:
+      - ./monitoring/promtail.yml:/etc/promtail/promtail.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - monitoring
+    depends_on:
+      - loki
+
+  # PostgreSQL Exporter - Database metrics
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: defillama-postgres-exporter
+    restart: unless-stopped
+    ports:
+      - "9187:9187"
+    networks:
+      - monitoring
+    environment:
+      - DATA_SOURCE_NAME=postgresql://${POSTGRES_USER:-defillama}:${POSTGRES_PASSWORD:-defillama123}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-defillama}?sslmode=disable
+
+  # Redis Exporter - Cache metrics
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.55.0
+    container_name: defillama-redis-exporter
+    restart: unless-stopped
+    ports:
+      - "9121:9121"
+    networks:
+      - monitoring
+    environment:
+      - REDIS_ADDR=${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+
+  # Node Exporter - System metrics
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: defillama-node-exporter
+    restart: unless-stopped
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - monitoring
+
+  # cAdvisor - Container metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: defillama-cadvisor
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - monitoring
+    privileged: true
+    devices:
+      - /dev/kmsg
+
+  # Kong Prometheus Plugin (metrics exposed by Kong itself)
+  # No separate exporter needed - Kong exposes metrics at :8001/metrics
+
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  alertmanager_data:
+  grafana_data:
+  loki_data:
+
