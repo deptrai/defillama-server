@@ -67,7 +67,7 @@ export class CacheManager {
       sorted[key] = obj[key];
     });
 
-    return JSON.stringify(sorted, (key, value) => {
+    return JSON.stringify(sorted, (_key, value) => {
       if (value && typeof value === 'object' && !Array.isArray(value)) {
         return Object.keys(value).sort().reduce((result: any, k) => {
           result[k] = value[k];

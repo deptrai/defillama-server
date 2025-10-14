@@ -51,7 +51,7 @@ export class AggregationEngine {
         executionTime,
         cacheHit: false,
       };
-    } catch (error) {
+    } catch (error: any) {
       throw new AggregationError(`Failed to execute query: ${error.message}`, error);
     } finally {
       // Reset query timeout

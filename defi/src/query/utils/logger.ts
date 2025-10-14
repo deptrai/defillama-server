@@ -6,7 +6,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import { QueryRequest } from '../types';
-import getDBConnection from '../../utils/shared/getDBConnection';
+import getDBConnection from '../db/connection';
 
 export interface QueryLogParams {
   userId?: string;
@@ -32,8 +32,8 @@ export async function logQuery(params: QueryLogParams): Promise<void> {
       .update(JSON.stringify(query, Object.keys(query).sort()))
       .digest('hex');
 
-    // Insert query log
-    await db.query(
+    // Insert query log using postgres unsafe method
+    await db.unsafe(
       `
       INSERT INTO query_logs (
         id,

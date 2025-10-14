@@ -45,8 +45,8 @@ export async function checkRateLimit(userId: string, requestId: string): Promise
     if (count > limit) {
       throw new Error(`Rate limit exceeded. Limit: ${limit} requests per minute`);
     }
-  } catch (error) {
-    if (error.message.includes('Rate limit exceeded')) {
+  } catch (error: any) {
+    if (error.message && error.message.includes('Rate limit exceeded')) {
       throw error;
     }
     // If Redis error, allow request (fail open)

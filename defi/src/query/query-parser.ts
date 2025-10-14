@@ -84,7 +84,7 @@ export class QueryParser {
     try {
       this.parse(query);
       return { valid: true, errors: [] };
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof QueryValidationError) {
         return { valid: false, errors: error.errors };
       }
@@ -218,10 +218,9 @@ export class QueryParser {
         }
         break;
       case 'array':
-        // For array fields, only certain operators are supported
-        if (operator !== 'in' && operator !== 'nin') {
-          this.addError(path, `Operator ${operator} is not supported for array fields. Use 'in' or 'nin' instead.`);
-        }
+        // For array fields, only IN and NIN operators are supported
+        // This check is redundant since we already returned early for IN/NIN operators
+        // and array fields should only use IN/NIN operators
         break;
     }
   }

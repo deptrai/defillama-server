@@ -36,7 +36,7 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
     // Check rate limit
     try {
       await checkRateLimit(userId || 'anonymous', event.requestContext.requestId);
-    } catch (error) {
+    } catch (error: any) {
       return formatErrorResponse(429, 'RATE_LIMIT_EXCEEDED', error.message);
     }
 
@@ -80,7 +80,7 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
     });
 
     return formatSuccessResponse(result);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Query execution error:', error);
 
     // Log error
