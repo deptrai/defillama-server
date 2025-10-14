@@ -1,0 +1,265 @@
+# Enhanced Security Configuration for DeFiLlama On-Chain Services
+# This file defines Secrets Manager, KMS keys, and WAF rules
+
+Resources:
+  # KMS Key for Encryption at Rest
+  EncryptionKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for DeFiLlama encryption at rest
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: kms:*
+            Resource: '*'
+          - Sid: Allow Lambda to use the key
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - kms:Decrypt
+              - kms:DescribeKey
+            Resource: '*'
+          - Sid: Allow RDS to use the key
+            Effect: Allow
+            Principal:
+              Service: rds.amazonaws.com
+            Action:
+              - kms:Decrypt
+              - kms:Encrypt
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:CreateGrant
+              - kms:DescribeKey
+            Resource: '*'
+          - Sid: Allow ElastiCache to use the key
+            Effect: Allow
+            Principal:
+              Service: elasticache.amazonaws.com
+            Action:
+              - kms:Decrypt
+              - kms:Encrypt
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:CreateGrant
+              - kms:DescribeKey
+            Resource: '*'
+          - Sid: Allow DynamoDB to use the key
+            Effect: Allow
+            Principal:
+              Service: dynamodb.amazonaws.com
+            Action:
+              - kms:Decrypt
+              - kms:Encrypt
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:CreateGrant
+              - kms:DescribeKey
+            Resource: '*'
+      Tags:
+        - Key: Name
+          Value: defillama-encryption-key-${self:custom.stage}
+        - Key: Environment
+          Value: ${self:custom.stage}
+
+  # KMS Key Alias
+  EncryptionKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: alias/defillama-${self:custom.stage}
+      TargetKeyId: !Ref EncryptionKey
+
+  # Secrets Manager - JWT Secret
+  JWTSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: defillama-jwt-secret-${self:custom.stage}
+      Description: JWT signing secret for DeFiLlama
+      GenerateSecretString:
+        SecretStringTemplate: '{}'
+        GenerateStringKey: secret
+        PasswordLength: 64
+        ExcludeCharacters: '"@/\'
+      KmsKeyId: !Ref EncryptionKey
+      Tags:
+        - Key: Name
+          Value: defillama-jwt-secret-${self:custom.stage}
+        - Key: Environment
+          Value: ${self:custom.stage}
+
+  # Secrets Manager - API Keys
+  APIKeysSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: defillama-api-keys-${self:custom.stage}
+      Description: API keys for external services
+      SecretString: |
+        {
+          "alchemy": "",
+          "infura": "",
+          "etherscan": "",
+          "coingecko": ""
+        }
+      KmsKeyId: !Ref EncryptionKey
+      Tags:
+        - Key: Name
+          Value: defillama-api-keys-${self:custom.stage}
+        - Key: Environment
+          Value: ${self:custom.stage}
+
+  # WAF Web ACL for API Gateway
+  WebACL:
+    Type: AWS::WAFv2::WebACL
+    Condition: IsProduction
+    Properties:
+      Name: defillama-waf-${self:custom.stage}
+      Scope: REGIONAL
+      DefaultAction:
+        Allow: {}
+      Rules:
+        # Rate limiting rule
+        - Name: RateLimitRule
+          Priority: 1
+          Statement:
+            RateBasedStatement:
+              Limit: 2000
+              AggregateKeyType: IP
+          Action:
+            Block:
+              CustomResponse:
+                ResponseCode: 429
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: RateLimitRule
+        # AWS Managed Rules - Core Rule Set
+        - Name: AWSManagedRulesCommonRuleSet
+          Priority: 2
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesCommonRuleSet
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: AWSManagedRulesCommonRuleSet
+        # AWS Managed Rules - Known Bad Inputs
+        - Name: AWSManagedRulesKnownBadInputsRuleSet
+          Priority: 3
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesKnownBadInputsRuleSet
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: AWSManagedRulesKnownBadInputsRuleSet
+        # AWS Managed Rules - SQL Injection
+        - Name: AWSManagedRulesSQLiRuleSet
+          Priority: 4
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesSQLiRuleSet
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: AWSManagedRulesSQLiRuleSet
+        # Block requests from specific countries (optional)
+        - Name: GeoBlockRule
+          Priority: 5
+          Statement:
+            NotStatement:
+              Statement:
+                GeoMatchStatement:
+                  CountryCodes:
+                    - US
+                    - CA
+                    - GB
+                    - DE
+                    - FR
+                    - JP
+                    - SG
+                    - AU
+          Action:
+            Block:
+              CustomResponse:
+                ResponseCode: 403
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: GeoBlockRule
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: defillama-waf-${self:custom.stage}
+      Tags:
+        - Key: Name
+          Value: defillama-waf-${self:custom.stage}
+        - Key: Environment
+          Value: ${self:custom.stage}
+
+  # WAF Logging Configuration
+  WebACLLogging:
+    Type: AWS::WAFv2::LoggingConfiguration
+    Condition: IsProduction
+    Properties:
+      ResourceArn: !GetAtt WebACL.Arn
+      LogDestinationConfigs:
+        - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/waf/defillama-${self:custom.stage}
+
+  # CloudWatch Log Group for WAF
+  WAFLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsProduction
+    Properties:
+      LogGroupName: /aws/waf/defillama-${self:custom.stage}
+      RetentionInDays: !If [IsProduction, 30, 7]
+
+# Conditions
+Conditions:
+  IsProduction: !Equals [${self:custom.stage}, prod]
+
+# Outputs
+Outputs:
+  EncryptionKeyId:
+    Description: KMS Encryption Key ID
+    Value: !Ref EncryptionKey
+    Export:
+      Name: ${self:service}-${self:custom.stage}-encryption-key-id
+
+  EncryptionKeyArn:
+    Description: KMS Encryption Key ARN
+    Value: !GetAtt EncryptionKey.Arn
+    Export:
+      Name: ${self:service}-${self:custom.stage}-encryption-key-arn
+
+  JWTSecretArn:
+    Description: JWT Secret ARN
+    Value: !Ref JWTSecret
+    Export:
+      Name: ${self:service}-${self:custom.stage}-jwt-secret-arn
+
+  APIKeysSecretArn:
+    Description: API Keys Secret ARN
+    Value: !Ref APIKeysSecret
+    Export:
+      Name: ${self:service}-${self:custom.stage}-api-keys-secret-arn
+
+  WebACLArn:
+    Condition: IsProduction
+    Description: WAF Web ACL ARN
+    Value: !GetAtt WebACL.Arn
+    Export:
+      Name: ${self:service}-${self:custom.stage}-waf-acl-arn
+

@@ -1,0 +1,223 @@
+# Security Groups for DeFiLlama On-Chain Services
+# This file defines security groups for Lambda, Redis, RDS, and ALB with least privilege access
+
+Resources:
+  # Lambda Security Group
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Lambda functions
+      VpcId: !ImportValue ${self:service}-${self:custom.stage}-vpc-id
+      SecurityGroupEgress:
+        # Allow HTTPS to internet (for external API calls)
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: Allow HTTPS to internet
+        # Allow HTTP to internet (for external API calls)
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: Allow HTTP to internet
+      Tags:
+        - Key: Name
+          Value: defillama-lambda-sg-${self:custom.stage}
+        - Key: Environment
+          Value: ${self:custom.stage}
+        - Key: Service
+          Value: lambda
+
+  # Lambda to Redis Egress Rule
+  LambdaToRedisEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref LambdaSecurityGroup
+      IpProtocol: tcp
+      FromPort: 6379
+      ToPort: 6379
+      DestinationSecurityGroupId: !Ref RedisSecurityGroup
+      Description: Allow Lambda to connect to Redis
+
+  # Lambda to RDS Egress Rule
+  LambdaToRDSEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref LambdaSecurityGroup
+      IpProtocol: tcp
+      FromPort: 5432
+      ToPort: 5432
+      DestinationSecurityGroupId: !Ref RDSSecurityGroup
+      Description: Allow Lambda to connect to RDS PostgreSQL
+
+  # Redis Security Group
+  RedisSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Redis ElastiCache
+      VpcId: !ImportValue ${self:service}-${self:custom.stage}-vpc-id
+      SecurityGroupIngress:
+        # Allow Redis connections from Lambda only
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          SourceSecurityGroupId: !Ref LambdaSecurityGroup
+          Description: Allow Redis connections from Lambda
+      SecurityGroupEgress:
+        # Allow HTTPS for CloudWatch metrics
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: Allow HTTPS for CloudWatch metrics
+      Tags:
+        - Key: Name
+          Value: defillama-redis-sg-${self:custom.stage}
+        - Key: Environment
+          Value: ${self:custom.stage}
+        - Key: Service
+          Value: redis
+
+  # RDS Security Group
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for RDS PostgreSQL
+      VpcId: !ImportValue ${self:service}-${self:custom.stage}-vpc-id
+      SecurityGroupIngress:
+        # Allow PostgreSQL connections from Lambda only
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref LambdaSecurityGroup
+          Description: Allow PostgreSQL connections from Lambda
+      SecurityGroupEgress:
+        # Allow HTTPS for CloudWatch metrics
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: Allow HTTPS for CloudWatch metrics
+      Tags:
+        - Key: Name
+          Value: defillama-rds-sg-${self:custom.stage}
+        - Key: Environment
+          Value: ${self:custom.stage}
+        - Key: Service
+          Value: rds
+
+  # ALB Security Group (for future use)
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Application Load Balancer
+      VpcId: !ImportValue ${self:service}-${self:custom.stage}-vpc-id
+      SecurityGroupIngress:
+        # Allow HTTPS from internet
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: Allow HTTPS from internet
+        # Allow HTTP from internet (redirect to HTTPS)
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: Allow HTTP from internet
+      SecurityGroupEgress:
+        # Allow all outbound traffic to Lambda
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          DestinationSecurityGroupId: !Ref LambdaSecurityGroup
+          Description: Allow traffic to Lambda functions
+      Tags:
+        - Key: Name
+          Value: defillama-alb-sg-${self:custom.stage}
+        - Key: Environment
+          Value: ${self:custom.stage}
+        - Key: Service
+          Value: alb
+
+  # Bastion Host Security Group (for debugging)
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Bastion host
+      VpcId: !ImportValue ${self:service}-${self:custom.stage}-vpc-id
+      SecurityGroupIngress:
+        # Allow SSH from specific IP (replace with your IP)
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0  # TODO: Replace with your IP
+          Description: Allow SSH from specific IP
+      SecurityGroupEgress:
+        # Allow all outbound traffic
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic
+      Tags:
+        - Key: Name
+          Value: defillama-bastion-sg-${self:custom.stage}
+        - Key: Environment
+          Value: ${self:custom.stage}
+        - Key: Service
+          Value: bastion
+
+  # Allow Bastion to connect to Redis (for debugging)
+  BastionToRedisIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref RedisSecurityGroup
+      IpProtocol: tcp
+      FromPort: 6379
+      ToPort: 6379
+      SourceSecurityGroupId: !Ref BastionSecurityGroup
+      Description: Allow Bastion to connect to Redis
+
+  # Allow Bastion to connect to RDS (for debugging)
+  BastionToRDSIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref RDSSecurityGroup
+      IpProtocol: tcp
+      FromPort: 5432
+      ToPort: 5432
+      SourceSecurityGroupId: !Ref BastionSecurityGroup
+      Description: Allow Bastion to connect to RDS
+
+# Outputs
+Outputs:
+  LambdaSecurityGroupId:
+    Description: Lambda Security Group ID
+    Value: !Ref LambdaSecurityGroup
+    Export:
+      Name: ${self:service}-${self:custom.stage}-lambda-sg-id
+
+  RedisSecurityGroupId:
+    Description: Redis Security Group ID
+    Value: !Ref RedisSecurityGroup
+    Export:
+      Name: ${self:service}-${self:custom.stage}-redis-sg-id
+
+  RDSSecurityGroupId:
+    Description: RDS Security Group ID
+    Value: !Ref RDSSecurityGroup
+    Export:
+      Name: ${self:service}-${self:custom.stage}-rds-sg-id
+
+  ALBSecurityGroupId:
+    Description: ALB Security Group ID
+    Value: !Ref ALBSecurityGroup
+    Export:
+      Name: ${self:service}-${self:custom.stage}-alb-sg-id
+
+  BastionSecurityGroupId:
+    Description: Bastion Security Group ID
+    Value: !Ref BastionSecurityGroup
+    Export:
+      Name: ${self:service}-${self:custom.stage}-bastion-sg-id
+

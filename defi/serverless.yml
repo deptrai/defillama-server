@@ -12,6 +12,21 @@ provider:
   region: eu-central-1
   endpointType: REGIONAL # Set to regional because the api gateway will be behind a cloudfront distribution
   stage: dev # Default to dev if no stage is specified
+  # VPC Configuration (Story 1.5)
+  vpc:
+    securityGroupIds:
+      - Fn::ImportValue: ${self:service}-${self:custom.stage}-lambda-sg-id
+    subnetIds:
+      - Fn::ImportValue: ${self:service}-${self:custom.stage}-private-subnet-1-id
+      - Fn::ImportValue: ${self:service}-${self:custom.stage}-private-subnet-2-id
+  # X-Ray Tracing (Story 1.5)
+  tracing:
+    lambda: true
+    apiGateway: true
+  # CloudWatch Logs (Story 1.5)
+  logs:
+    restApi: true
+    websocket: true
   iamRoleStatements:
     - Effect: Allow # X-Ray permissions
       Action:
@@ -68,6 +83,30 @@ provider:
       Action:
         - "s3:ListBucket"
         - "s3:*Object*"
+      Resource: "*"
+    # Secrets Manager permissions (Story 1.5)
+    - Effect: "Allow"
+      Action:
+        - "secretsmanager:GetSecretValue"
+        - "secretsmanager:DescribeSecret"
+      Resource:
+        - Fn::ImportValue: ${self:service}-${self:custom.stage}-jwt-secret-arn
+        - Fn::ImportValue: ${self:service}-${self:custom.stage}-api-keys-secret-arn
+    # KMS permissions (Story 1.5)
+    - Effect: "Allow"
+      Action:
+        - "kms:Decrypt"
+        - "kms:DescribeKey"
+      Resource:
+        - Fn::ImportValue: ${self:service}-${self:custom.stage}-encryption-key-arn
+    # VPC permissions (Story 1.5)
+    - Effect: "Allow"
+      Action:
+        - "ec2:CreateNetworkInterface"
+        - "ec2:DescribeNetworkInterfaces"
+        - "ec2:DeleteNetworkInterface"
+        - "ec2:AssignPrivateIpAddresses"
+        - "ec2:UnassignPrivateIpAddresses"
       Resource: "*"
   environment:
     ETHEREUM_RPC: ${file(./env.js):ETHEREUM_RPC}
@@ -870,6 +909,12 @@ resources:
   - ${file(resources/event-processor-lambda.yml)}
   # SQS Queues (Story 1.2)
   - ${file(resources/sqs-queues.yml)}
+  # VPC Network (Story 1.5 - Phase 1)
+  - ${file(resources/vpc-network.yml)}
+  # Security Groups (Story 1.5 - Phase 1)
+  - ${file(resources/security-groups.yml)}
+  # Enhanced Security (Story 1.5 - Phase 1)
+  - ${file(resources/security-enhanced.yml)}
 
 plugins:
   - serverless-esbuild
