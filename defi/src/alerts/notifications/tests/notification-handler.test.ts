@@ -84,15 +84,18 @@ describe('Notification Handler Integration Tests', () => {
     testRuleId = rule.id;
 
     await sql.unsafe(`
-      INSERT INTO alert_rules (id, user_id, name, description, alert_type, conditions, channels, webhook_url, enabled, throttle_minutes, created_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      INSERT INTO alert_rules (id, user_id, name, description, alert_type, protocol_id, token_id, chain_id, condition, channels, webhook_url, enabled, throttle_minutes, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
     `, [
       rule.id,
       rule.user_id,
       rule.name,
       rule.description,
       rule.alert_type,
-      rule.conditions,
+      rule.protocol_id,
+      rule.token_id,
+      rule.chain_id,
+      rule.condition,
       rule.channels,
       rule.webhook_url,
       rule.enabled,
@@ -105,18 +108,18 @@ describe('Notification Handler Integration Tests', () => {
     testAlertHistoryId = history.id;
 
     await sql.unsafe(`
-      INSERT INTO alert_history (id, rule_id, user_id, triggered_at, triggered_value, threshold_value, message, delivery_status, error_details)
+      INSERT INTO alert_history (id, alert_rule_id, user_id, triggered_value, threshold_value, message, notification_channels, delivery_status, created_at)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     `, [
       history.id,
-      history.rule_id,
+      history.alert_rule_id,
       history.user_id,
-      history.triggered_at,
       history.triggered_value,
       history.threshold_value,
       history.message,
+      history.notification_channels,
       history.delivery_status,
-      history.error_details,
+      history.created_at,
     ]);
   });
 

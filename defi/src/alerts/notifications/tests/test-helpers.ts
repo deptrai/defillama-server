@@ -129,7 +129,10 @@ export function generateTestAlertRule(userId: string) {
     name: `Test Rule ${Date.now()}`,
     description: 'Test alert rule',
     alert_type: 'price_change',
-    conditions: {
+    protocol_id: 'uniswap-v3',
+    token_id: null,
+    chain_id: null,
+    condition: {
       metric: 'price',
       operator: 'gt',
       threshold: 2000,
@@ -145,14 +148,14 @@ export function generateTestAlertRule(userId: string) {
 export function generateTestAlertHistory(ruleId: string, userId: string) {
   return {
     id: uuidv4(),
-    rule_id: ruleId,
+    alert_rule_id: ruleId,
     user_id: userId,
-    triggered_at: new Date(),
     triggered_value: 2500,
     threshold_value: 2000,
     message: 'ETH price reached $2,500 (threshold: $2,000)',
+    notification_channels: ['email', 'webhook', 'push'],
     delivery_status: {},
-    error_details: {},
+    created_at: new Date(),
   };
 }
 
