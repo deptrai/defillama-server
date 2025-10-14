@@ -10,13 +10,12 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 // Use postgres user (same as migration)
-// Password has special characters, use object config instead
+// Use Unix socket connection (trust auth) instead of TCP (scram-sha-256)
+// Docker container exposes Unix socket at /var/run/postgresql
 const sql = postgres({
-  host: 'localhost',
-  port: 5432,
+  host: '/var/run/postgresql',  // Unix socket path
   database: 'defillama',
   username: 'postgres',
-  password: 'k7RROgaFvTB1i5aHYywacJF+jCiWZ5OVbAc7XRyoQWA=',
 });
 
 // Sample data constants
