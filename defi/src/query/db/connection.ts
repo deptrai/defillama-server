@@ -31,7 +31,13 @@ export async function closeDBConnection(): Promise<void> {
 }
 
 // Clean up on process exit
-process.on('exit', closeDBConnection);
-process.on('SIGINT', closeDBConnection);
-process.on('SIGTERM', closeDBConnection);
+// Note: 'exit' event doesn't support async, so we only handle SIGINT/SIGTERM
+process.on('SIGINT', async () => {
+  await closeDBConnection();
+  process.exit(0);
+});
+process.on('SIGTERM', async () => {
+  await closeDBConnection();
+  process.exit(0);
+});
 
