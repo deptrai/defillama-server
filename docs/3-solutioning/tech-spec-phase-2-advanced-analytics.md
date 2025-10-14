@@ -467,11 +467,343 @@ export class RiskScoringEngine {
 }
 ```
 
+### 6.3 Cohort Analysis Engine
+
+```typescript
+// User Cohort Analyzer
+export class CohortAnalyzer {
+  /**
+   * Calculate cohort retention metrics
+   */
+  async analyzeCohort(
+    protocolId: string,
+    cohortDate: Date
+  ): Promise<CohortMetrics> {
+    const cohortUsers = await this.getCohortUsers(protocolId, cohortDate);
+    const periods = await this.getRetentionPeriods(cohortDate);
+
+    const metrics: CohortMetrics = {
+      cohortDate,
+      cohortSize: cohortUsers.length,
+      periods: []
+    };
+
+    for (const period of periods) {
+      const activeUsers = await this.getActiveUsers(
+        cohortUsers,
+        period.startDate,
+        period.endDate
+      );
+
+      metrics.periods.push({
+        periodNumber: period.number,
+        activeUsers: activeUsers.length,
+        retentionRate: (activeUsers.length / cohortUsers.length) * 100,
+        avgTransactionValue: this.calculateAvgValue(activeUsers),
+        totalVolume: this.calculateTotalVolume(activeUsers)
+      });
+    }
+
+    return metrics;
+  }
+
+  /**
+   * Calculate DAU/WAU/MAU metrics
+   */
+  async calculateUserMetrics(
+    protocolId: string,
+    date: Date
+  ): Promise<UserMetrics> {
+    const dau = await this.getActiveUsers(protocolId, date, 'day');
+    const wau = await this.getActiveUsers(protocolId, date, 'week');
+    const mau = await this.getActiveUsers(protocolId, date, 'month');
+
+    return {
+      dau: dau.length,
+      wau: wau.length,
+      mau: mau.length,
+      dauWauRatio: (dau.length / wau.length) * 100,
+      wauMauRatio: (wau.length / mau.length) * 100,
+      stickiness: (dau.length / mau.length) * 100
+    };
+  }
+}
+```
+
 ---
 
-**Document continues in next file due to 300-line limit...**
+## 7. Testing Strategy
 
-**Version**: 1.0  
-**Last Updated**: 2025-10-14  
+### 7.1 Unit Tests
+
+**Coverage Target**: 90%+
+
+**Test Cases:**
+```typescript
+describe('APYCalculator', () => {
+  it('should calculate APY from APR correctly', () => {
+    const calculator = new APYCalculator();
+    const apy = calculator.calculateAPY(0.10, 365); // 10% APR
+    expect(apy).toBeCloseTo(0.1052, 4); // ~10.52% APY
+  });
+
+  it('should handle zero APR', () => {
+    const calculator = new APYCalculator();
+    const apy = calculator.calculateAPY(0, 365);
+    expect(apy).toBe(0);
+  });
+});
+
+describe('RiskScoringEngine', () => {
+  it('should score low risk for high TVL + audited protocol', () => {
+    const engine = new RiskScoringEngine();
+    const score = engine.calculateRiskScore({
+      tvl: 150_000_000,
+      auditStatus: 'multiple_audits',
+      protocolAgeDays: 800,
+      yieldVolatility: 0.03
+    });
+    expect(score).toBeLessThan(30); // Low risk
+  });
+
+  it('should score high risk for low TVL + unaudited protocol', () => {
+    const engine = new RiskScoringEngine();
+    const score = engine.calculateRiskScore({
+      tvl: 50_000,
+      auditStatus: 'none',
+      protocolAgeDays: 60,
+      yieldVolatility: 0.60
+    });
+    expect(score).toBeGreaterThan(60); // High risk
+  });
+});
+```
+
+### 7.2 Integration Tests
+
+**Test Scenarios:**
+1. Protocol performance API with real database
+2. Yield opportunity scanner with multiple protocols
+3. Cache hit/miss scenarios
+4. Rate limiting enforcement
+5. Multi-chain data aggregation
+
+```typescript
+describe('Protocol Performance API Integration', () => {
+  it('should return performance metrics for valid protocol', async () => {
+    const response = await request(app)
+      .get('/v1/analytics/protocol/uniswap-v3/performance?timeRange=30d')
+      .set('Authorization', 'Bearer test-api-key')
+      .expect(200);
+
+    expect(response.body).toHaveProperty('metrics');
+    expect(response.body.metrics).toHaveProperty('apy');
+    expect(response.body.metrics).toHaveProperty('users');
+    expect(response.body.metrics).toHaveProperty('revenue');
+  });
+
+  it('should return cached data on second request', async () => {
+    const start1 = Date.now();
+    await request(app).get('/v1/analytics/protocol/uniswap-v3/performance');
+    const time1 = Date.now() - start1;
+
+    const start2 = Date.now();
+    await request(app).get('/v1/analytics/protocol/uniswap-v3/performance');
+    const time2 = Date.now() - start2;
+
+    expect(time2).toBeLessThan(time1 * 0.5); // Cache should be 2x faster
+  });
+});
+```
+
+### 7.3 Performance Tests
+
+**Load Testing with k6:**
+```javascript
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+export const options = {
+  stages: [
+    { duration: '2m', target: 100 },  // Ramp up to 100 users
+    { duration: '5m', target: 100 },  // Stay at 100 users
+    { duration: '2m', target: 500 },  // Ramp up to 500 users
+    { duration: '5m', target: 500 },  // Stay at 500 users
+    { duration: '2m', target: 0 },    // Ramp down
+  ],
+  thresholds: {
+    http_req_duration: ['p(95)<500'], // 95% of requests < 500ms
+    http_req_failed: ['rate<0.01'],   // Error rate < 1%
+  },
+};
+
+export default function () {
+  const response = http.get(
+    'https://api.defillama.com/v1/analytics/protocol/uniswap-v3/performance',
+    {
+      headers: { 'Authorization': 'Bearer test-api-key' },
+    }
+  );
+
+  check(response, {
+    'status is 200': (r) => r.status === 200,
+    'response time < 500ms': (r) => r.timings.duration < 500,
+  });
+
+  sleep(1);
+}
+```
+
+---
+
+## 8. Deployment Strategy
+
+### 8.1 Infrastructure as Code (AWS CDK)
+
+```typescript
+// Lambda function for protocol analytics
+const protocolAnalyticsLambda = new lambda.Function(this, 'ProtocolAnalytics', {
+  runtime: lambda.Runtime.NODEJS_20_X,
+  handler: 'index.handler',
+  code: lambda.Code.fromAsset('dist/protocol-analytics'),
+  environment: {
+    DB_HOST: rdsInstance.dbInstanceEndpointAddress,
+    REDIS_HOST: redisCluster.attrRedisEndpointAddress,
+    CACHE_TTL: '300',
+  },
+  timeout: Duration.seconds(30),
+  memorySize: 1024,
+  reservedConcurrentExecutions: 100,
+});
+
+// API Gateway integration
+const api = new apigateway.RestApi(this, 'AnalyticsAPI', {
+  restApiName: 'DeFiLlama Analytics API',
+  deployOptions: {
+    stageName: 'prod',
+    throttlingRateLimit: 1000,
+    throttlingBurstLimit: 2000,
+  },
+});
+
+const protocolResource = api.root.addResource('protocol');
+const protocolIdResource = protocolResource.addResource('{protocolId}');
+const performanceResource = protocolIdResource.addResource('performance');
+
+performanceResource.addMethod(
+  'GET',
+  new apigateway.LambdaIntegration(protocolAnalyticsLambda),
+  {
+    authorizationType: apigateway.AuthorizationType.CUSTOM,
+    authorizer: apiKeyAuthorizer,
+  }
+);
+```
+
+### 8.2 Monitoring and Alerting
+
+**CloudWatch Metrics:**
+```typescript
+// Custom metrics
+const apiLatencyMetric = new cloudwatch.Metric({
+  namespace: 'DeFiLlama/Analytics',
+  metricName: 'APILatency',
+  statistic: 'p95',
+  period: Duration.minutes(5),
+});
+
+// Alarms
+new cloudwatch.Alarm(this, 'HighLatencyAlarm', {
+  metric: apiLatencyMetric,
+  threshold: 500,
+  evaluationPeriods: 2,
+  alarmDescription: 'API latency exceeds 500ms (p95)',
+  actionsEnabled: true,
+});
+
+// Dashboard
+const dashboard = new cloudwatch.Dashboard(this, 'AnalyticsDashboard', {
+  dashboardName: 'DeFiLlama-Analytics',
+});
+
+dashboard.addWidgets(
+  new cloudwatch.GraphWidget({
+    title: 'API Latency (p95)',
+    left: [apiLatencyMetric],
+  }),
+  new cloudwatch.GraphWidget({
+    title: 'Request Rate',
+    left: [requestRateMetric],
+  }),
+  new cloudwatch.GraphWidget({
+    title: 'Error Rate',
+    left: [errorRateMetric],
+  })
+);
+```
+
+---
+
+## 9. Acceptance Criteria
+
+### 9.1 Feature Acceptance
+
+**Protocol Performance Dashboard:**
+- ✅ Display APY/APR for 7d, 30d, 90d, 1y periods
+- ✅ Show DAU/WAU/MAU metrics with trends
+- ✅ Display revenue breakdown by source
+- ✅ Support cohort retention analysis
+- ✅ Enable protocol comparison
+
+**Yield Opportunity Scanner:**
+- ✅ List yield opportunities with risk scores
+- ✅ Filter by chain, protocol, risk level
+- ✅ Sort by APY, TVL, risk score
+- ✅ Display historical yield trends
+- ✅ Support yield alerts
+
+**Liquidity Analysis Tools:**
+- ✅ Show liquidity depth charts
+- ✅ Display LP position profitability
+- ✅ Calculate impermanent loss
+- ✅ Track liquidity migrations
+- ✅ Support multi-pool analysis
+
+### 9.2 Performance Acceptance
+
+- ✅ API response time <500ms (p95)
+- ✅ Cache hit ratio >90%
+- ✅ Support 1000+ concurrent requests
+- ✅ Database query time <200ms (p95)
+- ✅ Zero downtime deployments
+
+### 9.3 Security Acceptance
+
+- ✅ API key authentication enforced
+- ✅ Rate limiting per tier
+- ✅ SQL injection prevention
+- ✅ XSS protection
+- ✅ CORS configuration
+- ✅ Audit logging enabled
+
+---
+
+## 10. Traceability Matrix
+
+| Requirement | Design Component | Implementation | Test Case |
+|-------------|------------------|----------------|-----------|
+| Protocol APY tracking | `protocol_performance_metrics` table | `APYCalculator` class | `test_apy_calculation` |
+| Risk scoring | Risk scoring algorithm | `RiskScoringEngine` class | `test_risk_scoring` |
+| User retention | `protocol_user_cohorts` table | `CohortAnalyzer` class | `test_cohort_analysis` |
+| Yield opportunities | `yield_opportunities` table | Yield Scanner API | `test_yield_scanner` |
+| Multi-chain support | Chain adapters | `PortfolioAggregator` | `test_multi_chain` |
+| Caching | Redis + Materialized Views | `CacheManager` | `test_cache_performance` |
+| Rate limiting | Token bucket algorithm | API Gateway config | `test_rate_limiting` |
+
+---
+
+**Version**: 1.0
+**Last Updated**: 2025-10-14
 **Status**: Ready for Implementation
+**Review Date**: 2026-01-14
 
