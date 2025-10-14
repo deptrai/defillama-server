@@ -217,6 +217,12 @@ export class QueryParser {
           this.addError(path, `Value must be a date or date string for field type ${fieldType}`);
         }
         break;
+      case 'array':
+        // For array fields, only certain operators are supported
+        if (operator !== 'in' && operator !== 'nin') {
+          this.addError(path, `Operator ${operator} is not supported for array fields. Use 'in' or 'nin' instead.`);
+        }
+        break;
     }
   }
 

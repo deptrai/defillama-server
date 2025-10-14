@@ -144,20 +144,11 @@ export class QueryBuilder {
 
     // Handle IN and NOT IN operators
     if (operator === 'in' || operator === 'nin') {
-      const placeholders = value.map(() => {
-        const paramIndex = this.params.length + 1;
-        this.params.push(value[this.params.length - (this.params.length)]);
-        return `$${paramIndex}`;
-      });
-      
-      // Add all values to params
+      const paramIndices: string[] = [];
       value.forEach((v: any) => {
-        if (!this.params.includes(v)) {
-          this.params.push(v);
-        }
+        this.params.push(v);
+        paramIndices.push(`$${this.params.length}`);
       });
-      
-      const paramIndices = value.map((_: any, i: number) => `$${this.params.length - value.length + i + 1}`);
       return `${field} ${sqlOperator} (${paramIndices.join(', ')})`;
     }
 

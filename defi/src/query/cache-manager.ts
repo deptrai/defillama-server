@@ -14,6 +14,7 @@ import { getRedisClient } from '../utils/shared/redis';
 export class CacheManager {
   private redis: any;
   private ttl: number;
+  private initialized: boolean = false;
 
   constructor(ttl: number = DEFAULT_CACHE_TTL) {
     this.ttl = ttl;
@@ -22,8 +23,12 @@ export class CacheManager {
   /**
    * Initialize Redis connection
    */
-  async init(): Promise<void> {
+  private async init(): Promise<void> {
+    if (this.initialized) {
+      return;
+    }
     this.redis = await getRedisClient();
+    this.initialized = true;
   }
 
   /**
@@ -128,11 +133,7 @@ export class CacheManager {
 
     try {
       const pattern = `query:${table}:*`;
-      const keys = await this.redis.keys(pattern);
-
-      if (keys.length > 0) {
-        await this.redis.del(...keys);
-      }
+      await this.scanAndDelete(pattern);
     } catch (error) {
       console.error('Cache invalidation error:', error);
     }
@@ -148,14 +149,27 @@ export class CacheManager {
 
     try {
       const pattern = 'query:*';
-      const keys = await this.redis.keys(pattern);
+      await this.scanAndDelete(pattern);
+    } catch (error) {
+      console.error('Cache clear error:', error);
+    }
+  }
+
+  /**
+   * Scan and delete keys matching pattern (uses SCAN instead of KEYS)
+   */
+  private async scanAndDelete(pattern: string): Promise<void> {
+    let cursor = '0';
+
+    do {
+      const result = await this.redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      cursor = result[0];
+      const keys = result[1];
 
       if (keys.length > 0) {
         await this.redis.del(...keys);
       }
-    } catch (error) {
-      console.error('Cache clear error:', error);
-    }
+    } while (cursor !== '0');
   }
 
   /**
@@ -168,28 +182,36 @@ export class CacheManager {
 
     try {
       const pattern = 'query:*';
-      const keys = await this.redis.keys(pattern);
-
+      let cursor = '0';
+      let totalKeys = 0;
       let totalSize = 0;
       let expiredCount = 0;
 
-      for (const key of keys) {
-        const cached = await this.redis.get(key);
-        if (cached) {
-          totalSize += cached.length;
+      do {
+        const result = await this.redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+        cursor = result[0];
+        const keys = result[1];
 
-          const cachedResult: CachedResult = JSON.parse(cached);
-          if (Date.now() > cachedResult.expiresAt) {
-            expiredCount++;
+        totalKeys += keys.length;
+
+        for (const key of keys) {
+          const cached = await this.redis.get(key);
+          if (cached) {
+            totalSize += cached.length;
+
+            const cachedResult: CachedResult = JSON.parse(cached);
+            if (Date.now() > cachedResult.expiresAt) {
+              expiredCount++;
+            }
           }
         }
-      }
+      } while (cursor !== '0');
 
       return {
-        totalKeys: keys.length,
+        totalKeys,
         totalSize,
         expiredCount,
-        avgSize: keys.length > 0 ? Math.round(totalSize / keys.length) : 0,
+        avgSize: totalKeys > 0 ? Math.round(totalSize / totalKeys) : 0,
       };
     } catch (error) {
       console.error('Cache stats error:', error);

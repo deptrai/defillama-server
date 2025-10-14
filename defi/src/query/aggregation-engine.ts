@@ -17,13 +17,16 @@ export class AggregationEngine {
    */
   async execute(query: QueryRequest): Promise<QueryResponse> {
     const startTime = Date.now();
+    const db = await getDBConnection();
 
     try {
+      // Set query timeout (30 seconds)
+      await db.query('SET statement_timeout = 30000');
+
       // Build SQL query
       const builtQuery = buildQuery(query);
 
       // Execute query
-      const db = await getDBConnection();
       const result = await db.query(builtQuery.sql, builtQuery.params);
 
       // Get total count for pagination
@@ -50,6 +53,13 @@ export class AggregationEngine {
       };
     } catch (error) {
       throw new AggregationError(`Failed to execute query: ${error.message}`, error);
+    } finally {
+      // Reset query timeout
+      try {
+        await db.query('SET statement_timeout = 0');
+      } catch (e) {
+        // Ignore error if connection is already closed
+      }
     }
   }
 
