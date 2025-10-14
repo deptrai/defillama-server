@@ -152,8 +152,8 @@ describe('Alert Engine Integration Tests', () => {
         [rule.id]
       );
       expect(history.length).toBeGreaterThan(0);
-      expect(history[0].triggered_value).toBe(2500);
-      expect(history[0].threshold_value).toBe(2000);
+      expect(Number(history[0].triggered_value)).toBe(2500);
+      expect(Number(history[0].threshold_value)).toBe(2000);
     });
 
     it('should not trigger alert when price below threshold', async () => {
