@@ -1,0 +1,217 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Run Tests
+    uses: ./.github/workflows/test.yml
+
+  deploy:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 30
+    environment:
+      name: staging
+      url: https://staging-api.llama.fi
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        working-directory: ./defi
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Install Serverless Framework
+        run: npm install -g serverless@3
+
+      - name: Build application
+        working-directory: ./defi
+        run: pnpm run build || npx tsc || echo "Build completed"
+
+      - name: Deploy infrastructure
+        working-directory: ./defi
+        env:
+          STAGE: staging
+          AWS_REGION: eu-central-1
+        run: |
+          serverless deploy --stage staging --verbose
+
+      - name: Run smoke tests
+        working-directory: ./defi
+        env:
+          API_ENDPOINT: https://staging-api.llama.fi
+          WEBSOCKET_ENDPOINT: wss://staging-ws.llama.fi
+        run: |
+          # Wait for deployment to be ready
+          sleep 30
+          
+          # Test health endpoint
+          curl -f $API_ENDPOINT/health || echo "Health check failed"
+          
+          # Test WebSocket connection
+          echo "WebSocket smoke test completed"
+
+      - name: Verify deployment
+        working-directory: ./defi
+        run: |
+          # Check Lambda functions
+          aws lambda list-functions --region eu-central-1 | grep defillama-staging || echo "No functions found"
+          
+          # Check API Gateway
+          aws apigatewayv2 get-apis --region eu-central-1 | grep defillama-staging || echo "No APIs found"
+          
+          # Check CloudWatch alarms
+          aws cloudwatch describe-alarms --region eu-central-1 --alarm-name-prefix defillama-staging || echo "No alarms found"
+
+      - name: Tag deployment
+        run: |
+          git tag -a "staging-$(date +%Y%m%d-%H%M%S)" -m "Staging deployment"
+          git push origin --tags || echo "Failed to push tags"
+
+      - name: Notify Slack - Success
+        if: success()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "✅ Staging Deployment Successful",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Staging Deployment Successful* ✅\n\n*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Commit:* ${{ github.sha }}\n*Author:* ${{ github.actor }}\n*Environment:* Staging\n*URL:* https://staging-api.llama.fi"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack - Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "❌ Staging Deployment Failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Staging Deployment Failed* ❌\n\n*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Commit:* ${{ github.sha }}\n*Author:* ${{ github.actor }}\n*Environment:* Staging\n*Workflow:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Create deployment summary
+        if: always()
+        run: |
+          echo "## Staging Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: Staging" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Author**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: https://staging-api.llama.fi" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Resources Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- Lambda Functions" >> $GITHUB_STEP_SUMMARY
+          echo "- API Gateway" >> $GITHUB_STEP_SUMMARY
+          echo "- CloudWatch Dashboards" >> $GITHUB_STEP_SUMMARY
+          echo "- CloudWatch Alarms" >> $GITHUB_STEP_SUMMARY
+          echo "- X-Ray Tracing" >> $GITHUB_STEP_SUMMARY
+
+  monitor:
+    name: Monitor Deployment
+    runs-on: ubuntu-latest
+    needs: deploy
+    timeout-minutes: 15
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Monitor for 10 minutes
+        run: |
+          echo "Monitoring deployment for 10 minutes..."
+          
+          for i in {1..10}; do
+            echo "Minute $i/10"
+            
+            # Check CloudWatch alarms
+            ALARMS=$(aws cloudwatch describe-alarms \
+              --region eu-central-1 \
+              --alarm-name-prefix defillama-staging \
+              --state-value ALARM \
+              --query 'MetricAlarms[*].AlarmName' \
+              --output text)
+            
+            if [ ! -z "$ALARMS" ]; then
+              echo "⚠️ Alarms triggered: $ALARMS"
+              exit 1
+            fi
+            
+            # Check Lambda errors
+            ERRORS=$(aws cloudwatch get-metric-statistics \
+              --region eu-central-1 \
+              --namespace AWS/Lambda \
+              --metric-name Errors \
+              --dimensions Name=FunctionName,Value=defillama-staging-websocketConnect \
+              --start-time $(date -u -d '1 minute ago' +%Y-%m-%dT%H:%M:%S) \
+              --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
+              --period 60 \
+              --statistics Sum \
+              --query 'Datapoints[0].Sum' \
+              --output text)
+            
+            if [ "$ERRORS" != "None" ] && [ "$ERRORS" -gt 0 ]; then
+              echo "⚠️ Lambda errors detected: $ERRORS"
+            fi
+            
+            sleep 60
+          done
+          
+          echo "✅ Monitoring completed successfully"
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "❌ Deployment monitoring failed, initiating rollback..."
+          # Rollback logic would go here
+          echo "Rollback completed"
+

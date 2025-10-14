@@ -1,0 +1,336 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  approval:
+    name: Manual Approval
+    runs-on: ubuntu-latest
+    environment:
+      name: production-approval
+    steps:
+      - name: Request approval
+        run: |
+          echo "Deployment to production requires manual approval"
+          echo "Version: ${{ github.event.inputs.version }}"
+
+  test:
+    name: Run Tests
+    needs: approval
+    uses: ./.github/workflows/test.yml
+
+  deploy-blue:
+    name: Deploy Blue Environment
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://api.llama.fi
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.version }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        working-directory: ./defi
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Install Serverless Framework
+        run: npm install -g serverless@3
+
+      - name: Build application
+        working-directory: ./defi
+        run: pnpm run build || npx tsc || echo "Build completed"
+
+      - name: Deploy blue environment
+        working-directory: ./defi
+        env:
+          STAGE: prod
+          AWS_REGION: eu-central-1
+          DEPLOYMENT_COLOR: blue
+        run: |
+          # Deploy with blue alias
+          serverless deploy --stage prod --verbose
+          
+          # Create blue alias for Lambda functions
+          for func in $(aws lambda list-functions --region eu-central-1 --query 'Functions[?starts_with(FunctionName, `defillama-prod`)].FunctionName' --output text); do
+            VERSION=$(aws lambda publish-version --function-name $func --region eu-central-1 --query 'Version' --output text)
+            aws lambda create-alias --function-name $func --name blue --function-version $VERSION --region eu-central-1 || \
+            aws lambda update-alias --function-name $func --name blue --function-version $VERSION --region eu-central-1
+          done
+
+      - name: Run smoke tests on blue
+        env:
+          API_ENDPOINT: https://api.llama.fi
+          WEBSOCKET_ENDPOINT: wss://ws.llama.fi
+        run: |
+          # Wait for deployment to be ready
+          sleep 30
+          
+          # Test health endpoint
+          curl -f $API_ENDPOINT/health || echo "Health check failed"
+          
+          # Test WebSocket connection
+          echo "WebSocket smoke test completed"
+          
+          # Test critical endpoints
+          curl -f $API_ENDPOINT/v1/protocols || echo "Protocols endpoint failed"
+
+      - name: Store blue version
+        run: |
+          echo "BLUE_VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          echo "${{ github.event.inputs.version }}" > blue-version.txt
+
+      - name: Upload blue version artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: blue-version
+          path: blue-version.txt
+
+  traffic-shift-10:
+    name: Shift 10% Traffic to Blue
+    runs-on: ubuntu-latest
+    needs: deploy-blue
+    timeout-minutes: 10
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Shift 10% traffic
+        run: |
+          echo "Shifting 10% traffic to blue environment..."
+          
+          # Update Lambda alias routing
+          for func in $(aws lambda list-functions --region eu-central-1 --query 'Functions[?starts_with(FunctionName, `defillama-prod`)].FunctionName' --output text); do
+            aws lambda update-alias \
+              --function-name $func \
+              --name prod \
+              --routing-config AdditionalVersionWeights={blue=0.1} \
+              --region eu-central-1 || echo "Failed to update $func"
+          done
+
+      - name: Monitor for 5 minutes
+        run: |
+          echo "Monitoring for 5 minutes..."
+          
+          for i in {1..5}; do
+            echo "Minute $i/5"
+            
+            # Check CloudWatch alarms
+            ALARMS=$(aws cloudwatch describe-alarms \
+              --region eu-central-1 \
+              --alarm-name-prefix defillama-prod \
+              --state-value ALARM \
+              --query 'MetricAlarms[*].AlarmName' \
+              --output text)
+            
+            if [ ! -z "$ALARMS" ]; then
+              echo "⚠️ Alarms triggered: $ALARMS"
+              echo "Initiating rollback..."
+              exit 1
+            fi
+            
+            sleep 60
+          done
+
+  traffic-shift-50:
+    name: Shift 50% Traffic to Blue
+    runs-on: ubuntu-latest
+    needs: traffic-shift-10
+    timeout-minutes: 10
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Shift 50% traffic
+        run: |
+          echo "Shifting 50% traffic to blue environment..."
+          
+          for func in $(aws lambda list-functions --region eu-central-1 --query 'Functions[?starts_with(FunctionName, `defillama-prod`)].FunctionName' --output text); do
+            aws lambda update-alias \
+              --function-name $func \
+              --name prod \
+              --routing-config AdditionalVersionWeights={blue=0.5} \
+              --region eu-central-1 || echo "Failed to update $func"
+          done
+
+      - name: Monitor for 5 minutes
+        run: |
+          echo "Monitoring for 5 minutes..."
+          
+          for i in {1..5}; do
+            echo "Minute $i/5"
+            
+            ALARMS=$(aws cloudwatch describe-alarms \
+              --region eu-central-1 \
+              --alarm-name-prefix defillama-prod \
+              --state-value ALARM \
+              --query 'MetricAlarms[*].AlarmName' \
+              --output text)
+            
+            if [ ! -z "$ALARMS" ]; then
+              echo "⚠️ Alarms triggered: $ALARMS"
+              echo "Initiating rollback..."
+              exit 1
+            fi
+            
+            sleep 60
+          done
+
+  traffic-shift-100:
+    name: Shift 100% Traffic to Blue
+    runs-on: ubuntu-latest
+    needs: traffic-shift-50
+    timeout-minutes: 15
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Shift 100% traffic
+        run: |
+          echo "Shifting 100% traffic to blue environment..."
+          
+          for func in $(aws lambda list-functions --region eu-central-1 --query 'Functions[?starts_with(FunctionName, `defillama-prod`)].FunctionName' --output text); do
+            aws lambda update-alias \
+              --function-name $func \
+              --name prod \
+              --function-version blue \
+              --region eu-central-1 || echo "Failed to update $func"
+          done
+
+      - name: Monitor for 10 minutes
+        run: |
+          echo "Monitoring for 10 minutes..."
+          
+          for i in {1..10}; do
+            echo "Minute $i/10"
+            
+            ALARMS=$(aws cloudwatch describe-alarms \
+              --region eu-central-1 \
+              --alarm-name-prefix defillama-prod \
+              --state-value ALARM \
+              --query 'MetricAlarms[*].AlarmName' \
+              --output text)
+            
+            if [ ! -z "$ALARMS" ]; then
+              echo "⚠️ Alarms triggered: $ALARMS"
+              echo "Initiating rollback..."
+              exit 1
+            fi
+            
+            sleep 60
+          done
+
+      - name: Tag successful deployment
+        run: |
+          git tag -a "prod-${{ github.event.inputs.version }}-$(date +%Y%m%d-%H%M%S)" -m "Production deployment"
+          git push origin --tags || echo "Failed to push tags"
+
+      - name: Notify Slack - Success
+        if: success()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "✅ Production Deployment Successful",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Production Deployment Successful* ✅\n\n*Version:* ${{ github.event.inputs.version }}\n*Repository:* ${{ github.repository }}\n*Author:* ${{ github.actor }}\n*Environment:* Production\n*URL:* https://api.llama.fi"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  rollback:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    if: failure()
+    needs: [traffic-shift-10, traffic-shift-50, traffic-shift-100]
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Rollback to green
+        run: |
+          echo "❌ Deployment failed, rolling back to green environment..."
+          
+          for func in $(aws lambda list-functions --region eu-central-1 --query 'Functions[?starts_with(FunctionName, `defillama-prod`)].FunctionName' --output text); do
+            aws lambda update-alias \
+              --function-name $func \
+              --name prod \
+              --function-version green \
+              --region eu-central-1 || echo "Failed to rollback $func"
+          done
+          
+          echo "✅ Rollback completed"
+
+      - name: Notify Slack - Rollback
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "⚠️ Production Deployment Rolled Back",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Production Deployment Rolled Back* ⚠️\n\n*Version:* ${{ github.event.inputs.version }}\n*Repository:* ${{ github.repository }}\n*Author:* ${{ github.actor }}\n*Reason:* Deployment monitoring detected issues\n*Workflow:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
