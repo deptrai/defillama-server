@@ -1,0 +1,294 @@
+# Kong Security Plugins Configuration for DeFiLlama
+# Defense-in-depth security with 10+ plugins
+
+_format_version: "3.0"
+
+# Global plugins (apply to all routes)
+plugins:
+  # 1. Rate Limiting - Global
+  - name: rate-limiting
+    config:
+      minute: 1000
+      hour: 50000
+      policy: redis
+      redis_host: redis
+      redis_port: 6379
+      redis_database: 2
+      fault_tolerant: true
+      hide_client_headers: false
+
+  # 2. IP Restriction - Blacklist known bad IPs
+  - name: ip-restriction
+    config:
+      deny:
+        - 0.0.0.0/8
+        - 10.0.0.0/8
+        - 127.0.0.0/8
+        - 169.254.0.0/16
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+        - 224.0.0.0/4
+        - 240.0.0.0/4
+      status: 403
+      message: "Access denied"
+
+  # 3. CORS - Cross-Origin Resource Sharing
+  - name: cors
+    config:
+      origins:
+        - "https://defillama.com"
+        - "https://www.defillama.com"
+        - "https://studio.defillama.com"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Accept-Version
+        - Content-Length
+        - Content-MD5
+        - Content-Type
+        - Date
+        - Authorization
+        - apikey
+      exposed_headers:
+        - X-Auth-Token
+      credentials: true
+      max_age: 3600
+      preflight_continue: false
+
+  # 4. Request Size Limiting
+  - name: request-size-limiting
+    config:
+      allowed_payload_size: 10
+      size_unit: megabytes
+      require_content_length: false
+
+  # 5. Request Termination - Block malicious patterns
+  - name: request-termination
+    enabled: false  # Enable when needed
+    config:
+      status_code: 403
+      message: "Request blocked by security policy"
+
+  # 6. Bot Detection
+  - name: bot-detection
+    config:
+      deny:
+        - "curl"
+        - "wget"
+        - "python-requests"
+        - "scrapy"
+      allow:
+        - "Googlebot"
+        - "Bingbot"
+
+# Services
+services:
+  # REST API Service
+  - name: rest-api
+    url: http://rest:3000
+    routes:
+      - name: rest-api-route
+        paths:
+          - /rest/v1
+        strip_path: false
+        preserve_host: true
+    plugins:
+      # API-specific rate limiting
+      - name: rate-limiting
+        config:
+          minute: 500
+          hour: 20000
+          policy: redis
+          redis_host: redis
+          redis_port: 6379
+          redis_database: 2
+
+      # JWT validation
+      - name: jwt
+        config:
+          uri_param_names:
+            - jwt
+          cookie_names:
+            - jwt
+          header_names:
+            - Authorization
+          claims_to_verify:
+            - exp
+          key_claim_name: kid
+          secret_is_base64: false
+          run_on_preflight: false
+
+      # Response rate limiting
+      - name: response-ratelimiting
+        config:
+          limits:
+            video:
+              minute: 10
+            image:
+              minute: 20
+          policy: redis
+          redis_host: redis
+          redis_port: 6379
+          redis_database: 2
+
+      # Request transformer - Add security headers
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - X-Request-ID:$(uuid)
+              - X-Forwarded-Proto:https
+          remove:
+            headers:
+              - X-Powered-By
+              - Server
+
+      # Response transformer - Add security headers
+      - name: response-transformer
+        config:
+          add:
+            headers:
+              - X-Content-Type-Options:nosniff
+              - X-Frame-Options:DENY
+              - X-XSS-Protection:1; mode=block
+              - Strict-Transport-Security:max-age=31536000; includeSubDomains
+          remove:
+            headers:
+              - X-Powered-By
+              - Server
+
+  # Auth Service
+  - name: auth
+    url: http://auth:9999
+    routes:
+      - name: auth-route
+        paths:
+          - /auth/v1
+        strip_path: false
+        preserve_host: true
+    plugins:
+      # Strict rate limiting for auth endpoints
+      - name: rate-limiting
+        config:
+          minute: 20
+          hour: 500
+          policy: redis
+          redis_host: redis
+          redis_port: 6379
+          redis_database: 2
+
+      # ACL - Access Control List
+      - name: acl
+        config:
+          allow:
+            - authenticated
+          hide_groups_header: true
+
+      # Request transformer
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - X-Request-ID:$(uuid)
+
+  # Realtime Service (WebSocket)
+  - name: realtime
+    url: http://realtime:4000
+    routes:
+      - name: realtime-route
+        paths:
+          - /realtime/v1
+        strip_path: false
+        preserve_host: true
+    plugins:
+      # WebSocket-specific rate limiting
+      - name: rate-limiting
+        config:
+          minute: 100
+          hour: 5000
+          policy: redis
+          redis_host: redis
+          redis_port: 6379
+          redis_database: 2
+
+      # Connection limiting
+      - name: request-size-limiting
+        config:
+          allowed_payload_size: 1
+          size_unit: megabytes
+
+  # Storage Service
+  - name: storage
+    url: http://storage:5000
+    routes:
+      - name: storage-route
+        paths:
+          - /storage/v1
+        strip_path: false
+        preserve_host: true
+    plugins:
+      # File upload rate limiting
+      - name: rate-limiting
+        config:
+          minute: 50
+          hour: 2000
+          policy: redis
+          redis_host: redis
+          redis_port: 6379
+          redis_database: 2
+
+      # Large file support
+      - name: request-size-limiting
+        config:
+          allowed_payload_size: 50
+          size_unit: megabytes
+
+      # File type validation
+      - name: request-validator
+        config:
+          allowed_content_types:
+            - image/jpeg
+            - image/png
+            - image/gif
+            - image/webp
+            - application/pdf
+            - text/plain
+          body_schema: |
+            {
+              "type": "object"
+            }
+
+# Consumers (API users)
+consumers:
+  - username: admin
+    custom_id: admin-user
+    plugins:
+      - name: key-auth
+        config:
+          key_names:
+            - apikey
+      - name: acl
+        config:
+          groups:
+            - authenticated
+            - admin
+
+  - username: service-account
+    custom_id: service-account
+    plugins:
+      - name: key-auth
+        config:
+          key_names:
+            - apikey
+      - name: acl
+        config:
+          groups:
+            - authenticated
+            - service
+
