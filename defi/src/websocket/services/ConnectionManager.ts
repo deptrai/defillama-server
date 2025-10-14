@@ -3,7 +3,11 @@ import { getRedisClient } from '../utils/redis';
 
 export interface ConnectionData {
   connectionId: string;
-  apiKey: string;
+  apiKey?: string;  // Optional for backward compatibility
+  userId?: string;  // From JWT
+  email?: string;   // From JWT
+  role?: 'user' | 'admin' | 'service';  // From JWT
+  permissions?: string[];  // From JWT
   connectedAt: number;
   lastHeartbeat: number;
   subscriptions: string[];
@@ -11,6 +15,8 @@ export interface ConnectionData {
     userAgent?: string;
     origin?: string;
     ip?: string;
+    tokenIssuedAt?: number;
+    tokenExpiresAt?: number;
   };
 }
 
@@ -33,17 +39,25 @@ export class ConnectionManager {
    */
   async addConnection(connectionId: string, connectionData: ConnectionData): Promise<void> {
     const key = this.getConnectionKey(connectionId);
-    
+
     try {
       // Store connection data
-      await this.redis.hset(key, {
+      const dataToStore: Record<string, string> = {
         connectionId: connectionData.connectionId,
-        apiKey: connectionData.apiKey,
         connectedAt: connectionData.connectedAt.toString(),
         lastHeartbeat: connectionData.lastHeartbeat.toString(),
         subscriptions: JSON.stringify(connectionData.subscriptions || []),
         metadata: JSON.stringify(connectionData.metadata || {})
-      });
+      };
+
+      // Add optional fields
+      if (connectionData.apiKey) dataToStore.apiKey = connectionData.apiKey;
+      if (connectionData.userId) dataToStore.userId = connectionData.userId;
+      if (connectionData.email) dataToStore.email = connectionData.email;
+      if (connectionData.role) dataToStore.role = connectionData.role;
+      if (connectionData.permissions) dataToStore.permissions = JSON.stringify(connectionData.permissions);
+
+      await this.redis.hset(key, dataToStore);
 
       // Add to connection index
       await this.redis.sadd(this.CONNECTION_INDEX, connectionId);
@@ -63,22 +77,30 @@ export class ConnectionManager {
    */
   async getConnection(connectionId: string): Promise<ConnectionData | null> {
     const key = this.getConnectionKey(connectionId);
-    
+
     try {
       const data = await this.redis.hgetall(key);
-      
+
       if (!data || Object.keys(data).length === 0) {
         return null;
       }
 
-      return {
+      const connectionData: ConnectionData = {
         connectionId: data.connectionId,
-        apiKey: data.apiKey,
         connectedAt: parseInt(data.connectedAt),
         lastHeartbeat: parseInt(data.lastHeartbeat),
         subscriptions: JSON.parse(data.subscriptions || '[]'),
         metadata: JSON.parse(data.metadata || '{}')
       };
+
+      // Add optional fields
+      if (data.apiKey) connectionData.apiKey = data.apiKey;
+      if (data.userId) connectionData.userId = data.userId;
+      if (data.email) connectionData.email = data.email;
+      if (data.role) connectionData.role = data.role as 'user' | 'admin' | 'service';
+      if (data.permissions) connectionData.permissions = JSON.parse(data.permissions);
+
+      return connectionData;
     } catch (error) {
       console.error(`Error getting connection ${connectionId}:`, error);
       return null;

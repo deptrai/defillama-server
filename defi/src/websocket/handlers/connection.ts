@@ -1,11 +1,33 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { ConnectionManager } from '../services/ConnectionManager';
 import { RoomManager } from '../services/RoomManager';
-import { successResponse, errorResponse } from '../../utils/shared/lambda-response';
-import { checkApiKey } from '../../api-keys/checkApiKey';
+import { JWTService } from '../services/JWTService';
+import { RateLimiter } from '../services/RateLimiter';
+import { successResponse } from '../../utils/shared/lambda-response';
 
 const connectionManager = new ConnectionManager();
 const roomManager = new RoomManager();
+const jwtService = new JWTService();
+const rateLimiter = new RateLimiter({
+  windowMs: 60000,        // 1 minute
+  maxRequests: 100,       // 100 requests per minute
+  blockDurationMs: 300000 // 5 minutes block
+});
+
+/**
+ * Custom error response with status code and headers
+ */
+function customErrorResponse(statusCode: number, message: string, headers?: Record<string, string>): APIGatewayProxyResult {
+  return {
+    statusCode,
+    body: JSON.stringify({ message }),
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      ...headers,
+    },
+  };
+}
 
 /**
  * WebSocket Connection Handler
@@ -14,8 +36,8 @@ const roomManager = new RoomManager();
 export const connectHandler: APIGatewayProxyHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  const { connectionId, eventType, routeKey } = event.requestContext;
-  
+  const { connectionId, eventType } = event.requestContext;
+
   console.log(`WebSocket ${eventType} event for connection ${connectionId}`);
 
   try {
@@ -31,11 +53,11 @@ export const connectHandler: APIGatewayProxyHandler = async (
       
       default:
         console.error(`Unknown event type: ${eventType}`);
-        return errorResponse(400, 'Unknown event type');
+        return customErrorResponse(400, 'Unknown event type');
     }
   } catch (error) {
     console.error(`Error handling WebSocket event:`, error);
-    return errorResponse(500, 'Internal server error');
+    return customErrorResponse(500, 'Internal server error');
   }
 };
 
@@ -44,45 +66,73 @@ export const connectHandler: APIGatewayProxyHandler = async (
  */
 async function handleConnect(connectionId: string, event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
-    // Extract API key from query parameters or headers
-    const apiKey = event.queryStringParameters?.apiKey || 
-                   event.headers?.['x-api-key'] || 
-                   event.headers?.['Authorization']?.replace('Bearer ', '');
-
-    if (!apiKey) {
-      console.log(`Connection ${connectionId} rejected: No API key provided`);
-      return errorResponse(401, 'API key required');
+    // Check rate limit first
+    const rateLimitResult = await rateLimiter.checkAndRecord(connectionId);
+    if (!rateLimitResult.allowed) {
+      console.log(`Connection ${connectionId} rejected: Rate limit exceeded`);
+      return customErrorResponse(429, 'Too many requests', {
+        'X-RateLimit-Limit': rateLimiter['config'].maxRequests.toString(),
+        'X-RateLimit-Remaining': '0',
+        'X-RateLimit-Reset': rateLimitResult.resetAt.toString(),
+        'Retry-After': Math.ceil((rateLimitResult.retryAfter || 0) / 1000).toString(),
+      });
     }
 
-    // Validate API key using existing system
-    const isValidKey = await checkApiKey(apiKey);
-    if (!isValidKey) {
-      console.log(`Connection ${connectionId} rejected: Invalid API key`);
-      return errorResponse(401, 'Invalid API key');
+    // Extract JWT token from query parameters or headers
+    const token = event.queryStringParameters?.token ||
+                  event.headers?.['Authorization']?.replace('Bearer ', '') ||
+                  event.headers?.['authorization']?.replace('Bearer ', '');
+
+    if (!token) {
+      console.log(`Connection ${connectionId} rejected: No token provided`);
+      return customErrorResponse(401, 'JWT token required');
     }
 
-    // Store connection with metadata
+    // Validate JWT token
+    const validationResult = await jwtService.validateToken(token);
+    if (!validationResult.valid) {
+      console.log(`Connection ${connectionId} rejected: ${validationResult.error}`);
+      return customErrorResponse(401, validationResult.error || 'Invalid token');
+    }
+
+    const payload = validationResult.payload!;
+
+    // Store connection with user info from JWT
     const connectionData = {
       connectionId,
-      apiKey,
+      userId: payload.sub,
+      email: payload.email,
+      role: payload.role,
+      permissions: payload.permissions,
       connectedAt: Date.now(),
       lastHeartbeat: Date.now(),
       subscriptions: [],
       metadata: {
         userAgent: event.headers?.['User-Agent'],
         origin: event.headers?.['Origin'],
-        ip: event.requestContext.identity?.sourceIp
+        ip: event.requestContext.identity?.sourceIp,
+        tokenIssuedAt: payload.iat,
+        tokenExpiresAt: payload.exp,
       }
     };
 
     await connectionManager.addConnection(connectionId, connectionData);
-    
-    console.log(`Connection ${connectionId} established successfully`);
-    return successResponse({ message: 'Connected successfully' });
+
+    console.log(`Connection ${connectionId} established for user ${payload.sub}`);
+    return successResponse({
+      message: 'Connected successfully',
+      userId: payload.sub,
+      role: payload.role,
+      rateLimit: {
+        limit: rateLimiter['config'].maxRequests,
+        remaining: rateLimitResult.remaining,
+        resetAt: rateLimitResult.resetAt,
+      }
+    });
 
   } catch (error) {
     console.error(`Error in handleConnect:`, error);
-    return errorResponse(500, 'Connection failed');
+    return customErrorResponse(500, 'Connection failed');
   }
 }
 
@@ -93,7 +143,7 @@ async function handleDisconnect(connectionId: string): Promise<APIGatewayProxyRe
   try {
     // Get connection data before cleanup
     const connectionData = await connectionManager.getConnection(connectionId);
-    
+
     if (connectionData) {
       // Unsubscribe from all rooms
       for (const subscription of connectionData.subscriptions || []) {
@@ -103,13 +153,13 @@ async function handleDisconnect(connectionId: string): Promise<APIGatewayProxyRe
 
     // Remove connection from manager
     await connectionManager.removeConnection(connectionId);
-    
+
     console.log(`Connection ${connectionId} disconnected and cleaned up`);
     return successResponse({ message: 'Disconnected successfully' });
 
   } catch (error) {
     console.error(`Error in handleDisconnect:`, error);
-    return errorResponse(500, 'Disconnect cleanup failed');
+    return customErrorResponse(500, 'Disconnect cleanup failed');
   }
 }
 
@@ -118,8 +168,19 @@ async function handleDisconnect(connectionId: string): Promise<APIGatewayProxyRe
  */
 async function handleMessage(connectionId: string, event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
+    // Check rate limit
+    const rateLimitResult = await rateLimiter.checkAndRecord(connectionId);
+    if (!rateLimitResult.allowed) {
+      return customErrorResponse(429, 'Too many requests', {
+        'X-RateLimit-Limit': rateLimiter['config'].maxRequests.toString(),
+        'X-RateLimit-Remaining': '0',
+        'X-RateLimit-Reset': rateLimitResult.resetAt.toString(),
+        'Retry-After': Math.ceil((rateLimitResult.retryAfter || 0) / 1000).toString(),
+      });
+    }
+
     if (!event.body) {
-      return errorResponse(400, 'Message body required');
+      return customErrorResponse(400, 'Message body required');
     }
 
     const message = JSON.parse(event.body);
@@ -131,21 +192,21 @@ async function handleMessage(connectionId: string, event: APIGatewayProxyEvent):
     switch (message.type) {
       case 'ping':
         return await handlePing(connectionId);
-      
+
       case 'subscribe':
         return await handleSubscribe(connectionId, message);
-      
+
       case 'unsubscribe':
         return await handleUnsubscribe(connectionId, message);
-      
+
       default:
         console.warn(`Unknown message type: ${message.type}`);
-        return errorResponse(400, 'Unknown message type');
+        return customErrorResponse(400, 'Unknown message type');
     }
 
   } catch (error) {
     console.error(`Error in handleMessage:`, error);
-    return errorResponse(500, 'Message processing failed');
+    return customErrorResponse(500, 'Message processing failed');
   }
 }
 
@@ -173,20 +234,20 @@ async function handleSubscribe(connectionId: string, message: any): Promise<APIG
     const { channels, filters } = message;
     
     if (!channels || !Array.isArray(channels)) {
-      return errorResponse(400, 'Channels array required');
+      return customErrorResponse(400, 'Channels array required');
     }
 
     const results = [];
-    
+
     for (const channel of channels) {
       try {
         await roomManager.subscribe(connectionId, channel, filters);
         await connectionManager.addSubscription(connectionId, channel);
         results.push({ channel, status: 'subscribed' });
         console.log(`Connection ${connectionId} subscribed to ${channel}`);
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Subscription failed for ${channel}:`, error);
-        results.push({ channel, status: 'failed', error: error.message });
+        results.push({ channel, status: 'failed', error: error?.message || 'Unknown error' });
       }
     }
 
@@ -197,7 +258,7 @@ async function handleSubscribe(connectionId: string, message: any): Promise<APIG
 
   } catch (error) {
     console.error(`Error in handleSubscribe:`, error);
-    return errorResponse(500, 'Subscription failed');
+    return customErrorResponse(500, 'Subscription failed');
   }
 }
 
@@ -207,22 +268,22 @@ async function handleSubscribe(connectionId: string, message: any): Promise<APIG
 async function handleUnsubscribe(connectionId: string, message: any): Promise<APIGatewayProxyResult> {
   try {
     const { channels } = message;
-    
+
     if (!channels || !Array.isArray(channels)) {
-      return errorResponse(400, 'Channels array required');
+      return customErrorResponse(400, 'Channels array required');
     }
 
     const results = [];
-    
+
     for (const channel of channels) {
       try {
         await roomManager.unsubscribe(connectionId, channel);
         await connectionManager.removeSubscription(connectionId, channel);
         results.push({ channel, status: 'unsubscribed' });
         console.log(`Connection ${connectionId} unsubscribed from ${channel}`);
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Unsubscription failed for ${channel}:`, error);
-        results.push({ channel, status: 'failed', error: error.message });
+        results.push({ channel, status: 'failed', error: error?.message || 'Unknown error' });
       }
     }
 
@@ -233,7 +294,7 @@ async function handleUnsubscribe(connectionId: string, message: any): Promise<AP
 
   } catch (error) {
     console.error(`Error in handleUnsubscribe:`, error);
-    return errorResponse(500, 'Unsubscription failed');
+    return customErrorResponse(500, 'Unsubscription failed');
   }
 }
 

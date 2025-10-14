@@ -407,7 +407,7 @@ process.on('SIGINT', async () => {
 });
 
 // Start server
-server.listen(PORT, HOST, () => {
+server.listen(Number(PORT), HOST, () => {
   console.log(`🚀 DeFiLlama WebSocket Server running on ${HOST}:${PORT}`);
   console.log(`📊 Max connections: ${MAX_CONNECTIONS}`);
   console.log(`⚡ Message rate limit: ${MESSAGE_RATE_LIMIT}/minute`);

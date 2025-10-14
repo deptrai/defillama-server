@@ -87,6 +87,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.245.0",
+    "@aws-sdk/client-sqs": "^3.908.0",
     "@defillama/adapters": "file:./DefiLlama-Adapters",
     "@defillama/dimension-adapters": "file:./dimension-adapters",
     "@defillama/emissions-adapters": "file:./emissions-adapters",
@@ -97,10 +98,12 @@
     "@types/aws-lambda": "^8.10.97",
     "@types/inquirer-autocomplete-prompt": "^2.0.0",
     "@types/jest": "^27.5.1",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/lodash": "^4.14.202",
     "@types/node": "^18.0.0",
     "@types/node-fetch": "^2.5.10",
     "@types/promise.allsettled": "^1.0.6",
+    "aws-sdk": "^2.1691.0",
     "axios": "^1.6.5",
     "bignumber.js": "^9.0.1",
     "buffer-layout": "^1.2.2",
@@ -110,6 +113,8 @@
     "ethers": "^6.0.0",
     "express": "^5.1.0",
     "hyper-express": "^6.8.7",
+    "ioredis": "^5.3.2",
+    "jsonwebtoken": "^9.0.2",
     "lodash": "^4.17.21",
     "node-fetch": "^2.6.1",
     "p-limit": "^3.0.0",
@@ -119,6 +124,7 @@
     "promise.allsettled": "^1.0.5",
     "reflect-metadata": "^0.1.13",
     "sequelize": "^6.33.0",
-    "typeorm": "^0.3.11"
+    "typeorm": "^0.3.11",
+    "uuid": "^9.0.1"
   }
 }

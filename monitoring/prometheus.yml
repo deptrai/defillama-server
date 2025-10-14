@@ -1,0 +1,94 @@
+# Prometheus Configuration for DeFiLlama Self-hosted Supabase
+# Monitoring and metrics collection
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # DeFiLlama WebSocket Server
+  - job_name: 'defillama-websocket'
+    static_configs:
+      - targets: ['defillama-websocket:9090']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+
+  # PostgreSQL
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:9187']
+    scrape_interval: 10s
+
+  # Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:9121']
+    scrape_interval: 10s
+
+  # Nginx
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:9113']
+    scrape_interval: 10s
+
+  # Node Exporter (system metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 10s
+
+  # Docker containers
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 10s
+
+  # Supabase services
+  - job_name: 'supabase-kong'
+    static_configs:
+      - targets: ['supabase-kong:8001']
+    scrape_interval: 15s
+
+  - job_name: 'supabase-auth'
+    static_configs:
+      - targets: ['supabase-auth:9999']
+    metrics_path: '/health'
+    scrape_interval: 15s
+
+  - job_name: 'supabase-rest'
+    static_configs:
+      - targets: ['supabase-rest:3000']
+    scrape_interval: 15s
+
+  - job_name: 'supabase-realtime'
+    static_configs:
+      - targets: ['supabase-realtime:4000']
+    scrape_interval: 15s
+
+  - job_name: 'supabase-storage'
+    static_configs:
+      - targets: ['supabase-storage:5000']
+    metrics_path: '/status'
+    scrape_interval: 15s
+
+  # DeFiLlama services
+  - job_name: 'defillama-coins'
+    static_configs:
+      - targets: ['defillama-coins:3005']
+    metrics_path: '/health'
+    scrape_interval: 10s
+
+  - job_name: 'defillama-defi'
+    static_configs:
+      - targets: ['defillama-defi:3006']
+    metrics_path: '/health'
+    scrape_interval: 10s

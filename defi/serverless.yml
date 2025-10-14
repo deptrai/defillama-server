@@ -107,6 +107,9 @@ provider:
     REDIS_PASSWORD: ${file(./env.js):REDIS_PASSWORD, ''}
     REDIS_DB: ${file(./env.js):REDIS_DB, '0'}
     WEBSOCKET_API_ENDPOINT: ${file(./env.js):WEBSOCKET_API_ENDPOINT, ''}
+    # Alert Rules environment variables
+    ALERTS_DB: ${file(./env.js):ALERTS_DB, env:ACCOUNTS_DB}
+    JWT_SECRET: ${file(./env.js):JWT_SECRET}
 
 custom:
   stage: ${opt:stage, self:provider.stage}
@@ -142,17 +145,51 @@ custom:
 functions:
   # WebSocket Connection Handlers
   websocketConnect:
-    handler: src/websocket/handlers/connection.connectHandler
+    handler: src/websocket/handlers/connection-separate.connectHandler
     timeout: 30
+    memorySize: 512
     events:
       - websocket:
           route: $connect
+    environment:
+      REDIS_HOST: ${self:provider.environment.REDIS_HOST}
+      REDIS_PORT: ${self:provider.environment.REDIS_PORT}
+      REDIS_PASSWORD: ${self:provider.environment.REDIS_PASSWORD}
+      WEBSOCKET_API_ENDPOINT: ${self:provider.environment.WEBSOCKET_API_ENDPOINT}
+
+  websocketDisconnect:
+    handler: src/websocket/handlers/connection-separate.disconnectHandler
+    timeout: 30
+    memorySize: 512
+    events:
       - websocket:
           route: $disconnect
-      - websocket:
-          route: $default
+    environment:
+      REDIS_HOST: ${self:provider.environment.REDIS_HOST}
+      REDIS_PORT: ${self:provider.environment.REDIS_PORT}
+      REDIS_PASSWORD: ${self:provider.environment.REDIS_PASSWORD}
+      WEBSOCKET_API_ENDPOINT: ${self:provider.environment.WEBSOCKET_API_ENDPOINT}
 
   websocketMessage:
+    handler: src/websocket/handlers/connection-separate.messageHandler
+    timeout: 30
+    memorySize: 512
+    events:
+      - websocket:
+          route: $default
+    environment:
+      REDIS_HOST: ${self:provider.environment.REDIS_HOST}
+      REDIS_PORT: ${self:provider.environment.REDIS_PORT}
+      REDIS_PASSWORD: ${self:provider.environment.REDIS_PASSWORD}
+      WEBSOCKET_API_ENDPOINT: ${self:provider.environment.WEBSOCKET_API_ENDPOINT}
+
+  websocketAuthorizer:
+    handler: src/websocket/handlers/connection-separate.authorizerHandler
+    timeout: 10
+    memorySize: 256
+
+  # WebSocket HTTP Endpoints
+  websocketBroadcast:
     handler: src/websocket/handlers/message.broadcastHandler
     timeout: 30
     events:
@@ -668,7 +705,7 @@ functions:
       - http:
           path: chain-assets/flows/{period}
           method: get
-  chainAssetHistoricalFlows: 
+  chainAssetHistoricalFlows:
     handler: src/getChainAssetHistoricalFlows.default
     timeout: 30
     memorySize: 1000
@@ -676,7 +713,94 @@ functions:
       - http:
           path: chain-assets/historical-flows/{chain}/{period}
           method: get
-  # depositedContracts: 
+
+  # Alert Rules API
+  createAlertRule:
+    handler: src/alerts/handlers/create-rule.handler
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: alerts
+          method: post
+          cors: true
+          authorizer:
+            name: websocketAuthorizer
+            type: request
+            identitySource: method.request.header.Authorization
+    environment:
+      ALERTS_DB: ${self:provider.environment.ALERTS_DB}
+      JWT_SECRET: ${self:provider.environment.JWT_SECRET}
+
+  getAlertRules:
+    handler: src/alerts/handlers/get-rules.handler
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: alerts
+          method: get
+          cors: true
+          authorizer:
+            name: websocketAuthorizer
+            type: request
+            identitySource: method.request.header.Authorization
+    environment:
+      ALERTS_DB: ${self:provider.environment.ALERTS_DB}
+      JWT_SECRET: ${self:provider.environment.JWT_SECRET}
+
+  getAlertRule:
+    handler: src/alerts/handlers/get-rule.handler
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: alerts/{id}
+          method: get
+          cors: true
+          authorizer:
+            name: websocketAuthorizer
+            type: request
+            identitySource: method.request.header.Authorization
+    environment:
+      ALERTS_DB: ${self:provider.environment.ALERTS_DB}
+      JWT_SECRET: ${self:provider.environment.JWT_SECRET}
+
+  updateAlertRule:
+    handler: src/alerts/handlers/update-rule.handler
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: alerts/{id}
+          method: put
+          cors: true
+          authorizer:
+            name: websocketAuthorizer
+            type: request
+            identitySource: method.request.header.Authorization
+    environment:
+      ALERTS_DB: ${self:provider.environment.ALERTS_DB}
+      JWT_SECRET: ${self:provider.environment.JWT_SECRET}
+
+  deleteAlertRule:
+    handler: src/alerts/handlers/delete-rule.handler
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: alerts/{id}
+          method: delete
+          cors: true
+          authorizer:
+            name: websocketAuthorizer
+            type: request
+            identitySource: method.request.header.Authorization
+    environment:
+      ALERTS_DB: ${self:provider.environment.ALERTS_DB}
+      JWT_SECRET: ${self:provider.environment.JWT_SECRET}
+
+  # depositedContracts:
   #   handler: src/getDepositedContracts.default
   #   timeout: 30
   #   memorySize: 1000
@@ -696,6 +820,10 @@ resources:
   - ${file(resources/websocket-api.yml)}
   # Redis ElastiCache cluster
   - ${file(resources/redis-cluster.yml)}
+  # Event Processor Lambda (Story 1.2)
+  - ${file(resources/event-processor-lambda.yml)}
+  # SQS Queues (Story 1.2)
+  - ${file(resources/sqs-queues.yml)}
 
 plugins:
   - serverless-esbuild

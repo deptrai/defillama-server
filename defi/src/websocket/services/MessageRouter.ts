@@ -3,6 +3,8 @@ import { Redis } from 'ioredis';
 import { getRedisClient } from '../utils/redis';
 import { ConnectionManager } from './ConnectionManager';
 import { RoomManager } from './RoomManager';
+import { EventSubscriptionManager } from './EventSubscriptionManager';
+import { BaseEvent } from '../../events/event-types';
 
 export interface MessageData {
   type: string;
@@ -28,17 +30,21 @@ export interface BroadcastOptions {
  */
 export class MessageRouter {
   private redis: Redis;
+  private redisSub?: Redis;  // Separate client for pub/sub
   private connectionManager: ConnectionManager;
   private roomManager: RoomManager;
+  private subscriptionManager: EventSubscriptionManager;
   private apiGatewayManagementApi?: ApiGatewayManagementApi;
   private readonly MESSAGE_QUEUE_PREFIX = 'ws:queue:';
   private readonly FAILED_MESSAGE_PREFIX = 'ws:failed:';
+  private isListening: boolean = false;
 
   constructor() {
     this.redis = getRedisClient();
     this.connectionManager = new ConnectionManager();
     this.roomManager = new RoomManager();
-    
+    this.subscriptionManager = new EventSubscriptionManager();
+
     // Initialize API Gateway Management API if endpoint is available
     if (process.env.WEBSOCKET_API_ENDPOINT) {
       this.apiGatewayManagementApi = new ApiGatewayManagementApi({
@@ -357,5 +363,117 @@ export class MessageRouter {
     } catch (storeError) {
       console.error('Error storing failed message:', storeError);
     }
+  }
+
+  /**
+   * Start listening to Redis pub/sub events
+   * Phase 5: WebSocket Integration
+   */
+  async startEventListener(): Promise<void> {
+    if (this.isListening) {
+      console.log('Event listener already running');
+      return;
+    }
+
+    try {
+      // Create separate Redis client for pub/sub
+      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+      this.redisSub = new Redis(redisUrl);
+
+      // Subscribe to all event channels using pattern
+      await this.redisSub.psubscribe('events:*');
+      console.log('Subscribed to events:* pattern');
+
+      // Handle incoming events
+      this.redisSub.on('pmessage', async (pattern, channel, message) => {
+        await this.handleIncomingEvent(channel, message);
+      });
+
+      // Handle errors
+      this.redisSub.on('error', (error) => {
+        console.error('Redis pub/sub error:', error);
+      });
+
+      // Handle reconnection
+      this.redisSub.on('reconnecting', () => {
+        console.log('Redis pub/sub reconnecting...');
+      });
+
+      this.isListening = true;
+      console.log('Event listener started successfully');
+    } catch (error) {
+      console.error('Error starting event listener:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Stop listening to Redis pub/sub events
+   */
+  async stopEventListener(): Promise<void> {
+    if (!this.isListening || !this.redisSub) {
+      return;
+    }
+
+    try {
+      await this.redisSub.punsubscribe('events:*');
+      await this.redisSub.quit();
+      this.redisSub = undefined;
+      this.isListening = false;
+      console.log('Event listener stopped');
+    } catch (error) {
+      console.error('Error stopping event listener:', error);
+    }
+  }
+
+  /**
+   * Handle incoming event from Redis pub/sub
+   */
+  private async handleIncomingEvent(channel: string, message: string): Promise<void> {
+    try {
+      const event: BaseEvent = JSON.parse(message);
+
+      console.log(`Received event on channel ${channel}: ${event.eventType}`);
+
+      // Get filtered subscribers for this channel and event
+      const subscribers = await this.subscriptionManager.getFilteredSubscribers(channel, event);
+
+      if (subscribers.length === 0) {
+        console.log(`No subscribers for channel ${channel}`);
+        return;
+      }
+
+      // Prepare message data for WebSocket clients
+      const messageData: MessageData = {
+        type: event.eventType,
+        channel,
+        data: (event as any).data,
+        timestamp: event.timestamp,
+      };
+
+      // Broadcast to subscribers
+      const results = await this.sendToConnections(subscribers, messageData, {
+        includeMetadata: true,
+        priority: event.metadata.tags.includes('extreme-change') ? 'high' : 'normal',
+      });
+
+      console.log(`Event broadcast complete - Sent: ${results.sent}, Failed: ${results.failed}, Queued: ${results.queued}`);
+    } catch (error) {
+      console.error(`Error handling event on channel ${channel}:`, error);
+    }
+  }
+
+  /**
+   * Get subscription manager instance
+   */
+  getSubscriptionManager(): EventSubscriptionManager {
+    return this.subscriptionManager;
+  }
+
+  /**
+   * Check if event listener is running
+   */
+  isEventListenerRunning(): boolean {
+    return this.isListening;
   }
 }

@@ -1,0 +1,169 @@
+# Event Processor Lambda Configuration
+# Story 1.2: Real-time Event Processor
+
+Resources:
+  # Lambda Function
+  EventProcessorLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: ${self:service}-event-processor-${self:provider.stage}
+      Runtime: nodejs18.x
+      Handler: src/events/event-processor.handler
+      Code:
+        S3Bucket: ${self:custom.deploymentBucket}
+        S3Key: ${self:service}/${self:provider.stage}/event-processor.zip
+      Role: !GetAtt EventProcessorRole.Arn
+      Timeout: 300
+      MemorySize: 512
+      Environment:
+        Variables:
+          REDIS_URL: ${env:REDIS_URL}
+          EVENTS_QUEUE_URL: !Ref EventsQueue
+          EVENTS_DLQ_URL: !Ref EventsDLQ
+          BATCH_SIZE: 100
+          MAX_RETRIES: 3
+          ENABLE_CACHING: true
+          ENABLE_PUBSUB: true
+          ENABLE_SQS: true
+          AWS_REGION: ${self:provider.region}
+      Tags:
+        - Key: Service
+          Value: ${self:service}
+        - Key: Stage
+          Value: ${self:provider.stage}
+        - Key: Component
+          Value: event-processor
+
+  # IAM Role for Lambda
+  EventProcessorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${self:service}-event-processor-role-${self:provider.stage}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                  - dynamodb:GetItem
+                  - dynamodb:BatchGetItem
+                Resource:
+                  - arn:aws:dynamodb:${self:provider.region}:*:table/prod-event-table
+                  - arn:aws:dynamodb:${self:provider.region}:*:table/prod-event-table/index/*
+        - PolicyName: SQSAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:SendMessageBatch
+                  - sqs:GetQueueUrl
+                Resource:
+                  - !GetAtt EventsQueue.Arn
+                  - !GetAtt EventsDLQ.Arn
+        - PolicyName: CloudWatchLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:${self:provider.region}:*:*
+
+  # CloudWatch Event Rule (Scheduled every 30 seconds)
+  EventProcessorSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: ${self:service}-event-processor-schedule-${self:provider.stage}
+      Description: Trigger event processor every 30 seconds
+      ScheduleExpression: rate(1 minute)  # CloudWatch Events minimum is 1 minute
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt EventProcessorLambda.Arn
+          Id: EventProcessorTarget
+
+  # Permission for CloudWatch Events to invoke Lambda
+  EventProcessorSchedulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref EventProcessorLambda
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt EventProcessorSchedule.Arn
+
+  # CloudWatch Log Group
+  EventProcessorLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/${self:service}-event-processor-${self:provider.stage}
+      RetentionInDays: 7
+
+  # CloudWatch Alarms
+  EventProcessorErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: ${self:service}-event-processor-errors-${self:provider.stage}
+      AlarmDescription: Alert when event processor has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref EventProcessorLambda
+      TreatMissingData: notBreaching
+
+  EventProcessorDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: ${self:service}-event-processor-duration-${self:provider.stage}
+      AlarmDescription: Alert when event processor takes too long
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 60000  # 60 seconds
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref EventProcessorLambda
+      TreatMissingData: notBreaching
+
+Outputs:
+  EventProcessorLambdaArn:
+    Description: ARN of the Event Processor Lambda
+    Value: !GetAtt EventProcessorLambda.Arn
+    Export:
+      Name: ${self:service}-event-processor-lambda-arn-${self:provider.stage}
+
+  EventProcessorRoleArn:
+    Description: ARN of the Event Processor IAM Role
+    Value: !GetAtt EventProcessorRole.Arn
+    Export:
+      Name: ${self:service}-event-processor-role-arn-${self:provider.stage}
+
+  EventProcessorScheduleArn:
+    Description: ARN of the Event Processor Schedule
+    Value: !GetAtt EventProcessorSchedule.Arn
+    Export:
+      Name: ${self:service}-event-processor-schedule-arn-${self:provider.stage}
+

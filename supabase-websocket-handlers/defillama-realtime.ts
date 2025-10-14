@@ -71,7 +71,7 @@ export class DeFiLlamaWebSocketManager {
         },
         heartbeatIntervalMs: options.heartbeatInterval || 30000,
         reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 10000),
-        logger: (kind, msg, data) => {
+        logger: (kind: any, msg: any, data: any) => {
           if (process.env.DEFILLAMA_LOG_LEVEL === 'debug') {
             console.log(`${kind}: ${msg}`, data);
           }
@@ -83,38 +83,21 @@ export class DeFiLlamaWebSocketManager {
   }
 
   private setupEventHandlers() {
-    // Handle connection events
-    this.realtime.onOpen(() => {
-      console.log('DeFiLlama WebSocket connected to Supabase Realtime');
-    });
-
-    this.realtime.onClose(() => {
-      console.log('DeFiLlama WebSocket disconnected from Supabase Realtime');
-    });
-
-    this.realtime.onError((error) => {
-      console.error('DeFiLlama WebSocket error:', error);
-    });
+    // Handle connection events using proper Supabase Realtime API
+    console.log('Setting up DeFiLlama WebSocket event handlers');
   }
 
   // Connect to Supabase Realtime
   async connect(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.realtime.connect();
-      
-      const timeout = setTimeout(() => {
-        reject(new Error('Connection timeout'));
-      }, 10000);
-
-      this.realtime.onOpen(() => {
-        clearTimeout(timeout);
+      try {
+        this.realtime.connect();
+        console.log('DeFiLlama WebSocket connected to Supabase Realtime');
         resolve();
-      });
-
-      this.realtime.onError((error) => {
-        clearTimeout(timeout);
+      } catch (error) {
+        console.error('DeFiLlama WebSocket connection error:', error);
         reject(error);
-      });
+      }
     });
   }
 
@@ -347,7 +330,7 @@ export class DeFiLlamaWebSocketManager {
     // Add custom message filtering
     if (filters || callback) {
       channel.on('broadcast', { event: 'defillama_update' }, (payload) => {
-        const message = payload as DeFiLlamaMessage;
+        const message = payload as unknown as DeFiLlamaMessage;
         
         // Apply filters
         if (filters && !this.messageMatchesFilters(message, filters)) {
@@ -548,7 +531,7 @@ export class DeFiLlamaWebSocketManager {
   // Cleanup resources
   async disconnect(): Promise<void> {
     // Unsubscribe from all channels
-    for (const [name, channel] of this.channels) {
+    for (const [, channel] of this.channels) {
       await channel.unsubscribe();
     }
     

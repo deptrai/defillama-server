@@ -226,6 +226,80 @@ export class RoomManager {
   }
 
   /**
+   * Get all subscriptions for a connection
+   */
+  async getConnectionSubscriptions(connectionId: string): Promise<Record<string, SubscriptionFilters>> {
+    try {
+      const rooms = await this.redis.smembers(this.ROOM_INDEX);
+      const subscriptions: Record<string, SubscriptionFilters> = {};
+
+      for (const room of rooms) {
+        const subscription = await this.getSubscription(connectionId, room);
+        if (subscription && subscription.filters) {
+          subscriptions[room] = subscription.filters;
+        }
+      }
+
+      return subscriptions;
+    } catch (error) {
+      console.error(`Error getting subscriptions for ${connectionId}:`, error);
+      return {};
+    }
+  }
+
+  /**
+   * Get filtered members of a room based on message content
+   */
+  async getFilteredMembers(channel: string, message: any): Promise<string[]> {
+    try {
+      const allMembers = await this.getRoomMembers(channel);
+      const filteredMembers: string[] = [];
+
+      for (const connectionId of allMembers) {
+        const subscription = await this.getSubscription(connectionId, channel);
+
+        if (!subscription || !subscription.filters) {
+          // No filters, include this connection
+          filteredMembers.push(connectionId);
+          continue;
+        }
+
+        // Check if message matches filters
+        if (this.matchesFilters(message.data || message, subscription.filters)) {
+          filteredMembers.push(connectionId);
+        }
+      }
+
+      return filteredMembers;
+    } catch (error) {
+      console.error(`Error getting filtered members for ${channel}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Clean up all subscriptions for a connection
+   */
+  async cleanupConnection(connectionId: string): Promise<void> {
+    try {
+      const rooms = await this.redis.smembers(this.ROOM_INDEX);
+
+      for (const room of rooms) {
+        const roomKey = this.getRoomKey(room);
+        const isMember = await this.redis.sismember(roomKey, connectionId);
+
+        if (isMember) {
+          await this.unsubscribe(connectionId, room);
+        }
+      }
+
+      console.log(`Cleaned up all subscriptions for connection ${connectionId}`);
+    } catch (error) {
+      console.error(`Error cleaning up connection ${connectionId}:`, error);
+    }
+  }
+
+  /**
    * Check if message data matches subscription filters
    */
   private matchesFilters(messageData: any, filters: SubscriptionFilters): boolean {

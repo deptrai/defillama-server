@@ -93,6 +93,20 @@ export function getRedisClient(): Redis {
 }
 
 /**
+ * Close Redis connection (for testing)
+ */
+export async function closeRedisConnection(): Promise<void> {
+  if (redisClient) {
+    await redisClient.quit();
+    redisClient = null;
+  }
+  if (pubSubClient) {
+    await pubSubClient.quit();
+    pubSubClient = null;
+  }
+}
+
+/**
  * Redis pub/sub client for message broadcasting
  * Separate client to avoid blocking main Redis operations
  */
