@@ -148,6 +148,11 @@ export class QueryParser {
     }
 
     const schema = TABLE_SCHEMAS[table];
+    if (!schema) {
+      this.addError(`${path}.field`, `Invalid table: ${table}`);
+      return;
+    }
+
     const fieldSchema = schema.fields.find(f => f.name === condition.field);
 
     if (!fieldSchema) {
@@ -222,6 +227,10 @@ export class QueryParser {
     }
 
     const schema = TABLE_SCHEMAS[table];
+    if (!schema) {
+      this.addError('aggregations', `Invalid table: ${table}`);
+      return;
+    }
 
     aggregations.forEach((agg, index) => {
       const path = `aggregations[${index}]`;
@@ -273,6 +282,10 @@ export class QueryParser {
     }
 
     const schema = TABLE_SCHEMAS[table];
+    if (!schema) {
+      this.addError('groupBy', `Invalid table: ${table}`);
+      return;
+    }
 
     groupBy.forEach((field, index) => {
       const fieldSchema = schema.fields.find(f => f.name === field);
@@ -290,6 +303,10 @@ export class QueryParser {
     }
 
     const schema = TABLE_SCHEMAS[table];
+    if (!schema) {
+      this.addError('orderBy', `Invalid table: ${table}`);
+      return;
+    }
 
     orderBy.forEach((order, index) => {
       const path = `orderBy[${index}]`;
