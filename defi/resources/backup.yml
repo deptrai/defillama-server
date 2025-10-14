@@ -1,0 +1,266 @@
+# Backup Configuration for DeFiLlama On-Chain Services
+# This file defines backup policies for RDS, DynamoDB, Redis, and S3
+
+Resources:
+  # AWS Backup Vault
+  BackupVault:
+    Type: AWS::Backup::BackupVault
+    Properties:
+      BackupVaultName: defillama-backup-vault-${self:custom.stage}
+      EncryptionKeyArn: !ImportValue ${self:service}-${self:custom.stage}-encryption-key-arn
+
+  # AWS Backup Plan
+  BackupPlan:
+    Type: AWS::Backup::BackupPlan
+    Properties:
+      BackupPlan:
+        BackupPlanName: defillama-backup-plan-${self:custom.stage}
+        BackupPlanRule:
+          # Daily Backup Rule
+          - RuleName: DailyBackup
+            TargetBackupVault: !Ref BackupVault
+            ScheduleExpression: cron(0 2 * * ? *)  # 2 AM UTC daily
+            StartWindowMinutes: 60
+            CompletionWindowMinutes: 120
+            Lifecycle:
+              DeleteAfterDays: !If [IsProduction, 30, 7]
+              MoveToColdStorageAfterDays: !If [IsProduction, 7, null]
+            RecoveryPointTags:
+              Environment: ${self:custom.stage}
+              BackupType: daily
+          # Weekly Backup Rule (Production only)
+          - !If
+            - IsProduction
+            - RuleName: WeeklyBackup
+              TargetBackupVault: !Ref BackupVault
+              ScheduleExpression: cron(0 3 ? * SUN *)  # 3 AM UTC every Sunday
+              StartWindowMinutes: 60
+              CompletionWindowMinutes: 180
+              Lifecycle:
+                DeleteAfterDays: 90
+                MoveToColdStorageAfterDays: 30
+              RecoveryPointTags:
+                Environment: ${self:custom.stage}
+                BackupType: weekly
+            - !Ref AWS::NoValue
+
+  # Backup Selection for RDS
+  RDSBackupSelection:
+    Type: AWS::Backup::BackupSelection
+    Properties:
+      BackupPlanId: !Ref BackupPlan
+      BackupSelection:
+        SelectionName: defillama-rds-backup-${self:custom.stage}
+        IamRoleArn: !GetAtt BackupRole.Arn
+        Resources:
+          - !Sub arn:aws:rds:${AWS::Region}:${AWS::AccountId}:db:defillama-${self:custom.stage}
+
+  # Backup Selection for DynamoDB
+  DynamoDBBackupSelection:
+    Type: AWS::Backup::BackupSelection
+    Properties:
+      BackupPlanId: !Ref BackupPlan
+      BackupSelection:
+        SelectionName: defillama-dynamodb-backup-${self:custom.stage}
+        IamRoleArn: !GetAtt BackupRole.Arn
+        Resources:
+          - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${self:custom.tableName}
+
+  # DynamoDB Point-in-Time Recovery
+  DynamoDBPITR:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:custom.tableName}
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !If [IsProduction, true, false]
+
+  # S3 Bucket Versioning
+  S3BucketVersioning:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: defillama-data-${self:custom.stage}
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpirationInDays: !If [IsProduction, 90, 30]
+          - Id: TransitionToIA
+            Status: Enabled
+            Transitions:
+              - TransitionInDays: 30
+                StorageClass: STANDARD_IA
+          - Id: TransitionToGlacier
+            Status: Enabled
+            Transitions:
+              - TransitionInDays: 90
+                StorageClass: GLACIER
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: !ImportValue ${self:service}-${self:custom.stage}-encryption-key-id
+
+  # Backup IAM Role
+  BackupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: backup.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSBackupServiceRolePolicyForBackup
+        - arn:aws:iam::aws:policy/service-role/AWSBackupServiceRolePolicyForRestores
+      Policies:
+        - PolicyName: BackupPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - rds:DescribeDBInstances
+                  - rds:CreateDBSnapshot
+                  - rds:DeleteDBSnapshot
+                  - rds:DescribeDBSnapshots
+                  - dynamodb:DescribeTable
+                  - dynamodb:CreateBackup
+                  - dynamodb:DeleteBackup
+                  - dynamodb:DescribeBackup
+                  - dynamodb:RestoreTableFromBackup
+                  - elasticache:DescribeReplicationGroups
+                  - elasticache:CreateSnapshot
+                  - elasticache:DeleteSnapshot
+                  - elasticache:DescribeSnapshots
+                  - kms:Decrypt
+                  - kms:Encrypt
+                  - kms:GenerateDataKey
+                  - kms:DescribeKey
+                Resource: '*'
+
+  # CloudWatch Event Rule for Backup Notifications
+  BackupNotificationRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: defillama-backup-notification-${self:custom.stage}
+      Description: Notify on backup job completion
+      EventPattern:
+        source:
+          - aws.backup
+        detail-type:
+          - Backup Job State Change
+        detail:
+          state:
+            - COMPLETED
+            - FAILED
+      State: ENABLED
+      Targets:
+        - Arn: !ImportValue ${self:service}-${self:custom.stage}-alarm-topic-arn
+          Id: BackupNotificationTarget
+
+  # Redis Snapshot Schedule (via CloudWatch Events)
+  RedisSnapshotSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: defillama-redis-snapshot-${self:custom.stage}
+      Description: Daily Redis snapshot
+      ScheduleExpression: cron(0 3 * * ? *)  # 3 AM UTC daily
+      State: ENABLED
+      Targets:
+        - Arn: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:defillama-${self:custom.stage}-redisSnapshot
+          Id: RedisSnapshotTarget
+
+  # Lambda Function for Redis Snapshot
+  RedisSnapshotFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: defillama-${self:custom.stage}-redisSnapshot
+      Runtime: nodejs20.x
+      Handler: index.handler
+      Role: !GetAtt RedisSnapshotRole.Arn
+      Timeout: 300
+      Environment:
+        Variables:
+          REDIS_CLUSTER_ID: !Ref RedisCluster
+          STAGE: ${self:custom.stage}
+      Code:
+        ZipFile: |
+          const { ElastiCache } = require('@aws-sdk/client-elasticache');
+          const elasticache = new ElastiCache({ region: process.env.AWS_REGION });
+          
+          exports.handler = async (event) => {
+            const clusterId = process.env.REDIS_CLUSTER_ID;
+            const snapshotName = `defillama-${process.env.STAGE}-${Date.now()}`;
+            
+            try {
+              await elasticache.createSnapshot({
+                ReplicationGroupId: clusterId,
+                SnapshotName: snapshotName,
+              });
+              
+              console.log(`Redis snapshot created: ${snapshotName}`);
+              return { statusCode: 200, body: 'Snapshot created' };
+            } catch (error) {
+              console.error('Failed to create snapshot:', error);
+              throw error;
+            }
+          };
+
+  # IAM Role for Redis Snapshot Lambda
+  RedisSnapshotRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: RedisSnapshotPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - elasticache:CreateSnapshot
+                  - elasticache:DescribeSnapshots
+                  - elasticache:DeleteSnapshot
+                Resource: '*'
+
+# Conditions
+Conditions:
+  IsProduction: !Equals [${self:custom.stage}, prod]
+
+# Outputs
+Outputs:
+  BackupVaultArn:
+    Description: Backup Vault ARN
+    Value: !GetAtt BackupVault.BackupVaultArn
+    Export:
+      Name: ${self:service}-${self:custom.stage}-backup-vault-arn
+
+  BackupPlanId:
+    Description: Backup Plan ID
+    Value: !Ref BackupPlan
+    Export:
+      Name: ${self:service}-${self:custom.stage}-backup-plan-id
+
+  S3BucketName:
+    Description: S3 Bucket Name
+    Value: !Ref S3BucketVersioning
+    Export:
+      Name: ${self:service}-${self:custom.stage}-s3-bucket-name
+

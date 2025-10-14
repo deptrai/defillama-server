@@ -1,0 +1,182 @@
+# Auto-scaling Configuration for DeFiLlama On-Chain Services
+# This file defines auto-scaling policies for Lambda, DynamoDB, and other resources
+
+Resources:
+  # Lambda Provisioned Concurrency Auto-scaling Target
+  WebSocketConnectProvisionedConcurrencyTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Condition: IsProduction
+    Properties:
+      MaxCapacity: 100
+      MinCapacity: 10
+      ResourceId: !Sub function:defillama-prod-websocketConnect:provisioned
+      RoleARN: !GetAtt AutoScalingRole.Arn
+      ScalableDimension: lambda:function:ProvisionedConcurrentExecutions
+      ServiceNamespace: lambda
+
+  # Lambda Provisioned Concurrency Scaling Policy
+  WebSocketConnectScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Condition: IsProduction
+    Properties:
+      PolicyName: defillama-websocket-connect-scaling-${self:custom.stage}
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref WebSocketConnectProvisionedConcurrencyTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 0.7  # Target 70% utilization
+        PredefinedMetricSpecification:
+          PredefinedMetricType: LambdaProvisionedConcurrencyUtilization
+
+  # DynamoDB Auto-scaling Target - Read Capacity
+  DynamoDBReadCapacityTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity: 100
+      MinCapacity: !If [IsProduction, 10, 1]
+      ResourceId: !Sub table/${self:custom.tableName}
+      RoleARN: !GetAtt AutoScalingRole.Arn
+      ScalableDimension: dynamodb:table:ReadCapacityUnits
+      ServiceNamespace: dynamodb
+
+  # DynamoDB Auto-scaling Policy - Read Capacity
+  DynamoDBReadScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: defillama-dynamodb-read-scaling-${self:custom.stage}
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref DynamoDBReadCapacityTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 70.0  # Target 70% utilization
+        PredefinedMetricSpecification:
+          PredefinedMetricType: DynamoDBReadCapacityUtilization
+
+  # DynamoDB Auto-scaling Target - Write Capacity
+  DynamoDBWriteCapacityTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity: 100
+      MinCapacity: !If [IsProduction, 10, 1]
+      ResourceId: !Sub table/${self:custom.tableName}
+      RoleARN: !GetAtt AutoScalingRole.Arn
+      ScalableDimension: dynamodb:table:WriteCapacityUnits
+      ServiceNamespace: dynamodb
+
+  # DynamoDB Auto-scaling Policy - Write Capacity
+  DynamoDBWriteScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: defillama-dynamodb-write-scaling-${self:custom.stage}
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref DynamoDBWriteCapacityTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 70.0  # Target 70% utilization
+        PredefinedMetricSpecification:
+          PredefinedMetricType: DynamoDBWriteCapacityUtilization
+
+  # Auto-scaling IAM Role
+  AutoScalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - application-autoscaling.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
+      Policies:
+        - PolicyName: AutoScalingPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:PutProvisionedConcurrencyConfig
+                  - lambda:GetProvisionedConcurrencyConfig
+                  - lambda:DeleteProvisionedConcurrencyConfig
+                  - dynamodb:DescribeTable
+                  - dynamodb:UpdateTable
+                  - cloudwatch:PutMetricAlarm
+                  - cloudwatch:DescribeAlarms
+                  - cloudwatch:GetMetricStatistics
+                  - cloudwatch:DeleteAlarms
+                Resource: '*'
+
+  # Lambda Reserved Concurrency for Critical Functions
+  WebSocketConnectReservedConcurrency:
+    Type: AWS::Lambda::EventInvokeConfig
+    Properties:
+      FunctionName: defillama-${self:custom.stage}-websocketConnect
+      Qualifier: $LATEST
+      MaximumRetryAttempts: 2
+      MaximumEventAgeInSeconds: 3600
+
+  # SQS Queue Auto-scaling (via CloudWatch Alarms)
+  SQSScaleUpAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-sqs-scale-up-${self:custom.stage}
+      AlarmDescription: Scale up Lambda when SQS queue depth is high
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 100
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  SQSScaleDownAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-sqs-scale-down-${self:custom.stage}
+      AlarmDescription: Scale down Lambda when SQS queue depth is low
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 10
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: notBreaching
+
+  # API Gateway Auto-scaling (Throttling)
+  APIGatewayThrottleSettings:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref WebSocketApi
+      StageName: ${self:custom.stage}
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: !If [IsProduction, 5000, 1000]
+        ThrottlingRateLimit: !If [IsProduction, 2000, 500]
+        DataTraceEnabled: true
+        DetailedMetricsEnabled: true
+        LoggingLevel: INFO
+
+# Conditions
+Conditions:
+  IsProduction: !Equals [${self:custom.stage}, prod]
+
+# Outputs
+Outputs:
+  AutoScalingRoleArn:
+    Description: Auto-scaling IAM Role ARN
+    Value: !GetAtt AutoScalingRole.Arn
+    Export:
+      Name: ${self:service}-${self:custom.stage}-autoscaling-role-arn
+
+  DynamoDBReadCapacityTargetId:
+    Description: DynamoDB Read Capacity Target ID
+    Value: !Ref DynamoDBReadCapacityTarget
+    Export:
+      Name: ${self:service}-${self:custom.stage}-dynamodb-read-target-id
+
+  DynamoDBWriteCapacityTargetId:
+    Description: DynamoDB Write Capacity Target ID
+    Value: !Ref DynamoDBWriteCapacityTarget
+    Export:
+      Name: ${self:service}-${self:custom.stage}-dynamodb-write-target-id
+
