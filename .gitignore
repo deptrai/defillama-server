@@ -17,3 +17,10 @@ defi/.current_commit_hash
 */api2-cache
 *.log
 temp/
+
+# Secrets and sensitive data
+secrets/
+*.key
+*.pem
+*.crt
+certbot/
