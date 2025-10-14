@@ -87,6 +87,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.245.0",
+    "@aws-sdk/client-ses": "^3.908.0",
+    "@aws-sdk/client-sns": "^3.908.0",
     "@aws-sdk/client-sqs": "^3.908.0",
     "@defillama/adapters": "file:./DefiLlama-Adapters",
     "@defillama/dimension-adapters": "file:./dimension-adapters",

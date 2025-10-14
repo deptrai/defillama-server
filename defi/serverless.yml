@@ -821,6 +821,31 @@ functions:
         Ref: AlertNotificationQueue
       AWS_REGION: ${self:provider.region}
 
+  # Notification Handler (Story 1.3 - Phase 6.3)
+  notificationHandler:
+    handler: src/alerts/notifications/notification-handler.handler
+    timeout: 30
+    memorySize: 512
+    reservedConcurrency: 10
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - AlertNotificationQueue
+              - Arn
+          batchSize: 10
+          maximumBatchingWindowInSeconds: 5
+    environment:
+      ALERTS_DB: ${self:provider.environment.ALERTS_DB}
+      AWS_REGION: ${self:provider.region}
+      USE_REAL_SES: ${env:USE_REAL_SES, 'false'}
+      USE_REAL_SNS: ${env:USE_REAL_SNS, 'false'}
+      SES_FROM_EMAIL: ${env:SES_FROM_EMAIL, 'noreply@defillama.com'}
+      SNS_PLATFORM_APPLICATION_ARN_IOS: ${env:SNS_PLATFORM_APPLICATION_ARN_IOS, ''}
+      SNS_PLATFORM_APPLICATION_ARN_ANDROID: ${env:SNS_PLATFORM_APPLICATION_ARN_ANDROID, ''}
+      WEBHOOK_TIMEOUT_MS: ${env:WEBHOOK_TIMEOUT_MS, '5000'}
+      WEBHOOK_MAX_RETRIES: ${env:WEBHOOK_MAX_RETRIES, '3'}
+
   # depositedContracts:
   #   handler: src/getDepositedContracts.default
   #   timeout: 30
