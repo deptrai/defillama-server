@@ -222,7 +222,20 @@ export class MockWebhookServer {
   stop(): Promise<void> {
     return new Promise((resolve) => {
       if (this.server) {
+        // Close all connections first (Node.js 18+)
+        if (typeof (this.server as any).closeAllConnections === 'function') {
+          (this.server as any).closeAllConnections();
+        }
+
+        // Force close after timeout
+        const timeout = setTimeout(() => {
+          this.server = null;
+          resolve();
+        }, 1000);
+
         this.server.close(() => {
+          clearTimeout(timeout);
+          this.server = null;
           resolve();
         });
       } else {
