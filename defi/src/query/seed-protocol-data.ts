@@ -9,14 +9,11 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-// Use postgres user (same as migration)
-// Use Unix socket connection (trust auth) instead of TCP (scram-sha-256)
-// Docker container exposes Unix socket at /var/run/postgresql
-const sql = postgres({
-  host: '/var/run/postgresql',  // Unix socket path
-  database: 'defillama',
-  username: 'postgres',
-});
+// Database connection configuration
+// Use environment variable or default to local PostgreSQL
+const DB_URL = process.env.ALERTS_DB || 'postgresql://defillama:defillama123@localhost:5432/defillama';
+
+const sql = postgres(DB_URL);
 
 // Sample data constants
 const CATEGORIES = ['DEX', 'Lending', 'Yield', 'Bridge', 'Derivatives', 'Insurance', 'Staking', 'NFT'];
