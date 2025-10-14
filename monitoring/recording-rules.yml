@@ -37,9 +37,6 @@ groups:
       - record: postgres:queries:rate5m
         expr: rate(pg_stat_statements_calls_total[5m])
 
-      - record: postgres:slow_queries:rate5m
-        expr: rate(pg_stat_statements_calls_total{query_time_ms > 1000}[5m])
-
       - record: postgres:cache_hit_ratio
         expr: sum(pg_stat_database_blks_hit) / (sum(pg_stat_database_blks_hit) + sum(pg_stat_database_blks_read))
 

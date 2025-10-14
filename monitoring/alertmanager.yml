@@ -2,19 +2,6 @@
 # Alert routing, grouping, and notification channels
 
 global:
-  # Default SMTP configuration
-  smtp_smarthost: '${SMTP_HOST}:${SMTP_PORT}'
-  smtp_from: '${SMTP_FROM}'
-  smtp_auth_username: '${SMTP_USERNAME}'
-  smtp_auth_password: '${SMTP_PASSWORD}'
-  smtp_require_tls: true
-  
-  # Slack webhook URL
-  slack_api_url: '${SLACK_WEBHOOK_URL}'
-  
-  # PagerDuty integration key
-  pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
-  
   # Resolve timeout
   resolve_timeout: 5m
 
@@ -39,77 +26,12 @@ route:
   # Wait time before re-sending notification for the same alert
   repeat_interval: 4h
   
-  # Child routes for specific alert types
+  # Child routes for specific alert types (simplified for testing)
   routes:
-    # P1 (Critical) alerts - immediate notification via PagerDuty + Slack + Email
-    - match:
-        severity: P1
-      receiver: 'pagerduty-critical'
-      group_wait: 10s
-      group_interval: 1m
-      repeat_interval: 30m
-      continue: true
-      
-    - match:
-        severity: P1
-      receiver: 'slack-critical'
-      group_wait: 10s
-      group_interval: 1m
-      repeat_interval: 30m
-      continue: true
-      
-    - match:
-        severity: P1
-      receiver: 'email-critical'
-      group_wait: 10s
-      group_interval: 1m
-      repeat_interval: 30m
-    
-    # P2 (High) alerts - Slack + Email
-    - match:
-        severity: P2
-      receiver: 'slack-high'
-      group_wait: 30s
-      group_interval: 5m
-      repeat_interval: 2h
-      continue: true
-      
-    - match:
-        severity: P2
-      receiver: 'email-high'
-      group_wait: 30s
-      group_interval: 5m
-      repeat_interval: 2h
-    
-    # P3 (Medium) alerts - Slack only
-    - match:
-        severity: P3
-      receiver: 'slack-medium'
-      group_wait: 1m
-      group_interval: 10m
-      repeat_interval: 4h
-    
-    # Component-specific routes
-    - match:
-        component: database
-      receiver: 'database-team'
-      group_wait: 30s
-      group_interval: 5m
-      repeat_interval: 2h
-      
-    - match:
-        component: websocket
-      receiver: 'websocket-team'
-      group_wait: 30s
-      group_interval: 5m
-      repeat_interval: 2h
-      
-    - match:
-        component: api_gateway
-      receiver: 'api-team'
-      group_wait: 30s
-      group_interval: 5m
-      repeat_interval: 2h
+    # All alerts go to default receiver for now
+    - match_re:
+        severity: '.*'
+      receiver: 'default'
 
 # Inhibition rules - suppress certain alerts when others are firing
 inhibit_rules:
@@ -145,129 +67,5 @@ inhibit_rules:
 receivers:
   # Default receiver (logs only)
   - name: 'default'
-    webhook_configs:
-      - url: 'http://localhost:9093/webhook'
-        send_resolved: true
-  
-  # PagerDuty for P1 critical alerts
-  - name: 'pagerduty-critical'
-    pagerduty_configs:
-      - service_key: '${PAGERDUTY_SERVICE_KEY}'
-        severity: 'critical'
-        description: '{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.summary }}'
-        details:
-          firing: '{{ .Alerts.Firing | len }}'
-          resolved: '{{ .Alerts.Resolved | len }}'
-          description: '{{ .CommonAnnotations.description }}'
-        send_resolved: true
-  
-  # Slack for P1 critical alerts
-  - name: 'slack-critical'
-    slack_configs:
-      - channel: '#defillama-alerts-critical'
-        username: 'DeFiLlama Alertmanager'
-        icon_emoji: ':rotating_light:'
-        color: 'danger'
-        title: '🚨 [P1 CRITICAL] {{ .GroupLabels.alertname }}'
-        text: |
-          *Summary:* {{ .CommonAnnotations.summary }}
-          *Description:* {{ .CommonAnnotations.description }}
-          *Component:* {{ .GroupLabels.component }}
-          *Firing:* {{ .Alerts.Firing | len }}
-          *Resolved:* {{ .Alerts.Resolved | len }}
-        send_resolved: true
-  
-  # Email for P1 critical alerts
-  - name: 'email-critical'
-    email_configs:
-      - to: '${ALERT_EMAIL_CRITICAL}'
-        headers:
-          Subject: '🚨 [P1 CRITICAL] {{ .GroupLabels.alertname }}'
-        html: |
-          <h2>🚨 Critical Alert</h2>
-          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
-          <p><strong>Summary:</strong> {{ .CommonAnnotations.summary }}</p>
-          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
-          <p><strong>Component:</strong> {{ .GroupLabels.component }}</p>
-          <p><strong>Firing:</strong> {{ .Alerts.Firing | len }}</p>
-          <p><strong>Resolved:</strong> {{ .Alerts.Resolved | len }}</p>
-        send_resolved: true
-  
-  # Slack for P2 high alerts
-  - name: 'slack-high'
-    slack_configs:
-      - channel: '#defillama-alerts-high'
-        username: 'DeFiLlama Alertmanager'
-        icon_emoji: ':warning:'
-        color: 'warning'
-        title: '⚠️ [P2 HIGH] {{ .GroupLabels.alertname }}'
-        text: |
-          *Summary:* {{ .CommonAnnotations.summary }}
-          *Description:* {{ .CommonAnnotations.description }}
-          *Component:* {{ .GroupLabels.component }}
-          *Firing:* {{ .Alerts.Firing | len }}
-        send_resolved: true
-  
-  # Email for P2 high alerts
-  - name: 'email-high'
-    email_configs:
-      - to: '${ALERT_EMAIL_HIGH}'
-        headers:
-          Subject: '⚠️ [P2 HIGH] {{ .GroupLabels.alertname }}'
-        html: |
-          <h2>⚠️ High Priority Alert</h2>
-          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
-          <p><strong>Summary:</strong> {{ .CommonAnnotations.summary }}</p>
-          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
-          <p><strong>Component:</strong> {{ .GroupLabels.component }}</p>
-        send_resolved: true
-  
-  # Slack for P3 medium alerts
-  - name: 'slack-medium'
-    slack_configs:
-      - channel: '#defillama-alerts-medium'
-        username: 'DeFiLlama Alertmanager'
-        icon_emoji: ':information_source:'
-        color: 'good'
-        title: 'ℹ️ [P3 MEDIUM] {{ .GroupLabels.alertname }}'
-        text: |
-          *Summary:* {{ .CommonAnnotations.summary }}
-          *Component:* {{ .GroupLabels.component }}
-        send_resolved: true
-  
-  # Database team notifications
-  - name: 'database-team'
-    slack_configs:
-      - channel: '#defillama-database'
-        username: 'DeFiLlama Alertmanager'
-        icon_emoji: ':database:'
-        title: '🗄️ [DATABASE] {{ .GroupLabels.alertname }}'
-        text: |
-          *Summary:* {{ .CommonAnnotations.summary }}
-          *Description:* {{ .CommonAnnotations.description }}
-        send_resolved: true
-  
-  # WebSocket team notifications
-  - name: 'websocket-team'
-    slack_configs:
-      - channel: '#defillama-websocket'
-        username: 'DeFiLlama Alertmanager'
-        icon_emoji: ':electric_plug:'
-        title: '🔌 [WEBSOCKET] {{ .GroupLabels.alertname }}'
-        text: |
-          *Summary:* {{ .CommonAnnotations.summary }}
-          *Description:* {{ .CommonAnnotations.description }}
-        send_resolved: true
-  
-  # API team notifications
-  - name: 'api-team'
-    slack_configs:
-      - channel: '#defillama-api'
-        username: 'DeFiLlama Alertmanager'
-        icon_emoji: ':globe_with_meridians:'
-        title: '🌐 [API] {{ .GroupLabels.alertname }}'
-        text: |
-          *Summary:* {{ .CommonAnnotations.summary }}
-          *Description:* {{ .CommonAnnotations.description }}
-        send_resolved: true
+    # No webhook for now, just logs
 
