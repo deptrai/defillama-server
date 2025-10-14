@@ -1,0 +1,143 @@
+# CloudWatch Dashboard for SQS Queues
+# This file defines monitoring dashboard for SQS queues
+
+Resources:
+  # SQS Dashboard
+  SQSDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: defillama-sqs-${self:custom.stage}
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/SQS", "NumberOfMessagesVisible", {"stat": "Average", "label": "Events Queue"}],
+                  ["...", {"stat": "Average", "label": "Alert Evaluation Queue"}],
+                  ["...", {"stat": "Average", "label": "Alert Notification Queue"}]
+                ],
+                "period": 60,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "Messages Visible",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/SQS", "NumberOfMessagesInFlight", {"stat": "Average", "label": "Events Queue"}],
+                  ["...", {"stat": "Average", "label": "Alert Evaluation Queue"}],
+                  ["...", {"stat": "Average", "label": "Alert Notification Queue"}]
+                ],
+                "period": 60,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "Messages In Flight",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/SQS", "ApproximateAgeOfOldestMessage", {"stat": "Maximum", "label": "Events Queue"}],
+                  ["...", {"stat": "Maximum", "label": "Alert Evaluation Queue"}],
+                  ["...", {"stat": "Maximum", "label": "Alert Notification Queue"}]
+                ],
+                "period": 60,
+                "stat": "Maximum",
+                "region": "${AWS::Region}",
+                "title": "Age of Oldest Message (seconds)",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/SQS", "NumberOfMessagesSent", {"stat": "Sum", "label": "Events Queue"}],
+                  ["...", {"stat": "Sum", "label": "Alert Evaluation Queue"}],
+                  ["...", {"stat": "Sum", "label": "Alert Notification Queue"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Message Throughput",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/SQS", "NumberOfMessagesReceived", {"stat": "Sum", "label": "Events Queue"}],
+                  ["...", {"stat": "Sum", "label": "Alert Evaluation Queue"}],
+                  ["...", {"stat": "Sum", "label": "Alert Notification Queue"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Messages Received",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/SQS", "NumberOfMessagesDeleted", {"stat": "Sum", "label": "Events Queue"}],
+                  ["...", {"stat": "Sum", "label": "Alert Evaluation Queue"}],
+                  ["...", {"stat": "Sum", "label": "Alert Notification Queue"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Messages Deleted",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/SQS", "NumberOfMessagesVisible", {"stat": "Average", "label": "Events DLQ"}],
+                  ["...", {"stat": "Average", "label": "Alert Evaluation DLQ"}],
+                  ["...", {"stat": "Average", "label": "Alert Notification DLQ"}]
+                ],
+                "period": 60,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "Dead Letter Queue Depth",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/SQS", "ApproximateNumberOfMessagesNotVisible", {"stat": "Average", "label": "Events Queue"}],
+                  ["...", {"stat": "Average", "label": "Alert Evaluation Queue"}],
+                  ["...", {"stat": "Average", "label": "Alert Notification Queue"}]
+                ],
+                "period": 60,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "Messages Not Visible",
+                "yAxis": {"left": {"min": 0}}
+              }
+            }
+          ]
+        }
+
+# Outputs
+Outputs:
+  SQSDashboardName:
+    Description: SQS Dashboard Name
+    Value: !Ref SQSDashboard
+    Export:
+      Name: ${self:service}-${self:custom.stage}-sqs-dashboard
+

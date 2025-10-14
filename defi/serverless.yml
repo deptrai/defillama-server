@@ -915,6 +915,13 @@ resources:
   - ${file(resources/security-groups.yml)}
   # Enhanced Security (Story 1.5 - Phase 1)
   - ${file(resources/security-enhanced.yml)}
+  # CloudWatch Dashboards (Story 1.5 - Phase 2)
+  - ${file(resources/monitoring-dashboard.yml)}
+  - ${file(resources/monitoring-sqs-dashboard.yml)}
+  # CloudWatch Alarms (Story 1.5 - Phase 2)
+  - ${file(resources/alarms.yml)}
+  # X-Ray Tracing (Story 1.5 - Phase 2)
+  - ${file(resources/xray-tracing.yml)}
 
 plugins:
   - serverless-esbuild

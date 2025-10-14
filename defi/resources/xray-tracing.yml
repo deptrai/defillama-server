@@ -1,0 +1,142 @@
+# AWS X-Ray Tracing Configuration for DeFiLlama On-Chain Services
+# This file defines X-Ray sampling rules and configuration
+
+Resources:
+  # X-Ray Sampling Rule - High Priority Requests
+  XRayHighPrioritySamplingRule:
+    Type: AWS::XRay::SamplingRule
+    Properties:
+      SamplingRule:
+        RuleName: defillama-high-priority-${self:custom.stage}
+        Priority: 100
+        Version: 1
+        ReservoirSize: 10
+        FixedRate: 1.0  # Sample 100% of high priority requests
+        URLPath: /v1/alerts/*
+        Host: '*'
+        HTTPMethod: '*'
+        ServiceType: '*'
+        ServiceName: '*'
+        ResourceARN: '*'
+        Attributes: {}
+
+  # X-Ray Sampling Rule - WebSocket Connections
+  XRayWebSocketSamplingRule:
+    Type: AWS::XRay::SamplingRule
+    Properties:
+      SamplingRule:
+        RuleName: defillama-websocket-${self:custom.stage}
+        Priority: 200
+        Version: 1
+        ReservoirSize: 5
+        FixedRate: 0.1  # Sample 10% of WebSocket requests
+        URLPath: /websocket/*
+        Host: '*'
+        HTTPMethod: '*'
+        ServiceType: '*'
+        ServiceName: '*'
+        ResourceARN: '*'
+        Attributes: {}
+
+  # X-Ray Sampling Rule - Query Requests
+  XRayQuerySamplingRule:
+    Type: AWS::XRay::SamplingRule
+    Properties:
+      SamplingRule:
+        RuleName: defillama-query-${self:custom.stage}
+        Priority: 300
+        Version: 1
+        ReservoirSize: 5
+        FixedRate: 0.05  # Sample 5% of query requests
+        URLPath: /v1/query/*
+        Host: '*'
+        HTTPMethod: '*'
+        ServiceType: '*'
+        ServiceName: '*'
+        ResourceARN: '*'
+        Attributes: {}
+
+  # X-Ray Sampling Rule - Default (Low Priority)
+  XRayDefaultSamplingRule:
+    Type: AWS::XRay::SamplingRule
+    Properties:
+      SamplingRule:
+        RuleName: defillama-default-${self:custom.stage}
+        Priority: 1000
+        Version: 1
+        ReservoirSize: 1
+        FixedRate: 0.01  # Sample 1% of all other requests
+        URLPath: '*'
+        Host: '*'
+        HTTPMethod: '*'
+        ServiceType: '*'
+        ServiceName: '*'
+        ResourceARN: '*'
+        Attributes: {}
+
+  # X-Ray Group for Error Traces
+  XRayErrorGroup:
+    Type: AWS::XRay::Group
+    Properties:
+      GroupName: defillama-errors-${self:custom.stage}
+      FilterExpression: 'error = true OR fault = true'
+      InsightsConfiguration:
+        InsightsEnabled: true
+        NotificationsEnabled: false
+
+  # X-Ray Group for Slow Traces
+  XRaySlowGroup:
+    Type: AWS::XRay::Group
+    Properties:
+      GroupName: defillama-slow-${self:custom.stage}
+      FilterExpression: 'duration > 1'  # Traces longer than 1 second
+      InsightsConfiguration:
+        InsightsEnabled: true
+        NotificationsEnabled: false
+
+  # X-Ray Group for WebSocket Traces
+  XRayWebSocketGroup:
+    Type: AWS::XRay::Group
+    Properties:
+      GroupName: defillama-websocket-${self:custom.stage}
+      FilterExpression: 'service(id(name: "websocket*"))'
+      InsightsConfiguration:
+        InsightsEnabled: true
+        NotificationsEnabled: false
+
+  # X-Ray Group for Alert Traces
+  XRayAlertGroup:
+    Type: AWS::XRay::Group
+    Properties:
+      GroupName: defillama-alerts-${self:custom.stage}
+      FilterExpression: 'service(id(name: "alert*"))'
+      InsightsConfiguration:
+        InsightsEnabled: true
+        NotificationsEnabled: false
+
+# Outputs
+Outputs:
+  XRayErrorGroupArn:
+    Description: X-Ray Error Group ARN
+    Value: !GetAtt XRayErrorGroup.GroupARN
+    Export:
+      Name: ${self:service}-${self:custom.stage}-xray-error-group-arn
+
+  XRaySlowGroupArn:
+    Description: X-Ray Slow Group ARN
+    Value: !GetAtt XRaySlowGroup.GroupARN
+    Export:
+      Name: ${self:service}-${self:custom.stage}-xray-slow-group-arn
+
+  XRayWebSocketGroupArn:
+    Description: X-Ray WebSocket Group ARN
+    Value: !GetAtt XRayWebSocketGroup.GroupARN
+    Export:
+      Name: ${self:service}-${self:custom.stage}-xray-websocket-group-arn
+
+  XRayAlertGroupArn:
+    Description: X-Ray Alert Group ARN
+    Value: !GetAtt XRayAlertGroup.GroupARN
+    Export:
+      Name: ${self:service}-${self:custom.stage}-xray-alert-group-arn
+

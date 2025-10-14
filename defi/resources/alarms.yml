@@ -1,0 +1,295 @@
+# CloudWatch Alarms for DeFiLlama On-Chain Services
+# This file defines comprehensive alarms for Lambda, WebSocket, Redis, and SQS
+
+Resources:
+  # SNS Topic for Alarms
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: defillama-alarms-${self:custom.stage}
+      DisplayName: DeFiLlama Alarms
+      Tags:
+        - Key: Name
+          Value: defillama-alarms-${self:custom.stage}
+        - Key: Environment
+          Value: ${self:custom.stage}
+
+  # SNS Topic Subscription (Email)
+  AlarmTopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: email
+      TopicArn: !Ref AlarmTopic
+      Endpoint: ${env:ALARM_EMAIL, 'devops@defillama.com'}
+
+  # Lambda Alarms - Critical (P1)
+  LambdaHighErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-lambda-high-error-rate-${self:custom.stage}
+      AlarmDescription: Lambda error rate >5% for 5 minutes
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  LambdaHighThrottleRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-lambda-high-throttle-rate-${self:custom.stage}
+      AlarmDescription: Lambda throttle rate >0.1% for 5 minutes
+      MetricName: Throttles
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0.1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  LambdaHighConcurrencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-lambda-high-concurrency-${self:custom.stage}
+      AlarmDescription: Lambda concurrent executions >80% of limit
+      MetricName: ConcurrentExecutions
+      Namespace: AWS/Lambda
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 800  # 80% of 1000 default limit
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  # Lambda Alarms - High Priority (P2)
+  LambdaMediumErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-lambda-medium-error-rate-${self:custom.stage}
+      AlarmDescription: Lambda error rate >1% for 10 minutes
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 600
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  LambdaHighDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-lambda-high-duration-${self:custom.stage}
+      AlarmDescription: Lambda duration p95 >500ms for 15 minutes
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      ExtendedStatistic: p95
+      Period: 900
+      EvaluationPeriods: 1
+      Threshold: 500
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  # Redis Alarms - Critical (P1)
+  RedisHighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-redis-high-cpu-${self:custom.stage}
+      AlarmDescription: Redis CPU >90% for 10 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/ElastiCache
+      Statistic: Average
+      Period: 600
+      EvaluationPeriods: 1
+      Threshold: 90
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  RedisHighMemoryAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-redis-high-memory-${self:custom.stage}
+      AlarmDescription: Redis memory >90% for 10 minutes
+      MetricName: DatabaseMemoryUsagePercentage
+      Namespace: AWS/ElastiCache
+      Statistic: Average
+      Period: 600
+      EvaluationPeriods: 1
+      Threshold: 90
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  # Redis Alarms - High Priority (P2)
+  RedisMediumCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-redis-medium-cpu-${self:custom.stage}
+      AlarmDescription: Redis CPU >80% for 15 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/ElastiCache
+      Statistic: Average
+      Period: 900
+      EvaluationPeriods: 1
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  RedisMediumMemoryAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-redis-medium-memory-${self:custom.stage}
+      AlarmDescription: Redis memory >85% for 15 minutes
+      MetricName: DatabaseMemoryUsagePercentage
+      Namespace: AWS/ElastiCache
+      Statistic: Average
+      Period: 900
+      EvaluationPeriods: 1
+      Threshold: 85
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  RedisLowCacheHitRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-redis-low-cache-hit-rate-${self:custom.stage}
+      AlarmDescription: Redis cache hit rate <80% for 15 minutes
+      MetricName: CacheHitRate
+      Namespace: AWS/ElastiCache
+      Statistic: Average
+      Period: 900
+      EvaluationPeriods: 1
+      Threshold: 80
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  RedisHighEvictionsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-redis-high-evictions-${self:custom.stage}
+      AlarmDescription: Redis evictions >100 for 10 minutes
+      MetricName: Evictions
+      Namespace: AWS/ElastiCache
+      Statistic: Sum
+      Period: 600
+      EvaluationPeriods: 1
+      Threshold: 100
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  # SQS Alarms - Critical (P1)
+  SQSHighQueueDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-sqs-high-queue-depth-${self:custom.stage}
+      AlarmDescription: SQS queue depth >1000 for 10 minutes
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Average
+      Period: 600
+      EvaluationPeriods: 1
+      Threshold: 1000
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  SQSDLQMessagesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-sqs-dlq-messages-${self:custom.stage}
+      AlarmDescription: SQS DLQ has messages
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  # SQS Alarms - Medium Priority (P3)
+  SQSHighMessageAgeAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-sqs-high-message-age-${self:custom.stage}
+      AlarmDescription: SQS message age >10 minutes
+      MetricName: ApproximateAgeOfOldestMessage
+      Namespace: AWS/SQS
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 600  # 10 minutes in seconds
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  # WebSocket Alarms - High Priority (P2)
+  WebSocketHighErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-websocket-high-error-rate-${self:custom.stage}
+      AlarmDescription: WebSocket error rate >1% for 10 minutes
+      MetricName: ExecutionError
+      Namespace: AWS/ApiGateway
+      Statistic: Sum
+      Period: 600
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  WebSocketHighLatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: defillama-websocket-high-latency-${self:custom.stage}
+      AlarmDescription: WebSocket latency p95 >200ms for 15 minutes
+      MetricName: IntegrationLatency
+      Namespace: AWS/ApiGateway
+      ExtendedStatistic: p95
+      Period: 900
+      EvaluationPeriods: 1
+      Threshold: 200
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+# Outputs
+Outputs:
+  AlarmTopicArn:
+    Description: SNS Topic ARN for Alarms
+    Value: !Ref AlarmTopic
+    Export:
+      Name: ${self:service}-${self:custom.stage}-alarm-topic-arn
+

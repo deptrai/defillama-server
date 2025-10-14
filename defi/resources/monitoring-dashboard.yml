@@ -1,0 +1,348 @@
+# CloudWatch Dashboards for DeFiLlama On-Chain Services
+# This file defines comprehensive monitoring dashboards for WebSocket, Lambda, Redis, and SQS
+
+Resources:
+  # Main Dashboard - Overview
+  MainDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: defillama-overview-${self:custom.stage}
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/ApiGateway", "Count", {"stat": "Sum", "label": "WebSocket Connections"}],
+                  ["AWS/Lambda", "Invocations", {"stat": "Sum", "label": "Lambda Invocations"}],
+                  ["AWS/SQS", "NumberOfMessagesSent", {"stat": "Sum", "label": "SQS Messages"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "System Overview",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Errors", {"stat": "Sum", "label": "Lambda Errors"}],
+                  ["AWS/ApiGateway", "4XXError", {"stat": "Sum", "label": "API 4XX Errors"}],
+                  ["AWS/ApiGateway", "5XXError", {"stat": "Sum", "label": "API 5XX Errors"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Error Overview",
+                "yAxis": {"left": {"min": 0}}
+              }
+            }
+          ]
+        }
+
+  # WebSocket Dashboard
+  WebSocketDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: defillama-websocket-${self:custom.stage}
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/ApiGateway", "Count", {"stat": "Sum", "label": "Active Connections"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Active WebSocket Connections",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/ApiGateway", "ConnectCount", {"stat": "Sum", "label": "Connections"}],
+                  [".", "DisconnectCount", {"stat": "Sum", "label": "Disconnections"}]
+                ],
+                "period": 60,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Connection Rate",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/ApiGateway", "MessageCount", {"stat": "Sum", "label": "Messages"}]
+                ],
+                "period": 60,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Message Throughput",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/ApiGateway", "ClientError", {"stat": "Sum", "label": "Client Errors"}],
+                  [".", "ExecutionError", {"stat": "Sum", "label": "Execution Errors"}],
+                  [".", "IntegrationError", {"stat": "Sum", "label": "Integration Errors"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "WebSocket Errors",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/ApiGateway", "IntegrationLatency", {"stat": "Average", "label": "p50"}],
+                  ["...", {"stat": "p95", "label": "p95"}],
+                  ["...", {"stat": "p99", "label": "p99"}]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "Message Latency",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["DeFiLlama", "Subscriptions.Active", {"stat": "Average", "label": "Active Subscriptions"}]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "Active Subscriptions by Protocol",
+                "yAxis": {"left": {"min": 0}}
+              }
+            }
+          ]
+        }
+
+  # Lambda Dashboard
+  LambdaDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: defillama-lambda-${self:custom.stage}
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", {"stat": "Sum"}]
+                ],
+                "period": 60,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Lambda Invocations",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Duration", {"stat": "Average", "label": "p50"}],
+                  ["...", {"stat": "p95", "label": "p95"}],
+                  ["...", {"stat": "p99", "label": "p99"}]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "Lambda Duration",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Errors", {"stat": "Sum", "label": "Errors"}],
+                  [".", "Throttles", {"stat": "Sum", "label": "Throttles"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Lambda Errors and Throttles",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "ConcurrentExecutions", {"stat": "Maximum"}]
+                ],
+                "period": 60,
+                "stat": "Maximum",
+                "region": "${AWS::Region}",
+                "title": "Concurrent Executions",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "MemoryUtilization", {"stat": "Average"}]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "Memory Usage",
+                "yAxis": {"left": {"min": 0, "max": 100}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["DeFiLlama", "Events.Published", {"stat": "Sum", "label": "Events Published"}],
+                  [".", "Alerts.Triggered", {"stat": "Sum", "label": "Alerts Triggered"}],
+                  [".", "Queries.Executed", {"stat": "Sum", "label": "Queries Executed"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Business Metrics",
+                "yAxis": {"left": {"min": 0}}
+              }
+            }
+          ]
+        }
+
+  # Redis Dashboard
+  RedisDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: defillama-redis-${self:custom.stage}
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/ElastiCache", "CPUUtilization", {"stat": "Average"}]
+                ],
+                "period": 60,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "Redis CPU Utilization",
+                "yAxis": {"left": {"min": 0, "max": 100}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/ElastiCache", "DatabaseMemoryUsagePercentage", {"stat": "Average"}]
+                ],
+                "period": 60,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "Redis Memory Usage",
+                "yAxis": {"left": {"min": 0, "max": 100}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/ElastiCache", "CacheHitRate", {"stat": "Average"}]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "Cache Hit Rate",
+                "yAxis": {"left": {"min": 0, "max": 100}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/ElastiCache", "CurrConnections", {"stat": "Average"}]
+                ],
+                "period": 60,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "Redis Connections",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/ElastiCache", "Evictions", {"stat": "Sum"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Redis Evictions",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/ElastiCache", "ReplicationLag", {"stat": "Average"}]
+                ],
+                "period": 60,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "Replication Lag",
+                "yAxis": {"left": {"min": 0}}
+              }
+            }
+          ]
+        }
+
+# Outputs
+Outputs:
+  MainDashboardName:
+    Description: Main Dashboard Name
+    Value: !Ref MainDashboard
+    Export:
+      Name: ${self:service}-${self:custom.stage}-main-dashboard
+
+  WebSocketDashboardName:
+    Description: WebSocket Dashboard Name
+    Value: !Ref WebSocketDashboard
+    Export:
+      Name: ${self:service}-${self:custom.stage}-websocket-dashboard
+
+  LambdaDashboardName:
+    Description: Lambda Dashboard Name
+    Value: !Ref LambdaDashboard
+    Export:
+      Name: ${self:service}-${self:custom.stage}-lambda-dashboard
+
+  RedisDashboardName:
+    Description: Redis Dashboard Name
+    Value: !Ref RedisDashboard
+    Export:
+      Name: ${self:service}-${self:custom.stage}-redis-dashboard
+
