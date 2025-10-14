@@ -122,12 +122,15 @@ export function generateE2EDevice(userId: string, platform: 'ios' | 'android' = 
 
 export function generateE2EAlertRule(userId: string, overrides?: Partial<AlertRule>): AlertRule {
   return {
-    id: `e2e-rule-${uuidv4()}`,
+    id: uuidv4(),
     user_id: userId,
     name: 'E2E Test Rule',
     description: 'End-to-end test alert rule',
     alert_type: 'price_change',
-    conditions: {
+    protocol_id: 'ethereum',
+    token_id: null,
+    chain_id: null,
+    condition: {
       metric: 'price',
       operator: 'greater_than',
       threshold: 2000,
@@ -205,8 +208,8 @@ export async function verifyAlertCreated(ruleId: string): Promise<AlertHistory |
   const sql = getAlertsDBConnection();
   const results = await sql.unsafe<AlertHistory[]>(`
     SELECT * FROM alert_history
-    WHERE rule_id = $1
-    ORDER BY triggered_at DESC
+    WHERE alert_rule_id = $1
+    ORDER BY created_at DESC
     LIMIT 1
   `, [ruleId]);
 
@@ -250,8 +253,8 @@ export async function getAllAlertHistory(ruleId: string): Promise<AlertHistory[]
   const sql = getAlertsDBConnection();
   return await sql.unsafe<AlertHistory[]>(`
     SELECT * FROM alert_history
-    WHERE rule_id = $1
-    ORDER BY triggered_at DESC
+    WHERE alert_rule_id = $1
+    ORDER BY created_at DESC
   `, [ruleId]);
 }
 

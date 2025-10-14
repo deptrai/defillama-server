@@ -124,7 +124,7 @@ describe('E2E Alert Workflow Tests', () => {
       const sql = getAlertsDBConnection();
       const rule = generateE2EAlertRule(testUserId, {
         alert_type: 'price_change',
-        conditions: {
+        condition: {
           metric: 'price',
           operator: 'greater_than',
           threshold: 2000,
@@ -138,15 +138,18 @@ describe('E2E Alert Workflow Tests', () => {
       testRuleId = rule.id;
 
       await sql.unsafe(`
-        INSERT INTO alert_rules (id, user_id, name, description, alert_type, conditions, channels, webhook_url, enabled, throttle_minutes, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        INSERT INTO alert_rules (id, user_id, name, description, alert_type, protocol_id, token_id, chain_id, condition, channels, webhook_url, enabled, throttle_minutes, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       `, [
         rule.id,
         rule.user_id,
         rule.name,
         rule.description,
         rule.alert_type,
-        rule.conditions,
+        rule.protocol_id,
+        rule.token_id,
+        rule.chain_id,
+        rule.condition,
         rule.channels,
         rule.webhook_url,
         rule.enabled,
@@ -199,13 +202,13 @@ describe('E2E Alert Workflow Tests', () => {
       // Step 5: Verify alert_history created
       const alert = await verifyAlertCreated(testRuleId);
       expect(alert).toBeDefined();
-      expect(alert!.rule_id).toBe(testRuleId);
+      expect(alert!.alert_rule_id).toBe(testRuleId);
       expect(alert!.user_id).toBe(testUserId);
       expect(alert!.triggered_value).toBeGreaterThan(2000);
 
       console.log('✅ E2E Test: Alert created successfully', {
         alert_id: alert!.id,
-        rule_id: testRuleId,
+        alert_rule_id: testRuleId,
         triggered_value: alert!.triggered_value,
       });
     }, 60000);
@@ -218,7 +221,7 @@ describe('E2E Alert Workflow Tests', () => {
       const rules = [
         generateE2EAlertRule(testUserId, {
           name: 'Rule 1: Price > 2000',
-          conditions: {
+          condition: {
             metric: 'price',
             operator: 'greater_than',
             threshold: 2000,
@@ -228,7 +231,7 @@ describe('E2E Alert Workflow Tests', () => {
         }),
         generateE2EAlertRule(testUserId, {
           name: 'Rule 2: Price > 2050',
-          conditions: {
+          condition: {
             metric: 'price',
             operator: 'greater_than',
             threshold: 2050,
@@ -239,7 +242,7 @@ describe('E2E Alert Workflow Tests', () => {
         }),
         generateE2EAlertRule(testUserId, {
           name: 'Rule 3: Price > 2100',
-          conditions: {
+          condition: {
             metric: 'price',
             operator: 'greater_than',
             threshold: 2100,
@@ -251,15 +254,18 @@ describe('E2E Alert Workflow Tests', () => {
 
       for (const rule of rules) {
         await sql.unsafe(`
-          INSERT INTO alert_rules (id, user_id, name, description, alert_type, conditions, channels, webhook_url, enabled, throttle_minutes, created_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          INSERT INTO alert_rules (id, user_id, name, description, alert_type, protocol_id, token_id, chain_id, condition, channels, webhook_url, enabled, throttle_minutes, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         `, [
           rule.id,
           rule.user_id,
           rule.name,
           rule.description,
           rule.alert_type,
-          rule.conditions,
+          rule.protocol_id,
+          rule.token_id,
+          rule.chain_id,
+          rule.condition,
           rule.channels,
           rule.webhook_url,
           rule.enabled,
@@ -305,7 +311,7 @@ describe('E2E Alert Workflow Tests', () => {
       for (const rule of rules) {
         const alert = await verifyAlertCreated(rule.id);
         expect(alert).toBeDefined();
-        expect(alert!.rule_id).toBe(rule.id);
+        expect(alert!.alert_rule_id).toBe(rule.id);
       }
 
       console.log('✅ E2E Test: Multiple rules triggered successfully');
