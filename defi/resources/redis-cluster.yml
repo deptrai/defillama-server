@@ -1,0 +1,247 @@
+# Redis ElastiCache Configuration for DeFiLlama WebSocket Services
+# This file defines the Redis infrastructure for connection state management and pub/sub messaging
+
+Resources:
+  # ElastiCache Subnet Group
+  RedisSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: Subnet group for DeFiLlama Redis cluster
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      CacheSubnetGroupName: defillama-redis-${self:custom.stage}
+      Tags:
+        - Key: Environment
+          Value: ${self:custom.stage}
+        - Key: Service
+          Value: defillama-websocket
+        - Key: Component
+          Value: redis
+
+  # Security Group for Redis
+  RedisSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for DeFiLlama Redis cluster
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          SourceSecurityGroupId: !Ref LambdaSecurityGroup
+          Description: Allow Redis access from Lambda functions
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic
+      Tags:
+        - Key: Name
+          Value: defillama-redis-sg-${self:custom.stage}
+        - Key: Environment
+          Value: ${self:custom.stage}
+        - Key: Service
+          Value: defillama-websocket
+
+  # Parameter Group for Redis Configuration
+  RedisParameterGroup:
+    Type: AWS::ElastiCache::ParameterGroup
+    Properties:
+      CacheParameterGroupFamily: redis7.x
+      Description: Parameter group for DeFiLlama Redis cluster
+      Properties:
+        # Optimize for WebSocket workload
+        maxmemory-policy: allkeys-lru
+        timeout: 300
+        tcp-keepalive: 60
+        # Pub/Sub optimizations
+        client-output-buffer-limit-pubsub-hard-limit: 33554432
+        client-output-buffer-limit-pubsub-soft-limit: 8388608
+        client-output-buffer-limit-pubsub-soft-seconds: 60
+        # Connection optimizations
+        tcp-backlog: 511
+        databases: 16
+      Tags:
+        - Key: Environment
+          Value: ${self:custom.stage}
+        - Key: Service
+          Value: defillama-websocket
+
+  # Redis Replication Group (Cluster)
+  RedisCluster:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties:
+      ReplicationGroupId: defillama-redis-${self:custom.stage}
+      Description: Redis cluster for DeFiLlama WebSocket services
+      # Node configuration
+      NodeType: !If [IsProduction, cache.r7g.large, cache.t4g.micro]
+      NumCacheClusters: !If [IsProduction, 3, 1]
+      # Engine configuration
+      Engine: redis
+      EngineVersion: 7.0
+      Port: 6379
+      ParameterGroupName: !Ref RedisParameterGroup
+      # Network configuration
+      CacheSubnetGroupName: !Ref RedisSubnetGroup
+      SecurityGroupIds:
+        - !Ref RedisSecurityGroup
+      # Backup and maintenance
+      PreferredMaintenanceWindow: sun:03:00-sun:04:00
+      SnapshotRetentionLimit: !If [IsProduction, 7, 1]
+      SnapshotWindow: 02:00-03:00
+      # Security
+      AtRestEncryptionEnabled: true
+      TransitEncryptionEnabled: true
+      AuthToken: !Ref RedisAuthToken
+      # Multi-AZ for production
+      MultiAZEnabled: !If [IsProduction, true, false]
+      AutomaticFailoverEnabled: !If [IsProduction, true, false]
+      # Notifications
+      NotificationTopicArn: !If [IsProduction, !Ref RedisNotificationTopic, !Ref AWS::NoValue]
+      # Logging
+      LogDeliveryConfigurations:
+        - DestinationType: cloudwatch-logs
+          DestinationDetails:
+            LogGroup: !Ref RedisLogGroup
+          LogFormat: json
+          LogType: slow-log
+      Tags:
+        - Key: Environment
+          Value: ${self:custom.stage}
+        - Key: Service
+          Value: defillama-websocket
+        - Key: Component
+          Value: redis-cluster
+
+  # Redis Auth Token (Secrets Manager)
+  RedisAuthToken:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: defillama-redis-auth-${self:custom.stage}
+      Description: Authentication token for DeFiLlama Redis cluster
+      GenerateSecretString:
+        SecretStringTemplate: '{}'
+        GenerateStringKey: token
+        PasswordLength: 32
+        ExcludeCharacters: '"@/\'
+      Tags:
+        - Key: Environment
+          Value: ${self:custom.stage}
+        - Key: Service
+          Value: defillama-websocket
+
+  # CloudWatch Log Group for Redis
+  RedisLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/elasticache/redis/${self:custom.stage}
+      RetentionInDays: ${self:custom.logRetentionInDays}
+      Tags:
+        - Key: Environment
+          Value: ${self:custom.stage}
+        - Key: Service
+          Value: defillama-websocket
+
+  # SNS Topic for Redis Notifications (Production only)
+  RedisNotificationTopic:
+    Type: AWS::SNS::Topic
+    Condition: IsProduction
+    Properties:
+      TopicName: defillama-redis-notifications-${self:custom.stage}
+      DisplayName: DeFiLlama Redis Cluster Notifications
+      Tags:
+        - Key: Environment
+          Value: ${self:custom.stage}
+        - Key: Service
+          Value: defillama-websocket
+
+  # CloudWatch Alarms for Redis Monitoring
+  RedisHighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsProduction
+    Properties:
+      AlarmName: defillama-redis-high-cpu-${self:custom.stage}
+      AlarmDescription: Redis cluster CPU utilization is high
+      MetricName: CPUUtilization
+      Namespace: AWS/ElastiCache
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: CacheClusterId
+          Value: !Sub ${RedisCluster}-001
+      AlarmActions:
+        - !Ref RedisNotificationTopic
+      TreatMissingData: notBreaching
+
+  RedisHighMemoryAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsProduction
+    Properties:
+      AlarmName: defillama-redis-high-memory-${self:custom.stage}
+      AlarmDescription: Redis cluster memory utilization is high
+      MetricName: DatabaseMemoryUsagePercentage
+      Namespace: AWS/ElastiCache
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 85
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: CacheClusterId
+          Value: !Sub ${RedisCluster}-001
+      AlarmActions:
+        - !Ref RedisNotificationTopic
+      TreatMissingData: notBreaching
+
+  RedisConnectionsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsProduction
+    Properties:
+      AlarmName: defillama-redis-high-connections-${self:custom.stage}
+      AlarmDescription: Redis cluster has high number of connections
+      MetricName: CurrConnections
+      Namespace: AWS/ElastiCache
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 500
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: CacheClusterId
+          Value: !Sub ${RedisCluster}-001
+      AlarmActions:
+        - !Ref RedisNotificationTopic
+      TreatMissingData: notBreaching
+
+# Conditions
+Conditions:
+  IsProduction: !Equals [${self:custom.stage}, prod]
+
+# Outputs
+Outputs:
+  RedisClusterEndpoint:
+    Description: Redis cluster primary endpoint
+    Value: !GetAtt RedisCluster.PrimaryEndPoint.Address
+    Export:
+      Name: ${self:service}-${self:custom.stage}-redis-endpoint
+
+  RedisClusterPort:
+    Description: Redis cluster port
+    Value: !GetAtt RedisCluster.PrimaryEndPoint.Port
+    Export:
+      Name: ${self:service}-${self:custom.stage}-redis-port
+
+  RedisAuthTokenArn:
+    Description: Redis authentication token ARN
+    Value: !Ref RedisAuthToken
+    Export:
+      Name: ${self:service}-${self:custom.stage}-redis-auth-token-arn
+
+  RedisSecurityGroupId:
+    Description: Redis security group ID
+    Value: !Ref RedisSecurityGroup
+    Export:
+      Name: ${self:service}-${self:custom.stage}-redis-security-group-id

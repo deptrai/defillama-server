@@ -1,0 +1,208 @@
+# WebSocket API Gateway v2 Configuration for DeFiLlama On-Chain Services
+# This file defines the WebSocket API infrastructure for real-time data streaming
+
+Resources:
+  # WebSocket API Gateway v2
+  WebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: DeFiLlama-OnChain-WebSocket-${self:custom.stage}
+      Description: Real-time data streaming API for DeFiLlama On-Chain Services
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: $request.body.action
+      Tags:
+        Environment: ${self:custom.stage}
+        Service: defillama-websocket
+        Component: api-gateway
+
+  # WebSocket API Deployment
+  WebSocketApiDeployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn:
+      - ConnectRoute
+      - DisconnectRoute
+      - DefaultRoute
+    Properties:
+      ApiId: !Ref WebSocketApi
+      Description: WebSocket API deployment for ${self:custom.stage}
+
+  # WebSocket API Stage
+  WebSocketApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref WebSocketApi
+      DeploymentId: !Ref WebSocketApiDeployment
+      StageName: ${self:custom.stage}
+      Description: WebSocket API stage for ${self:custom.stage}
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 5000
+        ThrottlingRateLimit: 2000
+        DataTraceEnabled: true
+        DetailedMetricsEnabled: true
+        LoggingLevel: INFO
+      AccessLogSettings:
+        DestinationArn: !GetAtt WebSocketApiLogGroup.Arn
+        Format: >
+          {
+            "requestId": "$context.requestId",
+            "connectionId": "$context.connectionId",
+            "routeKey": "$context.routeKey",
+            "eventType": "$context.eventType",
+            "status": "$context.status",
+            "error": "$context.error.message",
+            "requestTime": "$context.requestTime",
+            "responseTime": "$context.responseTime",
+            "sourceIp": "$context.identity.sourceIp",
+            "userAgent": "$context.identity.userAgent"
+          }
+      Tags:
+        Environment: ${self:custom.stage}
+        Service: defillama-websocket
+
+  # Connect Route
+  ConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $connect
+      AuthorizationType: NONE
+      Target: !Sub integrations/${ConnectIntegration}
+
+  # Disconnect Route
+  DisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $disconnect
+      AuthorizationType: NONE
+      Target: !Sub integrations/${DisconnectIntegration}
+
+  # Default Route (for messages)
+  DefaultRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $default
+      AuthorizationType: NONE
+      Target: !Sub integrations/${DefaultIntegration}
+
+  # Connect Integration
+  ConnectIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub
+        - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations
+        - LambdaArn: !GetAtt WebsocketConnectLambdaFunction.Arn
+      IntegrationMethod: POST
+
+  # Disconnect Integration
+  DisconnectIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub
+        - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations
+        - LambdaArn: !GetAtt WebsocketConnectLambdaFunction.Arn
+      IntegrationMethod: POST
+
+  # Default Integration (for messages)
+  DefaultIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub
+        - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations
+        - LambdaArn: !GetAtt WebsocketConnectLambdaFunction.Arn
+      IntegrationMethod: POST
+
+  # Lambda Permissions for WebSocket API
+  WebSocketConnectLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref WebsocketConnectLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*/*
+
+  # CloudWatch Log Group for WebSocket API
+  WebSocketApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/apigateway/websocket/${self:custom.stage}
+      RetentionInDays: ${self:custom.logRetentionInDays}
+      Tags:
+        - Key: Environment
+          Value: ${self:custom.stage}
+        - Key: Service
+          Value: defillama-websocket
+
+  # Custom Domain for WebSocket API (Production only)
+  WebSocketDomainName:
+    Type: AWS::ApiGatewayV2::DomainName
+    Condition: IsProduction
+    Properties:
+      DomainName: ws.${self:custom.domain}
+      DomainNameConfigurations:
+        - CertificateArn: ${self:custom.certificateArn}
+          EndpointType: REGIONAL
+          SecurityPolicy: TLS_1_2
+      Tags:
+        Environment: ${self:custom.stage}
+        Service: defillama-websocket
+
+  # API Mapping for Custom Domain
+  WebSocketApiMapping:
+    Type: AWS::ApiGatewayV2::ApiMapping
+    Condition: IsProduction
+    Properties:
+      ApiId: !Ref WebSocketApi
+      DomainName: !Ref WebSocketDomainName
+      Stage: !Ref WebSocketApiStage
+
+  # Route53 Record for WebSocket Domain
+  WebSocketDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: IsProduction
+    Properties:
+      HostedZoneName: ${self:custom.hostedZone}.
+      Name: ws.${self:custom.domain}
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt WebSocketDomainName.RegionalDomainName
+        HostedZoneId: !GetAtt WebSocketDomainName.RegionalHostedZoneId
+        EvaluateTargetHealth: false
+
+# Conditions
+Conditions:
+  IsProduction: !Equals [${self:custom.stage}, prod]
+
+# Outputs
+Outputs:
+  WebSocketApiId:
+    Description: WebSocket API ID
+    Value: !Ref WebSocketApi
+    Export:
+      Name: ${self:service}-${self:custom.stage}-websocket-api-id
+
+  WebSocketApiEndpoint:
+    Description: WebSocket API Endpoint
+    Value: !Sub wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${self:custom.stage}
+    Export:
+      Name: ${self:service}-${self:custom.stage}-websocket-endpoint
+
+  WebSocketCustomDomain:
+    Description: WebSocket Custom Domain (Production only)
+    Condition: IsProduction
+    Value: !Sub wss://ws.${self:custom.domain}
+    Export:
+      Name: ${self:service}-${self:custom.stage}-websocket-custom-domain
+
+  WebSocketApiLogGroup:
+    Description: WebSocket API CloudWatch Log Group
+    Value: !Ref WebSocketApiLogGroup
+    Export:
+      Name: ${self:service}-${self:custom.stage}-websocket-log-group

@@ -101,6 +101,12 @@ provider:
     INDEXA_DB: ${file(./env.js):INDEXA_DB}
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
     APIKEY: ${file(./env.js):APIKEY}
+    # WebSocket environment variables
+    REDIS_HOST: ${file(./env.js):REDIS_HOST, 'localhost'}
+    REDIS_PORT: ${file(./env.js):REDIS_PORT, '6379'}
+    REDIS_PASSWORD: ${file(./env.js):REDIS_PASSWORD, ''}
+    REDIS_DB: ${file(./env.js):REDIS_DB, '0'}
+    WEBSOCKET_API_ENDPOINT: ${file(./env.js):WEBSOCKET_API_ENDPOINT, ''}
 
 custom:
   stage: ${opt:stage, self:provider.stage}
@@ -108,6 +114,8 @@ custom:
     bundle: true
     minify: false
     concurrency: 4
+  serverless-offline:
+    httpPort: 3006
     exclude:
       - pg-native
       - pg-hstore
@@ -132,6 +140,45 @@ custom:
   logRetentionInDays: 30
 
 functions:
+  # WebSocket Connection Handlers
+  websocketConnect:
+    handler: src/websocket/handlers/connection.connectHandler
+    timeout: 30
+    events:
+      - websocket:
+          route: $connect
+      - websocket:
+          route: $disconnect
+      - websocket:
+          route: $default
+
+  websocketMessage:
+    handler: src/websocket/handlers/message.broadcastHandler
+    timeout: 30
+    events:
+      - http:
+          path: /websocket/broadcast
+          method: post
+          cors: true
+
+  websocketStats:
+    handler: src/websocket/handlers/message.statsHandler
+    timeout: 10
+    events:
+      - http:
+          path: /websocket/stats
+          method: get
+          cors: true
+
+  websocketHealth:
+    handler: src/websocket/handlers/message.healthHandler
+    timeout: 10
+    events:
+      - http:
+          path: /websocket/health
+          method: get
+          cors: true
+
   fallback:
     handler: src/fallback.default
     events:
@@ -645,6 +692,10 @@ resources:
   - ${file(resources/dynamodb-table.yml)}
   # Cloudfront API distribution
   - ${file(resources/api-cloudfront-distribution.yml)}
+  # WebSocket API Gateway v2
+  - ${file(resources/websocket-api.yml)}
+  # Redis ElastiCache cluster
+  - ${file(resources/redis-cluster.yml)}
 
 plugins:
   - serverless-esbuild

@@ -1,0 +1,20 @@
+{
+  "name": "defillama-local-price-service",
+  "version": "1.0.0",
+  "description": "Local price service for DeFiLlama development - replaces AWS dependencies",
+  "main": "local-price-service.js",
+  "scripts": {
+    "start": "node local-price-service.js",
+    "dev": "nodemon local-price-service.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["defi", "price", "crypto", "local", "development"],
+  "author": "DeFiLlama Local Dev",
+  "license": "MIT"
+}

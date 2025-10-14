@@ -468,7 +468,7 @@ const App = () => {
           label="Delay Between Runs (seconds)"
           name="delayBetweenRuns"
           rules={[{ required: false, message: 'Please enter delay between runs' }]}
-          style={{ display: Form.useWatch('delayEnabled', dimensionRefillForm) ? 'block' : 'none' }}
+          style={{ display: 'block' }}
         >
           <InputNumber min={0} max={1000} />
         </Form.Item>

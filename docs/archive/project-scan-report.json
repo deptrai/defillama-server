@@ -1,0 +1,69 @@
+{
+  "workflow_version": "1.2.0",
+  "timestamps": {
+    "started": "2025-10-13T19:45:00.000Z",
+    "last_updated": "2025-10-13T19:47:00.000Z"
+  },
+  "mode": "initial_scan",
+  "scan_level": "deep",
+  "current_step": "completed",
+  "completed_steps": [
+    {
+      "step": "step_1",
+      "status": "completed",
+      "timestamp": "2025-10-13T19:47:00.000Z",
+      "summary": "Classified as monorepo with 3 parts: defi (backend), coins (backend), common (library)"
+    },
+    {
+      "step": "step_2",
+      "status": "completed",
+      "timestamp": "2025-10-13T19:48:00.000Z",
+      "summary": "Found 7 existing docs including main READMEs and adapter documentation"
+    },
+    {
+      "step": "step_3_to_12",
+      "status": "completed",
+      "timestamp": "2025-10-13T19:52:00.000Z",
+      "summary": "Generated comprehensive brownfield documentation: index.md, architecture.md, component-inventory.md, development-guide.md, api-contracts.md"
+    }
+  ],
+  "project_classification": {
+    "repository_type": "monorepo",
+    "architecture": "serverless_microservices",
+    "tech_stack": "nodejs_typescript_serverless_aws",
+    "parts": [
+      {
+        "name": "defi",
+        "path": "defi/",
+        "project_type_id": "backend",
+        "description": "Main DeFi TVL and protocol data API",
+        "tech": "Node.js + TypeScript + Serverless + DynamoDB"
+      },
+      {
+        "name": "coins",
+        "path": "coins/",
+        "project_type_id": "backend",
+        "description": "Cryptocurrency price data API",
+        "tech": "Node.js + TypeScript + Serverless + DynamoDB"
+      },
+      {
+        "name": "common",
+        "path": "common/",
+        "project_type_id": "library",
+        "description": "Shared utilities and common code",
+        "tech": "TypeScript"
+      }
+    ]
+  },
+  "findings_summaries": {},
+  "outputs_written": [
+    "docs/index.md",
+    "docs/architecture.md",
+    "docs/component-inventory.md",
+    "docs/development-guide.md",
+    "docs/api-contracts.md",
+    "docs/project-scan-report.json"
+  ],
+  "total_steps": 12,
+  "progress_percentage": 100
+}

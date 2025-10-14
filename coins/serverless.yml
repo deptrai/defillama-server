@@ -5,7 +5,7 @@ package:
 
 provider:
   name: aws
-  runtime: nodejs16.x
+  runtime: nodejs20.x
   memorySize: 250
   region: eu-central-1
   endpointType: REGIONAL # Set to regional because the api gateway will be behind a cloudfront distribution
@@ -78,6 +78,7 @@ provider:
     R2_ACCESS_KEY_ID: ${file(./env.js):R2_ACCESS_KEY_ID}
     R2_SECRET_ACCESS_KEY: ${file(./env.js):R2_SECRET_ACCESS_KEY}
     R2_ENDPOINT: ${file(./env.js):R2_ENDPOINT}
+    LOCAL_PRICE_SERVICE_URL: http://localhost:3008
 
 custom:
   stage: ${opt:stage, self:provider.stage}
@@ -85,11 +86,14 @@ custom:
     bundle: true
     minify: false
     concurrency: 4
-  prune:
-    automatic: true
-    number: 5 # Number of versions to keep
+
   tableName: ${self:custom.stage}-coins-table
   region: eu-central-1
+  serverless-offline:
+    httpPort: 3005
+    lambdaPort: 3007
+    host: localhost
+    stage: prod
   domainMap:
     prod:
       domain: coins.llama.fi
@@ -140,7 +144,7 @@ functions:
           path: /coin/timestamps
           method: post
   currentCoinPrices:
-    handler: src/getCurrentCoins.default
+    handler: src/getCurrentCoinsLocal.default
     timeout: 60
     events:
       - httpApi:
@@ -279,5 +283,3 @@ resources:
 plugins:
   - serverless-esbuild
   - serverless-offline
-  - serverless-prune-plugin
-  - serverless-plugin-log-retention

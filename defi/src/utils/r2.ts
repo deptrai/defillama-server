@@ -9,14 +9,21 @@ const R2_ENDPOINT = "https://" + process.env.R2_ENDPOINT!;
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID!;
 const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY!;
 
-const R2 = new S3Client({
-  region: "auto",
-  endpoint: R2_ENDPOINT,
-  credentials: {
-    accessKeyId: R2_ACCESS_KEY_ID,
-    secretAccessKey: R2_SECRET_ACCESS_KEY,
-  },
-});
+let R2: S3Client | null = null;
+
+function getR2Client() {
+  if (!R2) {
+    R2 = new S3Client({
+      region: "auto",
+      endpoint: R2_ENDPOINT,
+      credentials: {
+        accessKeyId: R2_ACCESS_KEY_ID,
+        secretAccessKey: R2_SECRET_ACCESS_KEY,
+      },
+    });
+  }
+  return R2;
+}
 
 function next21Minutedate() {
   const dt = new Date();
@@ -43,7 +50,7 @@ export async function storeR2(
       ContentType: "application/json",
     }),
   });
-  return await R2.send(command);
+  return await getR2Client().send(command);
 }
 
 export async function deleteR2(
@@ -59,7 +66,7 @@ export async function deleteR2(
       ]
     } 
   })
-  return await R2.send(command)
+  return await getR2Client().send(command)
 }
 
 export async function storeR2JSONString(filename: string, body: string | Readable, cache?: number) {
@@ -74,7 +81,7 @@ export async function storeR2JSONString(filename: string, body: string | Readabl
         }
       : {}),
   });
-  return await R2.send(command);
+  return await getR2Client().send(command);
 }
 
 export async function getR2JSONString(filename: string) {
@@ -82,16 +89,24 @@ export async function getR2JSONString(filename: string) {
     Bucket: datasetBucket,
     Key: filename,
   });
-  const data = await R2.send(command);
+  const data = await getR2Client().send(command);
   return JSON.parse(await data.Body?.transformToString() as string)
 }
 
 export async function getR2(filename: string) {
+  // Skip R2 operations in local development
+  if (process.env.R2_ENDPOINT === 'dev_r2_endpoint' || !process.env.R2_ENDPOINT) {
+    return {
+      body: JSON.stringify({ data: [] }),
+      lastModified: new Date(),
+    };
+  }
+
   const command = new GetObjectCommand({
     Bucket: datasetBucket,
     Key: filename,
   });
-  const data = await R2.send(command);
+  const data = await getR2Client().send(command);
   return {
     body: await data.Body?.transformToString(),
     lastModified: data.LastModified,
@@ -104,6 +119,12 @@ export async function storeDatasetR2(
   contentType = "text/csv",
   cache?: number
 ) {
+  // Skip R2 operations in local development
+  if (process.env.R2_ENDPOINT === 'dev_r2_endpoint' || !process.env.R2_ENDPOINT) {
+    console.log(`[LOCAL DEV] Skipping R2 store for ${filename}`);
+    return { success: true };
+  }
+
   const command = new PutObjectCommand({
     Bucket: datasetBucket,
     Key: `temp/${filename}`,
@@ -115,7 +136,7 @@ export async function storeDatasetR2(
         }
       : {}),
   });
-  return await R2.send(command);
+  return await getR2Client().send(command);
 }
 
 export async function storeLiqsR2(
@@ -136,7 +157,7 @@ export async function storeLiqsR2(
       : {}),
   });
   console.log("Storing liqs", `liqs/${filename}`);
-  return await R2.send(command);
+  return await getR2Client().send(command);
 }
 
 export async function getCachedLiqsR2(protocol: string, chain: string) {
@@ -144,7 +165,7 @@ export async function getCachedLiqsR2(protocol: string, chain: string) {
     Bucket: datasetBucket,
     Key: `liqs/_cache/${protocol}/${chain}/latest.json`,
   });
-  const data = await R2.send(command);
+  const data = await getR2Client().send(command);
   return data.Body?.transformToString();
 }
 
@@ -165,7 +186,7 @@ export async function storeCachedLiqsR2(protocol: string, chain: string, body: s
         }
       : {}),
   });
-  return await R2.send(command);
+  return await getR2Client().send(command);
 }
 
 export function buildRedirectR2(filename: string, cache?: number) {
@@ -200,5 +221,5 @@ export async function deleteProtocolCache(protocolId: string) {
       Objects: keys,
     },
   });
-  return await R2.send(command);
+  return await getR2Client().send(command);
 }

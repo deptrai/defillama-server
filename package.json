@@ -1,0 +1,28 @@
+{
+  "name": "defillama-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "e2e-test-suite.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DefiLlama/defillama-server.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DefiLlama/defillama-server/issues"
+  },
+  "homepage": "https://github.com/DefiLlama/defillama-server#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "node-fetch": "^2.7.0"
+  }
+}
