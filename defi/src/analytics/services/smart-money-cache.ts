@@ -1,12 +1,14 @@
 /**
  * Smart Money Cache Service
  * Story: 3.1.1 - Smart Money Identification (Enhancement 1)
+ * Enhancement 2: Adaptive TTL based on data volatility
  * Enhancement 4: Integrated with MonitoringService
  *
  * Redis caching layer for smart money wallets API
  * - Cache wallet lists with filters
  * - Cache individual wallet data
  * - Cache invalidation strategy
+ * - Adaptive TTL based on data volatility
  * - Target: API response <50ms (cached), reduce DB queries by 90%
  */
 
@@ -61,10 +63,16 @@ export class SmartMoneyCache {
   private redis: Redis;
   private monitoring: MonitoringService;
 
-  // Cache TTL (Time To Live) in seconds
-  private readonly WALLET_LIST_TTL = 5 * 60; // 5 minutes
-  private readonly WALLET_DETAIL_TTL = 10 * 60; // 10 minutes
-  private readonly STATS_TTL = 5 * 60; // 5 minutes
+  // Base Cache TTL (Time To Live) in seconds
+  private readonly WALLET_LIST_BASE_TTL = 5 * 60; // 5 minutes
+  private readonly WALLET_DETAIL_BASE_TTL = 10 * 60; // 10 minutes
+  private readonly STATS_BASE_TTL = 5 * 60; // 5 minutes
+
+  // Adaptive TTL configuration
+  private readonly ENABLE_ADAPTIVE_TTL = true;
+  private readonly MIN_TTL = 2 * 60; // 2 minutes (volatile data)
+  private readonly MAX_TTL = 15 * 60; // 15 minutes (stable data)
+  private readonly VOLATILITY_TRACKING_KEY = 'smart_money:volatility:tracking';
 
   // Cache key prefixes
   private readonly WALLET_LIST_PREFIX = 'smart_money:wallets:list';
@@ -181,6 +189,7 @@ export class SmartMoneyCache {
 
   /**
    * Set cached wallet list
+   * Enhancement 2: Uses adaptive TTL
    */
   public async setWalletList(
     params: {
@@ -198,8 +207,11 @@ export class SmartMoneyCache {
   ): Promise<void> {
     try {
       const key = this.getWalletListKey(params);
-      const ttl = options?.ttl || this.WALLET_LIST_TTL;
-      
+      const baseTTL = options?.ttl || this.WALLET_LIST_BASE_TTL;
+
+      // Calculate adaptive TTL
+      const ttl = await this.calculateAdaptiveTTL(key, baseTTL);
+
       await this.redis.setex(key, ttl, JSON.stringify(data));
     } catch (error: any) {
       console.error('Error setting cached wallet list:', error.message);
@@ -245,13 +257,19 @@ export class SmartMoneyCache {
 
   /**
    * Invalidate all wallet list caches
+   * Enhancement 2: Track invalidation for volatility
    */
   public async invalidateWalletLists(): Promise<void> {
     try {
       const pattern = `${this.WALLET_LIST_PREFIX}:*`;
       const keys = await this.redis.keys(pattern);
-      
+
       if (keys.length > 0) {
+        // Track invalidation for each key
+        for (const key of keys) {
+          await this.trackCacheInvalidation(key);
+        }
+
         await this.redis.del(...keys);
         console.log(`Invalidated ${keys.length} wallet list cache entries`);
       }
@@ -319,6 +337,134 @@ export class SmartMoneyCache {
         walletListKeys: 0,
         walletDetailKeys: 0,
         totalKeys: 0,
+      };
+    }
+  }
+
+  /**
+   * Calculate adaptive TTL based on data volatility
+   * Enhancement 2: Adaptive TTL
+   *
+   * @param cacheKey - Cache key to calculate TTL for
+   * @param baseTTL - Base TTL in seconds
+   * @returns Adaptive TTL in seconds
+   */
+  private async calculateAdaptiveTTL(cacheKey: string, baseTTL: number): Promise<number> {
+    if (!this.ENABLE_ADAPTIVE_TTL) {
+      return baseTTL;
+    }
+
+    try {
+      // Get volatility data for this cache key
+      const volatilityKey = `${this.VOLATILITY_TRACKING_KEY}:${cacheKey}`;
+      const volatilityData = await this.redis.hgetall(volatilityKey);
+
+      if (!volatilityData || Object.keys(volatilityData).length === 0) {
+        // No volatility data yet, use base TTL
+        return baseTTL;
+      }
+
+      const changes = parseInt(volatilityData.changes || '0', 10);
+      const lastChanged = volatilityData.lastChanged ? new Date(volatilityData.lastChanged) : new Date();
+      const now = new Date();
+      const hoursSinceLastChange = (now.getTime() - lastChanged.getTime()) / (1000 * 60 * 60);
+
+      // Calculate change frequency (changes per hour)
+      const changeFrequency = hoursSinceLastChange > 0 ? changes / hoursSinceLastChange : 0;
+
+      // Adaptive TTL logic:
+      // - High volatility (>10 changes/hour): MIN_TTL (2 minutes)
+      // - Medium volatility (5-10 changes/hour): baseTTL (5 minutes)
+      // - Low volatility (<5 changes/hour): MAX_TTL (15 minutes)
+      let adaptiveTTL: number;
+
+      if (changeFrequency > 10) {
+        // High volatility - short TTL
+        adaptiveTTL = this.MIN_TTL;
+      } else if (changeFrequency > 5) {
+        // Medium volatility - base TTL
+        adaptiveTTL = baseTTL;
+      } else {
+        // Low volatility - long TTL
+        adaptiveTTL = this.MAX_TTL;
+      }
+
+      return adaptiveTTL;
+    } catch (error: any) {
+      console.error('Error calculating adaptive TTL:', error.message);
+      return baseTTL;
+    }
+  }
+
+  /**
+   * Track cache invalidation for volatility calculation
+   * Enhancement 2: Adaptive TTL
+   *
+   * @param cacheKey - Cache key that was invalidated
+   */
+  private async trackCacheInvalidation(cacheKey: string): Promise<void> {
+    if (!this.ENABLE_ADAPTIVE_TTL) {
+      return;
+    }
+
+    try {
+      const volatilityKey = `${this.VOLATILITY_TRACKING_KEY}:${cacheKey}`;
+      await this.redis.hincrby(volatilityKey, 'changes', 1);
+      await this.redis.hset(volatilityKey, 'lastChanged', new Date().toISOString());
+
+      // Expire volatility tracking after 24 hours
+      await this.redis.expire(volatilityKey, 24 * 60 * 60);
+    } catch (error: any) {
+      console.error('Error tracking cache invalidation:', error.message);
+    }
+  }
+
+  /**
+   * Get volatility metrics for a cache key
+   * Enhancement 2: Adaptive TTL
+   *
+   * @param cacheKey - Cache key to get volatility for
+   * @returns Volatility metrics
+   */
+  public async getVolatilityMetrics(cacheKey: string): Promise<{
+    changes: number;
+    lastChanged: Date | null;
+    changeFrequency: number;
+    recommendedTTL: number;
+  }> {
+    try {
+      const volatilityKey = `${this.VOLATILITY_TRACKING_KEY}:${cacheKey}`;
+      const volatilityData = await this.redis.hgetall(volatilityKey);
+
+      if (!volatilityData || Object.keys(volatilityData).length === 0) {
+        return {
+          changes: 0,
+          lastChanged: null,
+          changeFrequency: 0,
+          recommendedTTL: this.WALLET_LIST_BASE_TTL,
+        };
+      }
+
+      const changes = parseInt(volatilityData.changes || '0', 10);
+      const lastChanged = volatilityData.lastChanged ? new Date(volatilityData.lastChanged) : null;
+      const now = new Date();
+      const hoursSinceLastChange = lastChanged ? (now.getTime() - lastChanged.getTime()) / (1000 * 60 * 60) : 0;
+      const changeFrequency = hoursSinceLastChange > 0 ? changes / hoursSinceLastChange : 0;
+      const recommendedTTL = await this.calculateAdaptiveTTL(cacheKey, this.WALLET_LIST_BASE_TTL);
+
+      return {
+        changes,
+        lastChanged,
+        changeFrequency,
+        recommendedTTL,
+      };
+    } catch (error: any) {
+      console.error('Error getting volatility metrics:', error.message);
+      return {
+        changes: 0,
+        lastChanged: null,
+        changeFrequency: 0,
+        recommendedTTL: this.WALLET_LIST_BASE_TTL,
       };
     }
   }
