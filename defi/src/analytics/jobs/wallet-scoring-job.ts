@@ -1,10 +1,12 @@
 /**
  * Wallet Scoring Background Job
  * Story: 3.1.1 - Smart Money Identification (Enhancement 2)
+ * Enhancement 3: Parallel batch processing
  * Enhancement 4: Integrated with MonitoringService
  *
  * Auto-refreshes smart money scores every 15 minutes
  * - Batch process wallets
+ * - Parallel processing (configurable concurrency)
  * - Update scores and confidence levels
  * - Invalidate caches
  * - Ensure data freshness <15 minutes
@@ -18,6 +20,7 @@ import { MonitoringService } from '../services/monitoring-service';
 interface WalletScoringJobOptions {
   batchSize?: number;
   intervalMinutes?: number;
+  concurrency?: number; // Enhancement 3: Parallel processing
 }
 
 interface WalletScoringStats {
@@ -43,6 +46,7 @@ export class WalletScoringJob {
   // Default configuration
   private readonly DEFAULT_BATCH_SIZE = 50;
   private readonly DEFAULT_INTERVAL_MINUTES = 15;
+  private readonly DEFAULT_CONCURRENCY = 3; // Enhancement 3: Process 3 batches in parallel
 
   private constructor() {
     this.scorer = SmartMoneyScorer.getInstance();
@@ -100,6 +104,7 @@ export class WalletScoringJob {
 
   /**
    * Run the scoring job once
+   * Enhancement 3: Parallel batch processing
    */
   public async runJob(options?: WalletScoringJobOptions): Promise<WalletScoringStats> {
     if (this.isRunning) {
@@ -117,8 +122,9 @@ export class WalletScoringJob {
     this.isRunning = true;
     const startTime = Date.now();
     const batchSize = options?.batchSize || this.DEFAULT_BATCH_SIZE;
+    const concurrency = options?.concurrency || this.DEFAULT_CONCURRENCY;
 
-    console.log(`Running wallet scoring job (batch size: ${batchSize})`);
+    console.log(`Running wallet scoring job (batch size: ${batchSize}, concurrency: ${concurrency})`);
 
     try {
       // Get total wallet count
@@ -132,20 +138,34 @@ export class WalletScoringJob {
       let walletsFailed = 0;
       let offset = 0;
 
-      // Process wallets in batches
+      // Process wallets in parallel batches
       while (offset < totalWallets) {
-        const batch = await this.fetchWalletBatch(offset, batchSize);
-        
-        if (batch.length === 0) {
-          break;
+        // Fetch multiple batches for parallel processing
+        const batchPromises: Promise<WalletData[]>[] = [];
+        const batchOffsets: number[] = [];
+
+        for (let i = 0; i < concurrency && offset < totalWallets; i++) {
+          batchPromises.push(this.fetchWalletBatch(offset, batchSize));
+          batchOffsets.push(offset);
+          offset += batchSize;
         }
 
-        const batchResults = await this.processBatch(batch);
-        walletsProcessed += batchResults.processed;
-        walletsUpdated += batchResults.updated;
-        walletsFailed += batchResults.failed;
+        // Fetch all batches in parallel
+        const batches = await Promise.all(batchPromises);
 
-        offset += batchSize;
+        // Process all batches in parallel
+        const processingPromises = batches
+          .filter(batch => batch.length > 0)
+          .map(batch => this.processBatch(batch));
+
+        const batchResults = await Promise.all(processingPromises);
+
+        // Aggregate results
+        for (const result of batchResults) {
+          walletsProcessed += result.processed;
+          walletsUpdated += result.updated;
+          walletsFailed += result.failed;
+        }
       }
 
       // Invalidate all caches after scoring update

@@ -1,6 +1,7 @@
 /**
  * Unit Tests: WalletScoringJob
  * Story: 3.1.1 - Smart Money Identification (Enhancement 2)
+ * Enhancement 3: Parallel batch processing tests
  */
 
 import { WalletScoringJob } from '../wallet-scoring-job';
@@ -12,6 +13,15 @@ import { SmartMoneyCache } from '../../services/smart-money-cache';
 jest.mock('../../db/connection');
 jest.mock('../../engines/smart-money-scorer');
 jest.mock('../../services/smart-money-cache');
+
+// Mock MonitoringService
+jest.mock('../../services/monitoring-service', () => ({
+  MonitoringService: {
+    getInstance: jest.fn(() => ({
+      recordJobExecution: jest.fn(),
+    })),
+  },
+}));
 
 const mockQuery = dbConnection.query as jest.MockedFunction<typeof dbConnection.query>;
 
@@ -125,6 +135,31 @@ describe('WalletScoringJob', () => {
       job.start();
 
       expect(job.getStatus().isScheduled).toBe(true);
+    });
+  });
+
+  describe('Parallel Processing (Enhancement 3)', () => {
+    it('should have DEFAULT_CONCURRENCY configured', () => {
+      // Verify DEFAULT_CONCURRENCY is defined
+      expect((job as any).DEFAULT_CONCURRENCY).toBe(3);
+    });
+
+    it('should accept concurrency option in runJob', async () => {
+      // Reset isRunning
+      (job as any).isRunning = false;
+
+      // Mock minimal setup
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ count: '0' }],
+      } as any);
+
+      mockCache.invalidateAll.mockResolvedValue();
+
+      // Call with concurrency option - should not throw
+      await expect(job.runJob({
+        batchSize: 50,
+        concurrency: 5,
+      })).resolves.toBeDefined();
     });
   });
 });
