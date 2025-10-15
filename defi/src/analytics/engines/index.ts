@@ -25,6 +25,7 @@ export { AlertMatchingEngine, alertMatchingEngine } from './alert-matching-engin
 export { LiquidityDepthEngine, liquidityDepthEngine } from './liquidity-depth-engine';
 export { LPAnalysisEngine, lpAnalysisEngine } from './lp-analysis-engine';
 export { ImpermanentLossEngine, impermanentLossEngine } from './impermanent-loss-engine';
+export { LiquidityMigrationEngine, liquidityMigrationEngine } from './liquidity-migration-engine';
 
 // Export convenience object with all engines
 import { apyCalculator } from './apy-calculator';
@@ -39,6 +40,7 @@ import { alertMatchingEngine } from './alert-matching-engine';
 import { liquidityDepthEngine } from './liquidity-depth-engine';
 import { lpAnalysisEngine } from './lp-analysis-engine';
 import { impermanentLossEngine } from './impermanent-loss-engine';
+import { liquidityMigrationEngine } from './liquidity-migration-engine';
 
 export const analyticsEngines = {
   // Story 2.1.1
@@ -56,6 +58,7 @@ export const analyticsEngines = {
   liquidityDepth: liquidityDepthEngine,
   lpAnalysis: lpAnalysisEngine,
   impermanentLoss: impermanentLossEngine,
+  liquidityMigration: liquidityMigrationEngine,
 };
 
 export default analyticsEngines;
