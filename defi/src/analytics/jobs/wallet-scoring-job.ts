@@ -1,7 +1,8 @@
 /**
  * Wallet Scoring Background Job
  * Story: 3.1.1 - Smart Money Identification (Enhancement 2)
- * 
+ * Enhancement 4: Integrated with MonitoringService
+ *
  * Auto-refreshes smart money scores every 15 minutes
  * - Batch process wallets
  * - Update scores and confidence levels
@@ -12,6 +13,7 @@
 import { query } from '../db/connection';
 import { SmartMoneyScorer, WalletData } from '../engines/smart-money-scorer';
 import { SmartMoneyCache } from '../services/smart-money-cache';
+import { MonitoringService } from '../services/monitoring-service';
 
 interface WalletScoringJobOptions {
   batchSize?: number;
@@ -34,6 +36,7 @@ export class WalletScoringJob {
   private static instance: WalletScoringJob;
   private scorer: SmartMoneyScorer;
   private cache: SmartMoneyCache;
+  private monitoring: MonitoringService;
   private intervalId: NodeJS.Timeout | null = null;
   private isRunning: boolean = false;
 
@@ -44,6 +47,7 @@ export class WalletScoringJob {
   private constructor() {
     this.scorer = SmartMoneyScorer.getInstance();
     this.cache = SmartMoneyCache.getInstance();
+    this.monitoring = MonitoringService.getInstance();
   }
 
   /**
@@ -159,9 +163,29 @@ export class WalletScoringJob {
 
       console.log(`Wallet scoring job completed:`, stats);
 
+      // Record job execution metrics
+      await this.monitoring.recordJobExecution({
+        success: true,
+        duration,
+        walletsProcessed,
+        walletsUpdated,
+        walletsFailed,
+      });
+
       return stats;
     } catch (error: any) {
       console.error('Error in wallet scoring job:', error);
+
+      // Record failed job execution
+      const duration = Date.now() - startTime;
+      await this.monitoring.recordJobExecution({
+        success: false,
+        duration,
+        walletsProcessed: 0,
+        walletsUpdated: 0,
+        walletsFailed: 0,
+      });
+
       throw error;
     } finally {
       this.isRunning = false;

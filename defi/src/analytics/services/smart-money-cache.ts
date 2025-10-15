@@ -1,7 +1,8 @@
 /**
  * Smart Money Cache Service
  * Story: 3.1.1 - Smart Money Identification (Enhancement 1)
- * 
+ * Enhancement 4: Integrated with MonitoringService
+ *
  * Redis caching layer for smart money wallets API
  * - Cache wallet lists with filters
  * - Cache individual wallet data
@@ -10,6 +11,7 @@
  */
 
 import Redis from 'ioredis';
+import { MonitoringService } from './monitoring-service';
 
 interface CacheOptions {
   ttl?: number; // Time to live in seconds
@@ -57,6 +59,7 @@ interface WalletListResponse {
 export class SmartMoneyCache {
   private static instance: SmartMoneyCache;
   private redis: Redis;
+  private monitoring: MonitoringService;
 
   // Cache TTL (Time To Live) in seconds
   private readonly WALLET_LIST_TTL = 5 * 60; // 5 minutes
@@ -88,6 +91,9 @@ export class SmartMoneyCache {
     this.redis.on('connect', () => {
       console.log('Redis connected successfully');
     });
+
+    // Initialize monitoring service
+    this.monitoring = MonitoringService.getInstance();
   }
 
   /**
@@ -157,11 +163,15 @@ export class SmartMoneyCache {
     try {
       const key = this.getWalletListKey(params);
       const cached = await this.redis.get(key);
-      
+
       if (cached) {
+        // Record cache hit
+        await this.monitoring.recordCacheHit();
         return JSON.parse(cached);
       }
-      
+
+      // Record cache miss
+      await this.monitoring.recordCacheMiss();
       return null;
     } catch (error: any) {
       console.error('Error getting cached wallet list:', error.message);

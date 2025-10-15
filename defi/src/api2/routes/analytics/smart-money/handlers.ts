@@ -2,12 +2,14 @@
  * Smart Money API Handlers
  * Story: 3.1.1 - Smart Money Identification
  * Enhancement 1: Redis Caching Layer
+ * Enhancement 4: Monitoring Integration
  */
 
 import { Request, Response } from 'hyper-express';
 import { query } from '../../../analytics/db/connection';
 import { validateGetSmartMoneyWalletsQuery } from './validation';
 import { SmartMoneyCache } from '../../../analytics/services/smart-money-cache';
+import { MonitoringService } from '../../../analytics/services/monitoring-service';
 
 interface SmartMoneyWallet {
   walletAddress: string;
@@ -49,6 +51,8 @@ interface PaginationInfo {
  * Enhancement 1: Redis caching layer
  */
 export async function getSmartMoneyWallets(req: Request, res: Response) {
+  const startTime = Date.now();
+
   try {
     // Validate and parse query parameters
     const params = validateGetSmartMoneyWalletsQuery(req);
@@ -64,6 +68,11 @@ export async function getSmartMoneyWallets(req: Request, res: Response) {
       res.setHeader('Expires', expiresDate.toUTCString());
       res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}`);
       res.setHeader('X-Cache', 'HIT');
+
+      // Record API metrics
+      const responseTime = Date.now() - startTime;
+      const monitoring = MonitoringService.getInstance();
+      await monitoring.recordAPIRequest(responseTime, false);
 
       res.status(200).json(cachedData);
       return;
@@ -183,11 +192,21 @@ export async function getSmartMoneyWallets(req: Request, res: Response) {
     res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}`);
     res.setHeader('X-Cache', 'MISS');
 
+    // Record API metrics
+    const responseTime = Date.now() - startTime;
+    const monitoring = MonitoringService.getInstance();
+    await monitoring.recordAPIRequest(responseTime, false);
+
     // Send response
     res.status(200).json(response);
   } catch (error: any) {
     console.error('Error in getSmartMoneyWallets:', error);
-    
+
+    // Record API error
+    const responseTime = Date.now() - startTime;
+    const monitoring = MonitoringService.getInstance();
+    await monitoring.recordAPIRequest(responseTime, true);
+
     // Handle validation errors
     if (error.message.includes('must be')) {
       res.status(400).json({
