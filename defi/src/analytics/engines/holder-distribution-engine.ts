@@ -217,10 +217,19 @@ export class HolderDistributionEngine {
       dust: { count: 0, percentage: 0 },
     };
 
+    // Map database holder_type (singular) to types object keys (plural for whales)
+    const typeMap: Record<string, keyof typeof types> = {
+      whale: 'whales',
+      large: 'large',
+      medium: 'medium',
+      small: 'small',
+      dust: 'dust',
+    };
+
     result.rows.forEach(row => {
-      const type = row.holder_type as keyof typeof types;
-      if (type in types) {
-        types[type] = {
+      const mappedType = typeMap[row.holder_type];
+      if (mappedType) {
+        types[mappedType] = {
           count: parseInt(row.count),
           percentage: parseFloat(row.total_percentage),
         };
