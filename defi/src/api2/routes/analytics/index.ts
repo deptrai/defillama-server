@@ -1,6 +1,6 @@
 /**
  * Analytics API Routes
- * Stories: 2.1.1 - Protocol Performance Dashboard, 2.1.2 - Yield Opportunity Scanner
+ * Stories: 2.1.1 - Protocol Performance Dashboard, 2.1.2 - Yield Opportunity Scanner, 2.1.3 - Liquidity Analysis Tools
  *
  * Registers all analytics endpoints
  */
@@ -16,6 +16,8 @@ import {
 } from './handlers';
 import yieldOpportunitiesRouter from './yield-opportunities';
 import yieldAlertsRouter from './yield-alerts';
+import liquidityPoolsRouter from './liquidity';
+import liquidityMigrationsRouter from './liquidity-migrations';
 
 /**
  * Register analytics routes
@@ -34,5 +36,9 @@ export function setAnalyticsRoutes(router: HyperExpress.Router) {
   // Story 2.1.2: Yield Opportunity Scanner
   router.use('/analytics/yield-opportunities', yieldOpportunitiesRouter);
   router.use('/analytics/yield-alerts', yieldAlertsRouter);
+
+  // Story 2.1.3: Liquidity Analysis Tools
+  router.use('/analytics/liquidity-pools', liquidityPoolsRouter);
+  router.use('/analytics/liquidity-migrations', liquidityMigrationsRouter);
 }
 
