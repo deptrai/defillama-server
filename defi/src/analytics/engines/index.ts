@@ -1,6 +1,6 @@
 /**
  * Analytics Engines
- * Stories: 2.1.1 - Protocol Performance Dashboard, 2.1.2 - Yield Opportunity Scanner, 2.1.3 - Liquidity Analysis Tools, 2.2.1 - Wallet Portfolio Tracking, 2.2.2 - Holder Distribution Analysis
+ * Stories: 2.1.1 - Protocol Performance Dashboard, 2.1.2 - Yield Opportunity Scanner, 2.1.3 - Liquidity Analysis Tools, 2.2.1 - Wallet Portfolio Tracking, 2.2.2 - Holder Distribution Analysis, 2.2.3 - Cross-chain Portfolio Aggregation
  *
  * Central export for all analytics calculation engines
  */
@@ -37,6 +37,9 @@ export { HolderDistributionEngine } from './holder-distribution-engine';
 export { HolderBehaviorEngine } from './holder-behavior-engine';
 export { DistributionAlertEngine } from './distribution-alert-engine';
 
+// Export Story 2.2.3 engines
+export { CrossChainAggregationEngine } from './cross-chain-aggregation-engine';
+
 // Export convenience object with all engines
 import { apyCalculator } from './apy-calculator';
 import { userMetricsEngine } from './user-metrics-engine';
@@ -57,6 +60,7 @@ import { PerformanceTrackingEngine } from './performance-tracking-engine';
 import { HolderDistributionEngine } from './holder-distribution-engine';
 import { HolderBehaviorEngine } from './holder-behavior-engine';
 import { DistributionAlertEngine } from './distribution-alert-engine';
+import { CrossChainAggregationEngine } from './cross-chain-aggregation-engine';
 
 export const analyticsEngines = {
   // Story 2.1.1
@@ -83,6 +87,8 @@ export const analyticsEngines = {
   holderDistribution: HolderDistributionEngine.getInstance(),
   holderBehavior: HolderBehaviorEngine.getInstance(),
   distributionAlert: DistributionAlertEngine.getInstance(),
+  // Story 2.2.3
+  crossChainAggregation: CrossChainAggregationEngine.getInstance(),
 };
 
 export default analyticsEngines;
