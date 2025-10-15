@@ -83,12 +83,14 @@ export class APYCalculator {
       const endDate = new Date();
       const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
 
+      // Aggregate TVL across all chains for protocol-level calculation
       const tvlData = await query<{ tvl: number; timestamp: Date }>(
-        `SELECT tvl, timestamp 
-         FROM protocol_tvl 
-         WHERE protocol_id = $1 
-           AND timestamp >= $2 
+        `SELECT SUM(tvl) as tvl, timestamp
+         FROM protocol_tvl
+         WHERE protocol_id = $1
+           AND timestamp >= $2
            AND timestamp <= $3
+         GROUP BY timestamp
          ORDER BY timestamp ASC`,
         [protocolId, startDate, endDate]
       );
@@ -203,12 +205,14 @@ export class APYCalculator {
     const endDate = new Date();
     const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
 
+    // Aggregate TVL across all chains for protocol-level time series
     const tvlData = await query<{ tvl: number; timestamp: Date }>(
-      `SELECT tvl, timestamp 
-       FROM protocol_tvl 
-       WHERE protocol_id = $1 
-         AND timestamp >= $2 
+      `SELECT SUM(tvl) as tvl, timestamp
+       FROM protocol_tvl
+       WHERE protocol_id = $1
+         AND timestamp >= $2
          AND timestamp <= $3
+       GROUP BY timestamp
        ORDER BY timestamp ASC`,
       [protocolId, startDate, endDate]
     );

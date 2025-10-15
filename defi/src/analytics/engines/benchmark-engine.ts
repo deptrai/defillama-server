@@ -23,51 +23,55 @@ import {
 export class BenchmarkEngine {
   /**
    * Get protocol metrics for benchmarking
+   * Note: Aggregates TVL across all chains for each protocol
    */
   async getProtocolMetrics(
     protocolIds: string[],
     date: Date = new Date()
   ): Promise<ProtocolMetrics[]> {
-    const metrics = await query<{
+    // First, get latest timestamp for each protocol
+    const latestTvl = await query<{
       protocol_id: string;
       tvl: number;
       dau: number;
       daily_revenue: number;
       apy_7d: number;
     }>(
-      `SELECT 
+      `WITH latest_tvl AS (
+         SELECT
+           protocol_id,
+           MAX(timestamp) as latest_timestamp
+         FROM protocol_tvl
+         WHERE protocol_id = ANY($1)
+           AND timestamp <= $2
+         GROUP BY protocol_id
+       )
+       SELECT
          p.protocol_id,
-         p.tvl,
+         SUM(p.tvl) as tvl,
          m.dau as users,
          m.daily_revenue as revenue,
          m.apy_7d as apy
        FROM protocol_tvl p
-       LEFT JOIN protocol_performance_metrics m 
-         ON p.protocol_id = m.protocol_id 
+       INNER JOIN latest_tvl lt
+         ON p.protocol_id = lt.protocol_id
+         AND p.timestamp = lt.latest_timestamp
+       LEFT JOIN protocol_performance_metrics m
+         ON p.protocol_id = m.protocol_id
          AND m.timestamp = (
-           SELECT MAX(timestamp) 
-           FROM protocol_performance_metrics 
+           SELECT MAX(timestamp)
+           FROM protocol_performance_metrics
            WHERE protocol_id = p.protocol_id
          )
-       WHERE p.protocol_id = ANY($1)
-         AND p.timestamp <= $2
-       ORDER BY p.timestamp DESC`,
+       GROUP BY p.protocol_id, m.dau, m.daily_revenue, m.apy_7d`,
       [protocolIds, date]
     );
 
-    // Get unique protocols (latest data only)
-    const uniqueProtocols = new Map<string, typeof metrics[0]>();
-    for (const metric of metrics) {
-      if (!uniqueProtocols.has(metric.protocol_id)) {
-        uniqueProtocols.set(metric.protocol_id, metric);
-      }
-    }
-
-    return Array.from(uniqueProtocols.values()).map(m => ({
+    return latestTvl.map(m => ({
       protocolId: m.protocol_id,
       protocolName: m.protocol_id, // TODO: Get actual protocol name from metadata
       tvl: m.tvl || 0,
-      volume24h: 0, // TODO: Add volume data
+      volume24h: 0, // TODO: Add volume data from dimension adapters
       users: m.users || 0,
       revenue: m.revenue || 0,
       apy: m.apy || 0,

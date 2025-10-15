@@ -2,8 +2,21 @@
  * Revenue Analyzer Engine
  * Story: 2.1.1 - Protocol Performance Dashboard
  * Task: 3 - Analytics Engine
- * 
+ *
  * Analyzes protocol revenue, fees, trends, and projections
+ *
+ * DATA SOURCE DEPENDENCY:
+ * This engine reads revenue data from protocol_performance_metrics table.
+ * Revenue data must be pre-populated by the protocol-performance-collector.
+ *
+ * Revenue sources (collected by dimension adapters):
+ * - Trading fees (from DEX adapters)
+ * - Withdrawal fees (from protocol-specific adapters)
+ * - Performance fees (from yield/lending adapters)
+ * - Other protocol-specific fees
+ *
+ * The collector aggregates this data and stores it in protocol_performance_metrics.
+ * This analyzer then calculates trends, projections, and breakdowns.
  */
 
 import { query } from '../db/connection';
@@ -21,6 +34,7 @@ import {
 export class RevenueAnalyzer {
   /**
    * Get revenue data for a time range
+   * Note: Expects revenue data to be pre-populated in protocol_performance_metrics
    */
   async getRevenueData(
     protocolId: string,
@@ -34,7 +48,7 @@ export class RevenueAnalyzer {
       withdrawal_fees: number;
       performance_fees: number;
     }>(
-      `SELECT 
+      `SELECT
          timestamp,
          daily_revenue,
          trading_fees,

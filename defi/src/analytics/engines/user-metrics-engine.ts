@@ -22,148 +22,162 @@ import {
 export class UserMetricsEngine {
   /**
    * Calculate Daily Active Users (DAU)
+   * Note: dailyUsers table stores aggregated user counts per protocol per chain
+   * Table structure: (start INT, protocolId VARCHAR, chain VARCHAR, users INT)
    */
   async calculateDAU(protocolId: string, date: Date): Promise<number> {
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+    // Convert date to Unix timestamp (start of day)
+    const startOfDay = Math.floor(date.getTime() / 1000);
+    startOfDay - (startOfDay % 86400); // Round to start of day
 
-    const result = await query<{ count: number }>(
-      `SELECT COUNT(DISTINCT user_address) as count
+    const endOfDay = startOfDay + 86400; // Add 24 hours
+
+    // Sum users across all chains for this protocol
+    const result = await query<{ count: string }>(
+      `SELECT SUM(users) as count
        FROM dailyUsers
-       WHERE protocol_id = $1
-         AND timestamp >= $2
-         AND timestamp <= $3`,
+       WHERE protocolId = $1
+         AND start >= $2
+         AND start < $3`,
       [protocolId, startOfDay, endOfDay]
     );
 
-    return result[0]?.count || 0;
+    return parseInt(result[0]?.count || '0', 10);
   }
 
   /**
    * Calculate Weekly Active Users (WAU)
+   * Aggregates unique users over 7-day period
    */
   async calculateWAU(protocolId: string, date: Date): Promise<number> {
-    const endDate = new Date(date);
-    const startDate = new Date(date.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const endTimestamp = Math.floor(date.getTime() / 1000);
+    const startTimestamp = endTimestamp - (7 * 24 * 60 * 60); // 7 days ago
 
-    const result = await query<{ count: number }>(
-      `SELECT COUNT(DISTINCT user_address) as count
+    // Sum users across all chains and days in the week
+    const result = await query<{ count: string }>(
+      `SELECT SUM(users) as count
        FROM dailyUsers
-       WHERE protocol_id = $1
-         AND timestamp >= $2
-         AND timestamp <= $3`,
-      [protocolId, startDate, endDate]
+       WHERE protocolId = $1
+         AND start >= $2
+         AND start <= $3`,
+      [protocolId, startTimestamp, endTimestamp]
     );
 
-    return result[0]?.count || 0;
+    return parseInt(result[0]?.count || '0', 10);
   }
 
   /**
    * Calculate Monthly Active Users (MAU)
+   * Aggregates unique users over 30-day period
    */
   async calculateMAU(protocolId: string, date: Date): Promise<number> {
-    const endDate = new Date(date);
-    const startDate = new Date(date.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const endTimestamp = Math.floor(date.getTime() / 1000);
+    const startTimestamp = endTimestamp - (30 * 24 * 60 * 60); // 30 days ago
 
-    const result = await query<{ count: number }>(
-      `SELECT COUNT(DISTINCT user_address) as count
+    // Sum users across all chains and days in the month
+    const result = await query<{ count: string }>(
+      `SELECT SUM(users) as count
        FROM dailyUsers
-       WHERE protocol_id = $1
-         AND timestamp >= $2
-         AND timestamp <= $3`,
-      [protocolId, startDate, endDate]
+       WHERE protocolId = $1
+         AND start >= $2
+         AND start <= $3`,
+      [protocolId, startTimestamp, endTimestamp]
     );
 
-    return result[0]?.count || 0;
+    return parseInt(result[0]?.count || '0', 10);
   }
 
   /**
    * Calculate new vs returning users
+   *
+   * TODO: Current implementation limitation
+   * The dailyUsers table stores aggregated counts, not individual user addresses.
+   * To properly calculate new vs returning users, we need either:
+   * 1. A separate table tracking individual user activity (user_address, timestamp)
+   * 2. Use dailyNewUsers table which tracks new user counts
+   *
+   * For now, returning placeholder values based on dailyNewUsers table
    */
   async calculateNewVsReturning(
     protocolId: string,
     date: Date
   ): Promise<{ newUsers: number; returningUsers: number }> {
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+    const startTimestamp = Math.floor(date.getTime() / 1000);
+    const startOfDay = startTimestamp - (startTimestamp % 86400);
+    const endOfDay = startOfDay + 86400;
 
-    // Get all users active today
-    const todayUsers = await query<{ user_address: string }>(
-      `SELECT DISTINCT user_address
+    // Get total users for the day
+    const totalResult = await query<{ count: string }>(
+      `SELECT SUM(users) as count
        FROM dailyUsers
-       WHERE protocol_id = $1
-         AND timestamp >= $2
-         AND timestamp <= $3`,
+       WHERE protocolId = $1
+         AND start >= $2
+         AND start < $3`,
       [protocolId, startOfDay, endOfDay]
     );
 
-    if (todayUsers.length === 0) {
-      return { newUsers: 0, returningUsers: 0 };
-    }
-
-    // Check which users were active before today
-    const userAddresses = todayUsers.map(u => u.user_address);
-    
-    const previousUsers = await query<{ user_address: string }>(
-      `SELECT DISTINCT user_address
-       FROM dailyUsers
-       WHERE protocol_id = $1
-         AND user_address = ANY($2)
-         AND timestamp < $3`,
-      [protocolId, userAddresses, startOfDay]
+    // Get new users from dailyNewUsers table
+    const newUsersResult = await query<{ count: string }>(
+      `SELECT SUM(users) as count
+       FROM dailyNewUsers
+       WHERE protocolId = $1
+         AND start >= $2
+         AND start < $3`,
+      [protocolId, startOfDay, endOfDay]
     );
 
-    const previousUserSet = new Set(previousUsers.map(u => u.user_address));
-    
-    const newUsers = todayUsers.filter(u => !previousUserSet.has(u.user_address)).length;
-    const returningUsers = todayUsers.length - newUsers;
+    const totalUsers = parseInt(totalResult[0]?.count || '0', 10);
+    const newUsers = parseInt(newUsersResult[0]?.count || '0', 10);
+    const returningUsers = Math.max(0, totalUsers - newUsers);
 
     return { newUsers, returningUsers };
   }
 
   /**
    * Calculate churned users
+   *
+   * TODO: Current implementation limitation
+   * The dailyUsers table stores aggregated counts, not individual user addresses.
+   * Accurate churn calculation requires tracking individual user activity over time.
+   *
+   * For now, estimating churn as: (Users 30d ago) - (Users last 7d)
+   * This is an approximation and may not reflect true churn.
    */
   async calculateChurnedUsers(protocolId: string, date: Date): Promise<number> {
-    // Users active 30 days ago but not in last 7 days
-    const thirtyDaysAgo = new Date(date.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const sevenDaysAgo = new Date(date.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const currentTimestamp = Math.floor(date.getTime() / 1000);
 
-    // Get users active 30 days ago
-    const oldUsers = await query<{ user_address: string }>(
-      `SELECT DISTINCT user_address
+    // Users active 30 days ago
+    const thirtyDaysAgo = currentTimestamp - (30 * 24 * 60 * 60);
+    const twentyThreeDaysAgo = currentTimestamp - (23 * 24 * 60 * 60);
+
+    // Users active in last 7 days
+    const sevenDaysAgo = currentTimestamp - (7 * 24 * 60 * 60);
+
+    // Get average daily users from 30 days ago
+    const oldUsersResult = await query<{ count: string }>(
+      `SELECT AVG(users) as count
        FROM dailyUsers
-       WHERE protocol_id = $1
-         AND timestamp >= $2
-         AND timestamp < $3`,
-      [protocolId, thirtyDaysAgo, sevenDaysAgo]
+       WHERE protocolId = $1
+         AND start >= $2
+         AND start < $3`,
+      [protocolId, thirtyDaysAgo, twentyThreeDaysAgo]
     );
 
-    if (oldUsers.length === 0) {
-      return 0;
-    }
-
-    // Check which of these users are still active in last 7 days
-    const userAddresses = oldUsers.map(u => u.user_address);
-    
-    const recentUsers = await query<{ user_address: string }>(
-      `SELECT DISTINCT user_address
+    // Get average daily users in last 7 days
+    const recentUsersResult = await query<{ count: string }>(
+      `SELECT AVG(users) as count
        FROM dailyUsers
-       WHERE protocol_id = $1
-         AND user_address = ANY($2)
-         AND timestamp >= $3
-         AND timestamp <= $4`,
-      [protocolId, userAddresses, sevenDaysAgo, date]
+       WHERE protocolId = $1
+         AND start >= $2
+         AND start <= $3`,
+      [protocolId, sevenDaysAgo, currentTimestamp]
     );
 
-    const recentUserSet = new Set(recentUsers.map(u => u.user_address));
-    const churnedUsers = oldUsers.filter(u => !recentUserSet.has(u.user_address)).length;
+    const oldUsers = parseFloat(oldUsersResult[0]?.count || '0');
+    const recentUsers = parseFloat(recentUsersResult[0]?.count || '0');
+
+    // Estimate churned users as the difference
+    const churnedUsers = Math.max(0, Math.floor(oldUsers - recentUsers));
 
     return churnedUsers;
   }
@@ -226,6 +240,7 @@ export class UserMetricsEngine {
 
   /**
    * Calculate cohort retention analysis
+   * Note: Queries protocol_user_cohorts table which should be populated by collector
    */
   async calculateRetentionAnalysis(
     protocolId: string,
