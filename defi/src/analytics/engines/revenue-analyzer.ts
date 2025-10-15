@@ -41,7 +41,7 @@ export class RevenueAnalyzer {
     startDate: Date,
     endDate: Date
   ): Promise<RevenueData[]> {
-    const data = await query<{
+    const result = await query<{
       timestamp: Date;
       daily_revenue: number;
       trading_fees: number;
@@ -61,6 +61,8 @@ export class RevenueAnalyzer {
        ORDER BY timestamp ASC`,
       [protocolId, startDate, endDate]
     );
+
+    const data = result.rows;
 
     return data.map(d => ({
       protocolId,

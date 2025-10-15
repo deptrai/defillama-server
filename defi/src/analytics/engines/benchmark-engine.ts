@@ -30,7 +30,7 @@ export class BenchmarkEngine {
     date: Date = new Date()
   ): Promise<ProtocolMetrics[]> {
     // First, get latest timestamp for each protocol
-    const latestTvl = await query<{
+    const latestTvlResult = await query<{
       protocol_id: string;
       tvl: number;
       dau: number;
@@ -66,6 +66,8 @@ export class BenchmarkEngine {
        GROUP BY p.protocol_id, m.dau, m.daily_revenue, m.apy_7d`,
       [protocolIds, date]
     );
+
+    const latestTvl = latestTvlResult.rows;
 
     return latestTvl.map(m => ({
       protocolId: m.protocol_id,

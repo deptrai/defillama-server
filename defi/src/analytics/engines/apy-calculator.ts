@@ -84,7 +84,7 @@ export class APYCalculator {
       const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
 
       // Aggregate TVL across all chains for protocol-level calculation
-      const tvlData = await query<{ tvl: number; timestamp: Date }>(
+      const tvlResult = await query<{ tvl: number; timestamp: Date }>(
         `SELECT SUM(tvl) as tvl, timestamp
          FROM protocol_tvl
          WHERE protocol_id = $1
@@ -94,6 +94,8 @@ export class APYCalculator {
          ORDER BY timestamp ASC`,
         [protocolId, startDate, endDate]
       );
+
+      const tvlData = tvlResult.rows;
 
       if (tvlData.length < 2) {
         throw new Error(`Insufficient data for ${timeRange} APY calculation`);
@@ -206,7 +208,7 @@ export class APYCalculator {
     const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
 
     // Aggregate TVL across all chains for protocol-level time series
-    const tvlData = await query<{ tvl: number; timestamp: Date }>(
+    const tvlResult = await query<{ tvl: number; timestamp: Date }>(
       `SELECT SUM(tvl) as tvl, timestamp
        FROM protocol_tvl
        WHERE protocol_id = $1
@@ -216,6 +218,8 @@ export class APYCalculator {
        ORDER BY timestamp ASC`,
       [protocolId, startDate, endDate]
     );
+
+    const tvlData = tvlResult.rows;
 
     // Calculate rolling 7-day APY for each point
     const timeSeries: APYTimeSeriesPoint[] = [];
