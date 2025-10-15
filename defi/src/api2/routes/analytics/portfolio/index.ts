@@ -1,13 +1,14 @@
 /**
  * Portfolio API Routes
- * Story: 2.2.1 - Wallet Portfolio Tracking
- * 
+ * Stories: 2.2.1 - Wallet Portfolio Tracking, 2.2.3 - Cross-chain Portfolio Aggregation
+ *
  * Endpoints:
  * - GET /v1/portfolio/:walletAddress - Portfolio summary
  * - GET /v1/portfolio/:walletAddress/allocation - Asset allocation
  * - GET /v1/portfolio/:walletAddress/holdings - Detailed holdings
  * - GET /v1/portfolio/:walletAddress/performance - Performance history
  * - GET /v1/portfolio/compare - Compare wallets
+ * - GET /v1/portfolio/cross-chain/:userId - Cross-chain portfolio (Story 2.2.3)
  */
 
 import { Router } from 'hyper-express';
@@ -19,6 +20,7 @@ import {
   getPerformance,
   compareWallets,
 } from './handlers';
+import crossChainRouter from './cross-chain';
 
 const router = new Router();
 
@@ -99,6 +101,9 @@ router.get('/compare', ew(async (req, res) => {
   
   res.json(result);
 }));
+
+// Story 2.2.3: Cross-chain Portfolio Aggregation
+router.use('/portfolio', crossChainRouter);
 
 export default router;
 
