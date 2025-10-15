@@ -1,11 +1,13 @@
 /**
  * Smart Money API Handlers
  * Story: 3.1.1 - Smart Money Identification
+ * Enhancement 1: Redis Caching Layer
  */
 
 import { Request, Response } from 'hyper-express';
 import { query } from '../../../analytics/db/connection';
 import { validateGetSmartMoneyWalletsQuery } from './validation';
+import { SmartMoneyCache } from '../../../analytics/services/smart-money-cache';
 
 interface SmartMoneyWallet {
   walletAddress: string;
@@ -42,13 +44,30 @@ interface PaginationInfo {
 
 /**
  * GET /v1/analytics/smart-money/wallets
- * 
+ *
  * List smart money wallets with filtering, sorting, and pagination
+ * Enhancement 1: Redis caching layer
  */
 export async function getSmartMoneyWallets(req: Request, res: Response) {
   try {
     // Validate and parse query parameters
     const params = validateGetSmartMoneyWalletsQuery(req);
+
+    // Try to get from cache first
+    const cache = SmartMoneyCache.getInstance();
+    const cachedData = await cache.getWalletList(params);
+
+    if (cachedData) {
+      // Set cache headers (5 minutes)
+      const cacheMaxAge = 5 * 60;
+      const expiresDate = new Date(Date.now() + cacheMaxAge * 1000);
+      res.setHeader('Expires', expiresDate.toUTCString());
+      res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}`);
+      res.setHeader('X-Cache', 'HIT');
+
+      res.status(200).json(cachedData);
+      return;
+    }
 
     // Build WHERE clause
     const whereClauses: string[] = [];
@@ -154,11 +173,15 @@ export async function getSmartMoneyWallets(req: Request, res: Response) {
       },
     };
 
+    // Cache the response
+    await cache.setWalletList(params, response);
+
     // Set cache headers (5 minutes)
     const cacheMaxAge = 5 * 60; // 5 minutes in seconds
     const expiresDate = new Date(Date.now() + cacheMaxAge * 1000);
     res.setHeader('Expires', expiresDate.toUTCString());
     res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}`);
+    res.setHeader('X-Cache', 'MISS');
 
     // Send response
     res.status(200).json(response);
