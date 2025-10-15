@@ -1,9 +1,12 @@
 /**
  * Smart Money API Routes
  * Story: 3.1.1 - Smart Money Identification
+ * Story: 3.1.2 - Trade Pattern Analysis
  *
  * Endpoints:
  * - GET /v1/analytics/smart-money/wallets - List smart money wallets
+ * - GET /v1/analytics/smart-money/wallets/:address/patterns - Get wallet patterns
+ * - GET /v1/analytics/smart-money/wallets/:address/trades - Get wallet trades
  * - GET /v1/analytics/smart-money/monitoring - Monitoring dashboard (Enhancement 4)
  * - GET /v1/analytics/smart-money/monitoring/cache - Cache metrics
  * - GET /v1/analytics/smart-money/monitoring/job - Job metrics
@@ -14,6 +17,7 @@
 import { Router } from 'hyper-express';
 import { wrap as ew } from '../../../utils/errorWrapper';
 import * as handlers from './handlers';
+import * as patterns from './patterns-handlers';
 import * as monitoring from './monitoring';
 
 const router = new Router();
@@ -45,6 +49,12 @@ const router = new Router();
  * }
  */
 router.get('/wallets', ew(handlers.getSmartMoneyWallets));
+
+/**
+ * Trade Pattern endpoints (Story 3.1.2)
+ */
+router.get('/wallets/:address/patterns', ew(patterns.getWalletPatterns));
+router.get('/wallets/:address/trades', ew(patterns.getWalletTrades));
 
 /**
  * Monitoring endpoints (Enhancement 4)
