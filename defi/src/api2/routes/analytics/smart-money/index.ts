@@ -15,7 +15,7 @@
  */
 
 import { Router } from 'hyper-express';
-import { wrap as ew } from '../../../utils/errorWrapper';
+import { errorWrapper as ew } from '../../utils';
 import * as handlers from './handlers';
 import * as patterns from './patterns-handlers';
 import * as monitoring from './monitoring';

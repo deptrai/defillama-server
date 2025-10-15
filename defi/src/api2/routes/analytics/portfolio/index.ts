@@ -12,7 +12,7 @@
  */
 
 import { Router } from 'hyper-express';
-import { ew } from '../../../utils/error-wrapper';
+import { errorWrapper as ew } from '../../utils';
 import {
   getPortfolioSummary,
   getAssetAllocation,
