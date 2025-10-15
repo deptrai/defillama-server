@@ -7,6 +7,7 @@ import process from "process";
 import fs from 'fs'
 import { RUN_TYPE } from "./utils";
 import { setInternalRoutes } from './routes/internalRoutes';
+import { setAnalyticsRoutes } from './routes/analytics';
 
 const webserver = new HyperExpress.Server()
 
@@ -30,6 +31,7 @@ async function main() {
 
   if (skipSubPath) {
     setTvlRoutes(webserver, '/')
+    setAnalyticsRoutes(webserver)
   }
 
   if (process.env.API2_SUBPATH) {
@@ -38,6 +40,7 @@ async function main() {
     webserver.use(subPath, router)
 
     setTvlRoutes(router, subPath)
+    setAnalyticsRoutes(router)
   }
 
   if (process.env.API2_SUBPATH) {
