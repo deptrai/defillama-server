@@ -73,6 +73,7 @@
     "inquirer-autocomplete-prompt": "^2.0.0",
     "inquirer-date-prompt": "^2.0.1",
     "inquirer-search-list": "^1.2.6",
+    "ioredis-mock": "^8.13.0",
     "jest": "^29.0.0",
     "jest-dynalite": "^3.5.1",
     "js-yaml": "^4.1.0",
