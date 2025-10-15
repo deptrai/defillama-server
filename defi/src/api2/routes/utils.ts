@@ -13,17 +13,26 @@ export function successResponse(res: HyperExpress.Response, data: any, cacheMinu
   isPost = false,
 } = {}) {
   res.setHeaders({
-    "Expires": getTimeInFutureMinutes(cacheMinutes)
+    "Expires": getTimeInFutureMinutes(cacheMinutes),
+    "Cache-Control": `public, max-age=${cacheMinutes * 60}`
   })
-  if (isPost)
+  if (isPost) {
     res.removeHeader("Expires")
-  
+    res.removeHeader("Cache-Control")
+  }
+
   isJson ? res.json(data) : res.send(data)
 }
 
 export function errorResponse(res: HyperExpress.Response, data: any = 'Internal server error', {
   statusCode = 400,
+  cacheMinutes = 1, // Short cache for errors to prevent retry storms
 } = {}) {
+  // Set cache headers even for errors (short TTL)
+  res.setHeaders({
+    "Expires": getTimeInFutureMinutes(cacheMinutes),
+    "Cache-Control": `public, max-age=${cacheMinutes * 60}`
+  })
   res.status(statusCode)
   res.send(data, true)
 }

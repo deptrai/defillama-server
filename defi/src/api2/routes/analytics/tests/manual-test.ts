@@ -34,22 +34,32 @@ class MockResponse {
   statusCode: number = 200;
   headers: Record<string, string> = {};
   body: any = null;
-  
+
   status(code: number) {
     this.statusCode = code;
     return this;
   }
-  
+
   header(name: string, value: string) {
     this.headers[name] = value;
     return this;
   }
-  
+
+  setHeaders(headers: Record<string, string>) {
+    Object.assign(this.headers, headers);
+    return this;
+  }
+
+  removeHeader(name: string) {
+    delete this.headers[name];
+    return this;
+  }
+
   json(data: any) {
     this.body = data;
     return this;
   }
-  
+
   send(data: any) {
     this.body = data;
     return this;
