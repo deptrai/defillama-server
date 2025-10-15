@@ -1,8 +1,7 @@
 /**
  * Analytics API Routes
- * Story: 2.1.1 - Protocol Performance Dashboard
- * Phase: 2 - API Implementation
- * 
+ * Stories: 2.1.1 - Protocol Performance Dashboard, 2.1.2 - Yield Opportunity Scanner
+ *
  * Registers all analytics endpoints
  */
 
@@ -15,11 +14,14 @@ import {
   getProtocolRevenue,
   getProtocolsBenchmark,
 } from './handlers';
+import yieldOpportunitiesRouter from './yield-opportunities';
+import yieldAlertsRouter from './yield-alerts';
 
 /**
  * Register analytics routes
  */
 export function setAnalyticsRoutes(router: HyperExpress.Router) {
+  // Story 2.1.1: Protocol Performance Dashboard
   // Protocol-specific endpoints
   router.get('/analytics/protocol/:protocolId/performance', ew(getProtocolPerformance));
   router.get('/analytics/protocol/:protocolId/apy', ew(getProtocolAPY));
@@ -28,5 +30,9 @@ export function setAnalyticsRoutes(router: HyperExpress.Router) {
 
   // Multi-protocol endpoints
   router.get('/analytics/protocols/benchmark', ew(getProtocolsBenchmark));
+
+  // Story 2.1.2: Yield Opportunity Scanner
+  router.use('/analytics/yield-opportunities', yieldOpportunitiesRouter);
+  router.use('/analytics/yield-alerts', yieldAlertsRouter);
 }
 
