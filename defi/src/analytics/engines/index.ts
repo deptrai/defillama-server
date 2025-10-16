@@ -73,6 +73,14 @@ export { PEPScreener } from './pep-screener';
 export { AdverseMediaScreener } from './adverse-media-screener';
 export { ComplianceScreeningEngine } from './compliance-screening-engine';
 
+// Export Story 4.1.1 engines (MEV Detection)
+export * from './mev-types';
+export { SandwichDetector } from './sandwich-detector';
+export { FrontrunDetector } from './frontrun-detector';
+export { ArbitrageDetector } from './arbitrage-detector';
+export { LiquidationDetector } from './liquidation-detector';
+export { BackrunDetector } from './backrun-detector';
+
 // Export convenience object with all engines
 import { apyCalculator } from './apy-calculator';
 import { userMetricsEngine } from './user-metrics-engine';
@@ -109,6 +117,11 @@ import { RugPullDetector } from './rug-pull-detector';
 import { WashTradingDetector } from './wash-trading-detector';
 import { PumpDumpDetector } from './pump-dump-detector';
 import { SybilAttackDetector } from './sybil-attack-detector';
+import { SandwichDetector } from './sandwich-detector';
+import { FrontrunDetector } from './frontrun-detector';
+import { ArbitrageDetector } from './arbitrage-detector';
+import { LiquidationDetector } from './liquidation-detector';
+import { BackrunDetector } from './backrun-detector';
 
 export const analyticsEngines = {
   // Story 2.1.1
@@ -157,6 +170,12 @@ export const analyticsEngines = {
   washTradingDetector: WashTradingDetector.getInstance(),
   pumpDumpDetector: PumpDumpDetector.getInstance(),
   sybilAttackDetector: SybilAttackDetector.getInstance(),
+  // Story 4.1.1
+  sandwichDetector: SandwichDetector.getInstance(),
+  frontrunDetector: FrontrunDetector.getInstance(),
+  arbitrageDetector: ArbitrageDetector.getInstance(),
+  liquidationDetector: LiquidationDetector.getInstance(),
+  backrunDetector: BackrunDetector.getInstance(),
 };
 
 export default analyticsEngines;
