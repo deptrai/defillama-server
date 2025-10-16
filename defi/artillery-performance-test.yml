@@ -1,0 +1,81 @@
+config:
+  target: "http://localhost:6060"
+  phases:
+    # Baseline Performance Test
+    - duration: 30
+      arrivalRate: 1
+      name: "baseline"
+
+    # Load Test - Normal Traffic
+    - duration: 60
+      arrivalRate: 10
+      name: "load_10"
+
+    # Load Test - High Traffic
+    - duration: 60
+      arrivalRate: 50
+      name: "load_50"
+
+    # Stress Test
+    - duration: 30
+      arrivalRate: 100
+      name: "stress"
+  
+  # Performance Thresholds
+  ensure:
+    maxErrorRate: 1  # Max 1% error rate
+    p95: 500         # 95th percentile < 500ms
+    p99: 1000        # 99th percentile < 1000ms
+
+scenarios:
+  # Scenario 1: Bot Analytics Endpoint
+  - name: "Bot Analytics"
+    weight: 50
+    flow:
+      - get:
+          url: "/v1/analytics/mev/bots?limit=10"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: bots
+      
+      - get:
+          url: "/v1/analytics/mev/bots?chain_id=ethereum&limit=5"
+          expect:
+            - statusCode: 200
+            - contentType: json
+      
+      - get:
+          url: "/v1/analytics/mev/bots?limit=20&offset=10"
+          expect:
+            - statusCode: 200
+            - contentType: json
+  
+  # Scenario 2: Protocol Leakage Endpoint
+  - name: "Protocol Leakage"
+    weight: 25
+    flow:
+      - get:
+          url: "/v1/analytics/mev/protocols/uniswap-v3/leakage?chain_id=ethereum&date=2025-10-15"
+          expect:
+            - statusCode: [200, 400]  # May return error if no data
+      
+      - get:
+          url: "/v1/analytics/mev/protocols/curve/leakage?chain_id=ethereum&date=2025-10-15"
+          expect:
+            - statusCode: [200, 400]
+  
+  # Scenario 3: Market Trends Endpoint
+  - name: "Market Trends"
+    weight: 25
+    flow:
+      - get:
+          url: "/v1/analytics/mev/trends?chain_id=ethereum&date=2025-10-15"
+          expect:
+            - statusCode: [200, 400]  # May return error if no data
+      
+      - get:
+          url: "/v1/analytics/mev/trends?chain_id=arbitrum&date=2025-10-15"
+          expect:
+            - statusCode: [200, 400]
+

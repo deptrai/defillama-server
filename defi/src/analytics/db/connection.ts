@@ -14,12 +14,14 @@ const connectionString =
   process.env.ALERTS_DB || 
   'postgresql://defillama:defillama123@localhost:5432/defillama';
 
-// Create connection pool
+// Create connection pool with optimized settings for high load
 const pool = new Pool({
   connectionString,
-  max: 20, // Maximum number of clients in the pool
+  max: 50, // Maximum number of clients in the pool (increased for performance)
+  min: 10, // Minimum number of clients to keep in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection cannot be established
+  connectionTimeoutMillis: 5000, // Return an error after 5 seconds if connection cannot be established
+  allowExitOnIdle: false, // Keep pool alive even when idle
 });
 
 // Pool error handler

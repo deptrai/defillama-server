@@ -19,6 +19,7 @@
 import { query } from '../db/connection';
 import { BotStrategyAnalyzer } from './bot-strategy-analyzer';
 import { BotPerformanceCalculator } from './bot-performance-calculator';
+import cacheManager, { getCacheKey, CACHE_PREFIX, CACHE_TTL, cacheFunction } from '../cache/redis-cache';
 
 // ============================================================================
 // Types
@@ -106,77 +107,83 @@ export class BotSophisticationScorer {
     botAddress: string,
     chainId: string
   ): Promise<BotSophisticationScore> {
-    // Get bot data
-    const bot = await this.getBotData(botAddress, chainId);
-    if (!bot) {
-      throw new Error(`Bot not found: ${botAddress} on ${chainId}`);
-    }
+    // Generate cache key
+    const cacheKey = getCacheKey(CACHE_PREFIX.BOT_SOPHISTICATION, botAddress, chainId);
 
-    // Get strategy analysis
-    const strategyAnalysis = await this.strategyAnalyzer.analyzeStrategy(botAddress, chainId);
+    // Try to get from cache
+    return cacheFunction(cacheKey, CACHE_TTL.BOT_SOPHISTICATION, async () => {
+      // Get bot data
+      const bot = await this.getBotData(botAddress, chainId);
+      if (!bot) {
+        throw new Error(`Bot not found: ${botAddress} on ${chainId}`);
+      }
 
-    // Get performance metrics
-    const performance = await this.performanceCalculator.calculatePerformance(
-      botAddress,
-      chainId
-    );
+      // Get strategy analysis
+      const strategyAnalysis = await this.strategyAnalyzer.analyzeStrategy(botAddress, chainId);
 
-    // Calculate component scores
-    const strategyComplexityScore = this.calculateStrategyComplexityScore(
-      strategyAnalysis,
-      bot
-    );
+      // Get performance metrics
+      const performance = await this.performanceCalculator.calculatePerformance(
+        botAddress,
+        chainId
+      );
 
-    const technicalCapabilitiesScore = this.calculateTechnicalCapabilitiesScore(bot);
+      // Calculate component scores
+      const strategyComplexityScore = this.calculateStrategyComplexityScore(
+        strategyAnalysis,
+        bot
+      );
 
-    const executionQualityScore = this.calculateExecutionQualityScore(performance, bot);
+      const technicalCapabilitiesScore = this.calculateTechnicalCapabilitiesScore(bot);
 
-    const scaleConsistencyScore = this.calculateScaleConsistencyScore(performance, bot);
+      const executionQualityScore = this.calculateExecutionQualityScore(performance, bot);
 
-    // Calculate overall score
-    const overallScore = Math.round(
-      strategyComplexityScore * this.weights.strategy_complexity +
-        technicalCapabilitiesScore * this.weights.technical_capabilities +
-        executionQualityScore * this.weights.execution_quality +
-        scaleConsistencyScore * this.weights.scale_consistency
-    );
+      const scaleConsistencyScore = this.calculateScaleConsistencyScore(performance, bot);
 
-    // Determine sophistication level
-    const sophisticationLevel = this.determineSophisticationLevel(overallScore);
+      // Calculate overall score
+      const overallScore = Math.round(
+        strategyComplexityScore * this.weights.strategy_complexity +
+          technicalCapabilitiesScore * this.weights.technical_capabilities +
+          executionQualityScore * this.weights.execution_quality +
+          scaleConsistencyScore * this.weights.scale_consistency
+      );
 
-    return {
-      bot_address: botAddress,
-      chain_id: chainId,
-      overall_score: overallScore,
-      sophistication_level: sophisticationLevel,
-      strategy_complexity_score: strategyComplexityScore,
-      technical_capabilities_score: technicalCapabilitiesScore,
-      execution_quality_score: executionQualityScore,
-      scale_consistency_score: scaleConsistencyScore,
-      breakdown: {
-        // Strategy Complexity
-        is_multi_strategy: strategyAnalysis.is_multi_strategy,
-        uses_advanced_patterns: this.detectAdvancedPatterns(bot),
-        strategy_diversity: strategyAnalysis.specialization_score,
+      // Determine sophistication level
+      const sophisticationLevel = this.determineSophisticationLevel(overallScore);
 
-        // Technical Capabilities
-        uses_flashbots: bot.uses_flashbots || false,
-        uses_private_mempool: bot.uses_private_mempool || false,
-        uses_flash_loans: bot.uses_flash_loans || false,
-        uses_multi_hop: bot.uses_multi_hop || false,
+      return {
+        bot_address: botAddress,
+        chain_id: chainId,
+        overall_score: overallScore,
+        sophistication_level: sophisticationLevel,
+        strategy_complexity_score: strategyComplexityScore,
+        technical_capabilities_score: technicalCapabilitiesScore,
+        execution_quality_score: executionQualityScore,
+        scale_consistency_score: scaleConsistencyScore,
+        breakdown: {
+          // Strategy Complexity
+          is_multi_strategy: strategyAnalysis.is_multi_strategy,
+          uses_advanced_patterns: this.detectAdvancedPatterns(bot),
+          strategy_diversity: strategyAnalysis.specialization_score,
 
-        // Execution Quality
-        success_rate_pct: performance.success.success_rate_pct,
-        gas_efficiency_score: performance.efficiency.gas_efficiency_score,
-        profit_consistency: performance.success.consistency_score,
+          // Technical Capabilities
+          uses_flashbots: bot.uses_flashbots || false,
+          uses_private_mempool: bot.uses_private_mempool || false,
+          uses_flash_loans: bot.uses_flash_loans || false,
+          uses_multi_hop: bot.uses_multi_hop || false,
 
-        // Scale & Consistency
-        total_volume_usd: performance.financial.total_mev_extracted_usd,
-        transactions_per_day: performance.activity.transactions_per_day,
-        uptime_pct: performance.activity.uptime_pct,
-        active_days: performance.activity.active_days,
-      },
-    };
+          // Execution Quality
+          success_rate_pct: performance.success.success_rate_pct,
+          gas_efficiency_score: performance.efficiency.gas_efficiency_score,
+          profit_consistency: performance.success.consistency_score,
+
+          // Scale & Consistency
+          total_volume_usd: performance.financial.total_mev_extracted_usd,
+          transactions_per_day: performance.activity.transactions_per_day,
+          uptime_pct: performance.activity.uptime_pct,
+          active_days: performance.activity.active_days,
+        },
+      };
+    });
   }
 
   /**

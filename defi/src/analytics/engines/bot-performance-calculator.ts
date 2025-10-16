@@ -18,6 +18,7 @@
  */
 
 import { query } from '../db/connection';
+import cacheManager, { getCacheKey, CACHE_PREFIX, CACHE_TTL, cacheFunction } from '../cache/redis-cache';
 
 // ============================================================================
 // Types
@@ -116,24 +117,33 @@ export class BotPerformanceCalculator {
     chainId: string,
     timeRange?: TimeRange
   ): Promise<BotPerformanceMetrics> {
-    // Get bot data
-    const bot = await this.getBotData(botAddress, chainId);
-    if (!bot) {
-      throw new Error(`Bot not found: ${botAddress} on ${chainId}`);
-    }
+    // Generate cache key
+    const timeRangeKey = timeRange
+      ? `${timeRange.start_date?.toISOString() || 'all'}_${timeRange.end_date?.toISOString() || 'all'}`
+      : 'all';
+    const cacheKey = getCacheKey(CACHE_PREFIX.BOT_PERFORMANCE, botAddress, chainId, timeRangeKey);
 
-    // Calculate metrics
-    const financial = await this.calculateFinancialMetrics(botAddress, chainId, timeRange);
-    const success = await this.calculateSuccessMetrics(botAddress, chainId, timeRange);
-    const efficiency = await this.calculateEfficiencyMetrics(botAddress, chainId, timeRange);
-    const activity = await this.calculateActivityMetrics(botAddress, chainId, timeRange);
+    // Try to get from cache
+    return cacheFunction(cacheKey, CACHE_TTL.BOT_PERFORMANCE, async () => {
+      // Get bot data
+      const bot = await this.getBotData(botAddress, chainId);
+      if (!bot) {
+        throw new Error(`Bot not found: ${botAddress} on ${chainId}`);
+      }
 
-    return {
-      financial,
-      success,
-      efficiency,
-      activity,
-    };
+      // Calculate metrics
+      const financial = await this.calculateFinancialMetrics(botAddress, chainId, timeRange);
+      const success = await this.calculateSuccessMetrics(botAddress, chainId, timeRange);
+      const efficiency = await this.calculateEfficiencyMetrics(botAddress, chainId, timeRange);
+      const activity = await this.calculateActivityMetrics(botAddress, chainId, timeRange);
+
+      return {
+        financial,
+        success,
+        efficiency,
+        activity,
+      };
+    });
   }
 
   /**

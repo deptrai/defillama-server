@@ -20,6 +20,7 @@
 
 import { query } from '../db/connection';
 import { MEVOpportunityType } from './mev-types';
+import cacheManager, { getCacheKey, CACHE_PREFIX, CACHE_TTL, cacheFunction } from '../cache/redis-cache';
 
 // ============================================================================
 // Types
@@ -117,44 +118,50 @@ export class BotStrategyAnalyzer {
     botAddress: string,
     chainId: string
   ): Promise<BotStrategyAnalysis> {
-    // Analyze opportunity types
-    const opportunityTypes = await this.analyzeOpportunityTypes(botAddress, chainId);
-    const primaryStrategy = opportunityTypes[0]?.opportunity_type || 'sandwich';
-    const isMultiStrategy = opportunityTypes.filter((t) => t.share_pct >= 20).length >= 2;
-    const specializationScore = this.calculateSpecializationScore(opportunityTypes);
+    // Generate cache key
+    const cacheKey = getCacheKey(CACHE_PREFIX.BOT_STRATEGY, botAddress, chainId);
 
-    // Analyze protocols
-    const preferredProtocols = await this.analyzeProtocols(botAddress, chainId);
-    const protocolDiversityScore = this.calculateDiversityScore(
-      preferredProtocols.map((p) => p.share_pct)
-    );
+    // Try to get from cache
+    return cacheFunction(cacheKey, CACHE_TTL.BOT_STRATEGY, async () => {
+      // Analyze opportunity types
+      const opportunityTypes = await this.analyzeOpportunityTypes(botAddress, chainId);
+      const primaryStrategy = opportunityTypes[0]?.opportunity_type || 'sandwich';
+      const isMultiStrategy = opportunityTypes.filter((t) => t.share_pct >= 20).length >= 2;
+      const specializationScore = this.calculateSpecializationScore(opportunityTypes);
 
-    // Analyze tokens
-    const preferredTokens = await this.analyzeTokens(botAddress, chainId);
-    const tokenDiversityScore = this.calculateDiversityScore(
-      preferredTokens.map((t) => t.share_pct)
-    );
+      // Analyze protocols
+      const preferredProtocols = await this.analyzeProtocols(botAddress, chainId);
+      const protocolDiversityScore = this.calculateDiversityScore(
+        preferredProtocols.map((p) => p.share_pct)
+      );
 
-    // Classify strategy
-    const strategyClassification = this.classifyStrategy(
-      opportunityTypes,
-      specializationScore,
-      isMultiStrategy
-    );
+      // Analyze tokens
+      const preferredTokens = await this.analyzeTokens(botAddress, chainId);
+      const tokenDiversityScore = this.calculateDiversityScore(
+        preferredTokens.map((t) => t.share_pct)
+      );
 
-    return {
-      bot_address: botAddress,
-      chain_id: chainId,
-      opportunity_types: opportunityTypes,
-      primary_strategy: primaryStrategy,
-      is_multi_strategy: isMultiStrategy,
-      specialization_score: specializationScore,
-      preferred_protocols: preferredProtocols,
-      protocol_diversity_score: protocolDiversityScore,
-      preferred_tokens: preferredTokens,
-      token_diversity_score: tokenDiversityScore,
-      strategy_classification: strategyClassification,
-    };
+      // Classify strategy
+      const strategyClassification = this.classifyStrategy(
+        opportunityTypes,
+        specializationScore,
+        isMultiStrategy
+      );
+
+      return {
+        bot_address: botAddress,
+        chain_id: chainId,
+        opportunity_types: opportunityTypes,
+        primary_strategy: primaryStrategy,
+        is_multi_strategy: isMultiStrategy,
+        specialization_score: specializationScore,
+        preferred_protocols: preferredProtocols,
+        protocol_diversity_score: protocolDiversityScore,
+        preferred_tokens: preferredTokens,
+        token_diversity_score: tokenDiversityScore,
+        strategy_classification: strategyClassification,
+      };
+    });
   }
 
   /**

@@ -34,6 +34,20 @@ import {
 import { MEVProtectionAnalyzer } from '../../../../analytics/engines/mev-protection-analyzer';
 
 // ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Add caching headers to response
+ * @param res Response object
+ * @param maxAge Cache duration in seconds (default: 300 = 5 minutes)
+ */
+function addCacheHeaders(res: any, maxAge: number = 300) {
+  res.header('Cache-Control', `public, max-age=${maxAge}`);
+  res.header('Vary', 'Accept-Encoding');
+}
+
+// ============================================================================
 // Route Handlers
 // ============================================================================
 
@@ -367,6 +381,9 @@ async function getBotAnalytics(req: any, res: any) {
       })
     );
 
+    // Add caching headers (5 minutes)
+    addCacheHeaders(res, 300);
+
     return successResponse(res, {
       bots: enrichedBots,
       pagination: {
@@ -406,6 +423,9 @@ async function getProtocolLeakage(req: any, res: any) {
     const impactCalculator = UserImpactCalculator.getInstance();
     const userImpact = await impactCalculator.calculateImpact(leakage);
 
+    // Add caching headers (10 minutes - data changes less frequently)
+    addCacheHeaders(res, 600);
+
     return successResponse(res, {
       leakage,
       breakdown,
@@ -440,6 +460,9 @@ async function getMarketTrends(req: any, res: any) {
     // Get bot competition
     const competitionAnalyzer = BotCompetitionAnalyzer.getInstance();
     const competition = await competitionAnalyzer.analyzeCompetition(chain_id, new Date(date));
+
+    // Add caching headers (10 minutes - data changes less frequently)
+    addCacheHeaders(res, 600);
 
     return successResponse(res, {
       trend,
