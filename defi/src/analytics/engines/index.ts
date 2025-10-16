@@ -86,6 +86,13 @@ export { ProfitCalculator, profitCalculator } from './profit-calculator';
 export { ConfidenceScorer, confidenceScorer } from './confidence-scorer';
 export { TransactionSimulator, transactionSimulator } from './transaction-simulator';
 
+// Export Story 4.1.3 engines (MEV Bot Tracking & Analytics)
+export { MEVBotIdentifier } from './mev-bot-identifier';
+export { MEVBotTracker } from './mev-bot-tracker';
+export { BotPerformanceCalculator } from './bot-performance-calculator';
+export { BotStrategyAnalyzer } from './bot-strategy-analyzer';
+export { BotSophisticationScorer } from './bot-sophistication-scorer';
+
 // Export convenience object with all engines
 import { apyCalculator } from './apy-calculator';
 import { userMetricsEngine } from './user-metrics-engine';
