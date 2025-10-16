@@ -40,7 +40,7 @@ for port in "${required_ports[@]}"; do
     else
         echo "❌ Port $port is in use - killing process..."
         # Kill process on this port
-        lsof -ti :$port -P tcp -t | awk 'NR==1' | awk '{print $2}' | xargs kill -9 || true)
+        lsof -ti :$port -P tcp -t | awk 'NR==1' | awk '{print $2}' | xargs kill -9 || true
         sleep 2
         
         # Wait and check again
@@ -52,7 +52,7 @@ for port in "${required_ports[@]}"; do
     fi
 done
 
-if [ $available_ports -ne ${#required_ports} ]; then
+if [ $available_ports -eq ${#required_ports[@]} ]; then
     echo "✅ All required ports are available"
 else
     echo "⚠️ Some required ports are still in use"
@@ -175,7 +175,7 @@ fi
 cd ..
 
 echo "🚀 Step 3.4: Starting Frontend App (Port 5003)..."
-if [ -d "defillama-app" ] && [ -f "package.json" ]]; then
+if [ -d "defillama-app" ] && [ -f "package.json" ]; then
     cd defillama-app
     export NEXT_PUBLIC_URL=http://localhost:5003
     export API_BASE_URL=http://localhost:5000
@@ -288,13 +288,13 @@ echo ""
 echo "🔍 PROCESS LIST:"
 echo "========================"
 echo "Database:"
-docker ps --format "table {{.Names}}\t{{.Status}}" | grep -E "(postgres|redis)" | awk '{printf "%s\t%s\n"} {{.Name}} {{.Status}}'
+docker ps --format "table {{.Names}}\t{{.Status}}" | grep -E "(postgres|redis)"
 echo ""
 echo "Application Services:"
-ps aux | grep -E "(npm.*dev|next.*dev|yarn.*dev)" | awk '{printf "%s\t%s\t%s\n" $9 $10}' | $11}' | $2}' | $3}'
+ps aux | grep -E "(npm.*dev|next.*dev|yarn.*dev)" | grep -v grep | awk '{print $2, $11}'
 echo ""
 echo "WebSocket Connections:"
-lsof -i:5001 -P -n | grep -E "(LISTEN)" | n/a' > /dev/null | wc -l | awk 'NR>0' | awk '{printf "%s\t%d\n" $3} {split("/")|map -d"/" | head -2}' | sort -n' | wc -l)'
+lsof -i:5001 -P -n | grep -E "(LISTEN)" | wc -l
 echo ""
 
 echo ""

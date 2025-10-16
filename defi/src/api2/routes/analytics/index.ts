@@ -19,7 +19,7 @@ import yieldAlertsRouter from './yield-alerts';
 import liquidityPoolsRouter from './liquidity';
 import liquidityMigrationsRouter from './liquidity-migrations';
 import portfolioRouter from './portfolio';
-import holdersRouter from './holders';
+// import holdersRouter from './holders'; // Temporarily disabled - missing holder-distribution-engine
 import smartMoneyRouter from './smart-money';
 import riskRouter from './risk';
 import suspiciousActivitiesRouter from './suspicious-activities';
@@ -52,7 +52,7 @@ export function setAnalyticsRoutes(router: HyperExpress.Router) {
   router.use('/analytics/portfolio', portfolioRouter);
 
   // Story 2.2.2: Holder Distribution Analysis
-  router.use('/analytics', holdersRouter);
+  // router.use('/analytics', holdersRouter); // Temporarily disabled - missing holder-distribution-engine
 
   // Story 3.1.1: Smart Money Identification
   router.use('/analytics/smart-money', smartMoneyRouter);
