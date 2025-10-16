@@ -67,7 +67,9 @@ describe('MEV Trend Analyzers', () => {
           'new_bots',
           'active_bots',
           'bot_concentration_hhi',
+          'concentration_level',
           'top_10_bots_share_pct',
+          'competition_intensity',
           'avg_gas_price_gwei',
           'avg_priority_fee_gwei',
           'total_gas_spent_usd',
@@ -75,7 +77,7 @@ describe('MEV Trend Analyzers', () => {
           'top_tokens',
         ];
 
-        expect(expectedKeys).toHaveLength(34);
+        expect(expectedKeys).toHaveLength(37);
       });
 
       it('should calculate share percentages correctly', () => {
