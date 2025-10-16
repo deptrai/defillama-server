@@ -13,6 +13,7 @@ import {
   validateStatsQuery,
   validateDetectQuery,
   validateOpportunityId,
+  validateProtectionAnalysisRequest,
 } from './validation';
 import {
   SandwichDetector,
@@ -21,6 +22,7 @@ import {
   LiquidationDetector,
   BackrunDetector,
 } from '../../../../analytics/engines';
+import { MEVProtectionAnalyzer } from '../../../../analytics/engines/mev-protection-analyzer';
 
 // ============================================================================
 // Route Handlers
@@ -187,9 +189,9 @@ async function getStats(req: any, res: any) {
 async function detectOpportunities(req: any, res: any) {
   try {
     const params = validateDetectQuery(req.query_parameters);
-    
+
     let results: any[] = [];
-    
+
     // Run appropriate detector
     switch (params.opportunity_type) {
       case 'sandwich':
@@ -199,7 +201,7 @@ async function detectOpportunities(req: any, res: any) {
           params.block_number
         );
         break;
-        
+
       case 'frontrun':
         const frontrunDetector = FrontrunDetector.getInstance();
         results = await frontrunDetector.detectFrontrunning(
@@ -207,17 +209,17 @@ async function detectOpportunities(req: any, res: any) {
           params.block_number
         );
         break;
-        
+
       case 'arbitrage':
         const arbitrageDetector = ArbitrageDetector.getInstance();
         results = await arbitrageDetector.detectArbitrage(params.chain_id);
         break;
-        
+
       case 'liquidation':
         const liquidationDetector = LiquidationDetector.getInstance();
         results = await liquidationDetector.detectLiquidations(params.chain_id);
         break;
-        
+
       case 'backrun':
         const backrunDetector = BackrunDetector.getInstance();
         results = await backrunDetector.detectBackrunning(
@@ -226,7 +228,7 @@ async function detectOpportunities(req: any, res: any) {
         );
         break;
     }
-    
+
     return successResponse(res, {
       opportunity_type: params.opportunity_type,
       chain_id: params.chain_id,
@@ -234,6 +236,73 @@ async function detectOpportunities(req: any, res: any) {
       results_count: results.length,
       results: results.filter(r => r.detected),
     });
+  } catch (error: any) {
+    return errorResponse(res, error.message, 400);
+  }
+}
+
+/**
+ * POST /v1/analytics/mev/protection/analyze
+ * Analyze transaction vulnerability to MEV attacks
+ * Story: 4.1.2 - MEV Protection Insights
+ */
+async function analyzeProtection(req: any, res: any) {
+  try {
+    // Parse and validate request body
+    const body = await req.json();
+    const params = validateProtectionAnalysisRequest(body);
+
+    // Analyze vulnerability
+    const analyzer = MEVProtectionAnalyzer.getInstance();
+    const assessment = await analyzer.analyzeVulnerability(params);
+
+    // Save to database
+    const sql = `
+      INSERT INTO transaction_vulnerability_assessments (
+        tx_hash, user_address, chain_id, timestamp,
+        token_in_address, token_out_address,
+        amount_in, amount_out,
+        slippage_tolerance,
+        vulnerability_score, risk_category,
+        sandwich_risk, frontrun_risk, backrun_risk,
+        estimated_mev_loss_usd, estimated_slippage_pct,
+        recommended_slippage, recommended_gas_price,
+        use_private_mempool, use_mev_protection_rpc,
+        alternative_routes, simulation_results
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
+      ) RETURNING id
+    `;
+
+    const values = [
+      null, // tx_hash (not yet executed)
+      params.from_address || 'unknown',
+      params.chain_id,
+      assessment.timestamp,
+      params.token_in_address,
+      params.token_out_address,
+      params.amount_in,
+      assessment.simulation.expected_case.amount_out,
+      params.slippage_tolerance_pct,
+      assessment.vulnerability_score,
+      assessment.risk_category,
+      assessment.risks.sandwich_risk,
+      assessment.risks.frontrun_risk,
+      assessment.risks.backrun_risk,
+      assessment.estimated_impact.mev_loss_usd,
+      assessment.estimated_impact.slippage_pct,
+      assessment.recommendations.recommended_slippage,
+      assessment.recommendations.recommended_gas_price,
+      assessment.recommendations.use_private_mempool,
+      assessment.recommendations.use_mev_protection_rpc,
+      JSON.stringify(assessment.recommendations.alternative_routes || []),
+      JSON.stringify(assessment.simulation),
+    ];
+
+    await query(sql, values);
+
+    return successResponse(res, assessment);
   } catch (error: any) {
     return errorResponse(res, error.message, 400);
   }
@@ -248,20 +317,25 @@ export default function registerMEVRoutes(router: HyperExpress.Router) {
   router.get('/v1/analytics/mev/opportunities', async (req: any, res: any) => {
     return listOpportunities(req, res);
   });
-  
+
   // Get opportunity by ID
   router.get('/v1/analytics/mev/opportunities/:id', async (req: any, res: any) => {
     return getOpportunityById(req, res);
   });
-  
+
   // Get statistics
   router.get('/v1/analytics/mev/stats', async (req: any, res: any) => {
     return getStats(req, res);
   });
-  
+
   // Trigger detection
   router.post('/v1/analytics/mev/detect', async (req: any, res: any) => {
     return detectOpportunities(req, res);
+  });
+
+  // Analyze protection (Story 4.1.2)
+  router.post('/v1/analytics/mev/protection/analyze', async (req: any, res: any) => {
+    return analyzeProtection(req, res);
   });
 }
 

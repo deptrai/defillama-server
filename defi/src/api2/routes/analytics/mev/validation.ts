@@ -1,11 +1,13 @@
 /**
  * MEV API Validation
  * Story: 4.1.1 - MEV Opportunity Detection
- * 
+ * Story: 4.1.2 - MEV Protection Insights
+ *
  * Request validation for MEV API endpoints
  */
 
 import { MEVOpportunityType } from '../../../../analytics/engines/mev-types';
+import { TransactionRequest } from '../../../../analytics/engines/mev-protection-analyzer';
 
 // ============================================================================
 // Validation Functions
@@ -275,6 +277,71 @@ export function validateDetectQuery(queryParams: any): {
     opportunity_type: opportunityType,
     chain_id: validateChainId(queryParams.chain_id),
     block_number: blockNumber,
+  };
+}
+
+/**
+ * Validate protection analysis request
+ * Story: 4.1.2 - MEV Protection Insights
+ */
+export function validateProtectionAnalysisRequest(body: any): TransactionRequest {
+  // Required fields
+  if (!body.chain_id) {
+    throw new Error('chain_id is required');
+  }
+
+  if (!body.token_in_address) {
+    throw new Error('token_in_address is required');
+  }
+
+  if (!body.token_out_address) {
+    throw new Error('token_out_address is required');
+  }
+
+  if (typeof body.amount_in !== 'number' || body.amount_in <= 0) {
+    throw new Error('amount_in must be a positive number');
+  }
+
+  if (typeof body.amount_in_usd !== 'number' || body.amount_in_usd <= 0) {
+    throw new Error('amount_in_usd must be a positive number');
+  }
+
+  if (typeof body.slippage_tolerance_pct !== 'number' || body.slippage_tolerance_pct < 0) {
+    throw new Error('slippage_tolerance_pct must be a non-negative number');
+  }
+
+  // Validate chain ID
+  const chainId = validateChainId(body.chain_id);
+
+  // Optional fields with defaults
+  const gasPrice = body.gas_price_gwei && typeof body.gas_price_gwei === 'number' && body.gas_price_gwei > 0
+    ? body.gas_price_gwei
+    : undefined;
+
+  const poolLiquidity = body.pool_liquidity_usd && typeof body.pool_liquidity_usd === 'number' && body.pool_liquidity_usd > 0
+    ? body.pool_liquidity_usd
+    : undefined;
+
+  const poolVolume = body.pool_volume_24h_usd && typeof body.pool_volume_24h_usd === 'number' && body.pool_volume_24h_usd > 0
+    ? body.pool_volume_24h_usd
+    : undefined;
+
+  return {
+    chain_id: chainId,
+    from_address: body.from_address,
+    to_address: body.to_address,
+    token_in_address: body.token_in_address,
+    token_out_address: body.token_out_address,
+    amount_in: body.amount_in,
+    amount_in_usd: body.amount_in_usd,
+    slippage_tolerance_pct: body.slippage_tolerance_pct,
+    gas_price_gwei: gasPrice,
+    pool_address: body.pool_address,
+    pool_liquidity_usd: poolLiquidity,
+    pool_volume_24h_usd: poolVolume,
+    dex: body.dex,
+    is_time_sensitive: body.is_time_sensitive === true,
+    use_private_mempool: body.use_private_mempool === true,
   };
 }
 
