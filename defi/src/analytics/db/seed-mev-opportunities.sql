@@ -1,0 +1,323 @@
+-- Seed Data: MEV Opportunities
+-- Story: 4.1.1 - MEV Opportunity Detection
+-- Date: 2025-10-16
+-- Description: Test data for MEV opportunities covering all 5 types
+
+-- Clear existing data
+TRUNCATE TABLE mev_opportunities CASCADE;
+
+-- Sandwich Attack Opportunities (5 records)
+INSERT INTO mev_opportunities (
+  opportunity_type, chain_id, block_number, timestamp,
+  target_tx_hash, mev_tx_hashes, token_addresses, token_symbols,
+  protocol_id, protocol_name, dex_name,
+  mev_profit_usd, victim_loss_usd, gas_cost_usd, net_profit_usd,
+  bot_address, bot_name, bot_type,
+  detection_method, confidence_score, status
+) VALUES
+-- Sandwich 1: Large USDC/ETH swap on Uniswap
+(
+  'sandwich', 'ethereum', 18500000, '2025-10-15 10:30:00',
+  '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+  ARRAY['0xabc123...frontrun', '0xdef456...backrun'],
+  ARRAY['0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
+  ARRAY['USDC', 'WETH'],
+  'uniswap-v3', 'Uniswap V3', 'Uniswap V3',
+  15420.50, 8230.25, 450.30, 14970.20,
+  '0x1a2b3c4d5e6f7890abcdef1234567890abcdef12', 'jaredfromsubway.eth', 'sandwich_bot',
+  'pattern_matching', 92.5, 'confirmed'
+),
+
+-- Sandwich 2: Medium PEPE/WETH swap on Uniswap
+(
+  'sandwich', 'ethereum', 18500100, '2025-10-15 11:15:00',
+  '0x2345678901bcdef2345678901bcdef2345678901bcdef2345678901bcdef23',
+  ARRAY['0xbcd234...frontrun', '0xefg567...backrun'],
+  ARRAY['0x6982508145454Ce325dDbE47a25d4ec3d2311933', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
+  ARRAY['PEPE', 'WETH'],
+  'uniswap-v2', 'Uniswap V2', 'Uniswap V2',
+  8750.00, 4320.50, 320.00, 8430.00,
+  '0x2b3c4d5e6f7890abcdef1234567890abcdef1234', 'mev_bot_alpha', 'sandwich_bot',
+  'pattern_matching', 88.0, 'executed'
+),
+
+-- Sandwich 3: Small ARB/USDC swap on Arbitrum
+(
+  'sandwich', 'arbitrum', 145000000, '2025-10-15 12:00:00',
+  '0x3456789012cdef3456789012cdef3456789012cdef3456789012cdef345678',
+  ARRAY['0xcde345...frontrun', '0xfgh678...backrun'],
+  ARRAY['0x912CE59144191C1204E64559FE8253a0e49E6548', '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'],
+  ARRAY['ARB', 'USDC'],
+  'uniswap-v3', 'Uniswap V3', 'Uniswap V3',
+  2340.00, 1150.00, 45.00, 2295.00,
+  '0x3c4d5e6f7890abcdef1234567890abcdef123456', 'arb_sandwich_bot', 'sandwich_bot',
+  'pattern_matching', 85.5, 'confirmed'
+),
+
+-- Sandwich 4: Failed sandwich (victim used MEV protection)
+(
+  'sandwich', 'ethereum', 18500200, '2025-10-15 13:30:00',
+  '0x4567890123def4567890123def4567890123def4567890123def4567890123',
+  ARRAY['0xdef456...frontrun'],
+  ARRAY['0xdAC17F958D2ee523a2206206994597C13D831ec7', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
+  ARRAY['USDT', 'WETH'],
+  'uniswap-v3', 'Uniswap V3', 'Uniswap V3',
+  0.00, 0.00, 280.00, -280.00,
+  '0x4d5e6f7890abcdef1234567890abcdef12345678', 'failed_sandwich_bot', 'sandwich_bot',
+  'pattern_matching', 75.0, 'failed'
+),
+
+-- Sandwich 5: Large LINK/ETH swap on Optimism
+(
+  'sandwich', 'optimism', 112000000, '2025-10-15 14:45:00',
+  '0x5678901234ef5678901234ef5678901234ef5678901234ef5678901234ef56',
+  ARRAY['0xefg567...frontrun', '0xhij890...backrun'],
+  ARRAY['0x350a791Bfc2C21F9Ed5d10980Dad2e2638ffa7f6', '0x4200000000000000000000000000000000000006'],
+  ARRAY['LINK', 'WETH'],
+  'uniswap-v3', 'Uniswap V3', 'Uniswap V3',
+  5680.00, 2890.00, 35.00, 5645.00,
+  '0x5e6f7890abcdef1234567890abcdef1234567890', 'op_sandwich_master', 'sandwich_bot',
+  'pattern_matching', 90.0, 'executed'
+);
+
+-- Frontrunning Opportunities (4 records)
+INSERT INTO mev_opportunities (
+  opportunity_type, chain_id, block_number, timestamp,
+  target_tx_hash, mev_tx_hashes, token_addresses, token_symbols,
+  protocol_id, protocol_name, dex_name,
+  mev_profit_usd, victim_loss_usd, gas_cost_usd, net_profit_usd,
+  bot_address, bot_name, bot_type,
+  detection_method, confidence_score, status
+) VALUES
+-- Frontrun 1: Large buy order
+(
+  'frontrun', 'ethereum', 18500300, '2025-10-15 15:00:00',
+  '0x6789012345f6789012345f6789012345f6789012345f6789012345f678901',
+  ARRAY['0xfgh678...frontrun'],
+  ARRAY['0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
+  ARRAY['UNI', 'WETH'],
+  'uniswap-v3', 'Uniswap V3', 'Uniswap V3',
+  12500.00, 6200.00, 380.00, 12120.00,
+  '0x6f7890abcdef1234567890abcdef12345678901a', 'frontrun_master', 'frontrun_bot',
+  'price_impact_estimation', 87.0, 'confirmed'
+),
+
+-- Frontrun 2: NFT mint
+(
+  'frontrun', 'ethereum', 18500350, '2025-10-15 15:30:00',
+  '0x7890123456g7890123456g7890123456g7890123456g7890123456g789012',
+  ARRAY['0xghi789...frontrun'],
+  ARRAY['0x0000000000000000000000000000000000000000'],
+  ARRAY['ETH'],
+  'nft-collection', 'Bored Ape Yacht Club', NULL,
+  8900.00, 0.00, 520.00, 8380.00,
+  '0x7890abcdef1234567890abcdef12345678901abc', 'nft_sniper_bot', 'frontrun_bot',
+  'price_impact_estimation', 82.5, 'executed'
+),
+
+-- Frontrun 3: Token launch
+(
+  'frontrun', 'base', 5000000, '2025-10-15 16:00:00',
+  '0x8901234567h8901234567h8901234567h8901234567h8901234567h890123',
+  ARRAY['0xhij890...frontrun'],
+  ARRAY['0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', '0x4200000000000000000000000000000000000006'],
+  ARRAY['USDC', 'WETH'],
+  'uniswap-v3', 'Uniswap V3', 'Uniswap V3',
+  4560.00, 2100.00, 25.00, 4535.00,
+  '0x890abcdef1234567890abcdef12345678901abcd', 'base_frontrun_bot', 'frontrun_bot',
+  'price_impact_estimation', 79.0, 'confirmed'
+),
+
+-- Frontrun 4: Failed frontrun (gas war lost)
+(
+  'frontrun', 'ethereum', 18500400, '2025-10-15 16:30:00',
+  '0x9012345678i9012345678i9012345678i9012345678i9012345678i901234',
+  ARRAY['0xijk901...frontrun'],
+  ARRAY['0x6B175474E89094C44Da98b954EedeAC495271d0F', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
+  ARRAY['DAI', 'WETH'],
+  'uniswap-v2', 'Uniswap V2', 'Uniswap V2',
+  0.00, 0.00, 650.00, -650.00,
+  '0x90abcdef1234567890abcdef12345678901abcde', 'failed_frontrun_bot', 'frontrun_bot',
+  'price_impact_estimation', 70.0, 'failed'
+);
+
+-- Arbitrage Opportunities (5 records)
+INSERT INTO mev_opportunities (
+  opportunity_type, chain_id, block_number, timestamp,
+  target_tx_hash, mev_tx_hashes, token_addresses, token_symbols,
+  protocol_id, protocol_name, dex_name,
+  mev_profit_usd, victim_loss_usd, gas_cost_usd, net_profit_usd,
+  bot_address, bot_name, bot_type,
+  detection_method, confidence_score, status
+) VALUES
+-- Arbitrage 1: Uniswap vs Sushiswap
+(
+  'arbitrage', 'ethereum', 18500500, '2025-10-15 17:00:00',
+  NULL,
+  ARRAY['0xjkl012...arbitrage'],
+  ARRAY['0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
+  ARRAY['USDC', 'WETH'],
+  'multi-dex', 'Uniswap V3 → Sushiswap', 'Uniswap V3, Sushiswap',
+  3240.00, 0.00, 420.00, 2820.00,
+  '0xa0bcdef1234567890abcdef12345678901abcdef', 'arb_bot_pro', 'arbitrage_bot',
+  'multi_dex_price_comparison', 94.0, 'executed'
+),
+
+-- Arbitrage 2: Curve vs Balancer
+(
+  'arbitrage', 'ethereum', 18500550, '2025-10-15 17:30:00',
+  NULL,
+  ARRAY['0xklm123...arbitrage'],
+  ARRAY['0x6B175474E89094C44Da98b954EedeAC495271d0F', '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'],
+  ARRAY['DAI', 'USDC'],
+  'multi-dex', 'Curve → Balancer', 'Curve, Balancer',
+  1850.00, 0.00, 280.00, 1570.00,
+  '0xb0cdef1234567890abcdef12345678901abcdef1', 'stable_arb_bot', 'arbitrage_bot',
+  'multi_dex_price_comparison', 96.5, 'executed'
+),
+
+-- Arbitrage 3: Cross-chain (Ethereum → Arbitrum)
+(
+  'arbitrage', 'ethereum', 18500600, '2025-10-15 18:00:00',
+  NULL,
+  ARRAY['0xlmn234...arbitrage_eth', '0xmno345...arbitrage_arb'],
+  ARRAY['0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'],
+  ARRAY['USDC'],
+  'cross-chain', 'Ethereum → Arbitrum', 'Uniswap V3',
+  5670.00, 0.00, 850.00, 4820.00,
+  '0xc0def1234567890abcdef12345678901abcdef12', 'cross_chain_arb_bot', 'arbitrage_bot',
+  'cross_chain_price_comparison', 91.0, 'confirmed'
+),
+
+-- Arbitrage 4: Flash loan arbitrage
+(
+  'arbitrage', 'ethereum', 18500650, '2025-10-15 18:30:00',
+  NULL,
+  ARRAY['0xnop456...arbitrage'],
+  ARRAY['0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
+  ARRAY['WBTC', 'WETH'],
+  'multi-dex', 'Uniswap V2 → Sushiswap → Curve', 'Multiple DEXes',
+  12340.00, 0.00, 680.00, 11660.00,
+  '0xd0ef1234567890abcdef12345678901abcdef123', 'flash_arb_master', 'arbitrage_bot',
+  'multi_dex_price_comparison', 93.5, 'executed'
+),
+
+-- Arbitrage 5: Small opportunity (not profitable after gas)
+(
+  'arbitrage', 'ethereum', 18500700, '2025-10-15 19:00:00',
+  NULL,
+  ARRAY['0xopq567...arbitrage'],
+  ARRAY['0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
+  ARRAY['UNI', 'WETH'],
+  'multi-dex', 'Uniswap V3 → Sushiswap', 'Uniswap V3, Sushiswap',
+  450.00, 0.00, 520.00, -70.00,
+  '0xe0f1234567890abcdef12345678901abcdef1234', 'small_arb_bot', 'arbitrage_bot',
+  'multi_dex_price_comparison', 88.0, 'detected'
+);
+
+-- Liquidation Opportunities (4 records)
+INSERT INTO mev_opportunities (
+  opportunity_type, chain_id, block_number, timestamp,
+  target_tx_hash, mev_tx_hashes, token_addresses, token_symbols,
+  protocol_id, protocol_name, dex_name,
+  mev_profit_usd, victim_loss_usd, gas_cost_usd, net_profit_usd,
+  bot_address, bot_name, bot_type,
+  detection_method, confidence_score, status
+) VALUES
+-- Liquidation 1: Aave position
+(
+  'liquidation', 'ethereum', 18500800, '2025-10-15 19:30:00',
+  NULL,
+  ARRAY['0xpqr678...liquidation'],
+  ARRAY['0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'],
+  ARRAY['WETH', 'USDC'],
+  'aave-v3', 'Aave V3', NULL,
+  8950.00, 0.00, 450.00, 8500.00,
+  '0xf01234567890abcdef12345678901abcdef12345', 'aave_liquidator_bot', 'liquidation_bot',
+  'health_factor_monitoring', 98.0, 'executed'
+),
+
+-- Liquidation 2: Compound position
+(
+  'liquidation', 'ethereum', 18500850, '2025-10-15 20:00:00',
+  NULL,
+  ARRAY['0xqrs789...liquidation'],
+  ARRAY['0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', '0x6B175474E89094C44Da98b954EedeAC495271d0F'],
+  ARRAY['WBTC', 'DAI'],
+  'compound-v3', 'Compound V3', NULL,
+  15670.00, 0.00, 520.00, 15150.00,
+  '0x0123456789abcdef0123456789abcdef01234567', 'compound_liquidator', 'liquidation_bot',
+  'health_factor_monitoring', 97.5, 'executed'
+),
+
+-- Liquidation 3: MakerDAO vault
+(
+  'liquidation', 'ethereum', 18500900, '2025-10-15 20:30:00',
+  NULL,
+  ARRAY['0xrst890...liquidation'],
+  ARRAY['0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', '0x6B175474E89094C44Da98b954EedeAC495271d0F'],
+  ARRAY['WETH', 'DAI'],
+  'makerdao', 'MakerDAO', NULL,
+  22340.00, 0.00, 680.00, 21660.00,
+  '0x123456789abcdef0123456789abcdef012345678', 'maker_liquidator_pro', 'liquidation_bot',
+  'health_factor_monitoring', 99.0, 'executed'
+),
+
+-- Liquidation 4: Failed liquidation (already liquidated)
+(
+  'liquidation', 'ethereum', 18500950, '2025-10-15 21:00:00',
+  NULL,
+  ARRAY['0xstu901...liquidation'],
+  ARRAY['0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', '0x6B175474E89094C44Da98b954EedeAC495271d0F'],
+  ARRAY['USDC', 'DAI'],
+  'aave-v3', 'Aave V3', NULL,
+  0.00, 0.00, 380.00, -380.00,
+  '0x23456789abcdef0123456789abcdef0123456789', 'slow_liquidator', 'liquidation_bot',
+  'health_factor_monitoring', 95.0, 'failed'
+);
+
+-- Backrunning Opportunities (2 records)
+INSERT INTO mev_opportunities (
+  opportunity_type, chain_id, block_number, timestamp,
+  target_tx_hash, mev_tx_hashes, token_addresses, token_symbols,
+  protocol_id, protocol_name, dex_name,
+  mev_profit_usd, victim_loss_usd, gas_cost_usd, net_profit_usd,
+  bot_address, bot_name, bot_type,
+  detection_method, confidence_score, status
+) VALUES
+-- Backrun 1: After large buy
+(
+  'backrun', 'ethereum', 18501000, '2025-10-15 21:30:00',
+  '0xtuv012...target',
+  ARRAY['0xuv w123...backrun'],
+  ARRAY['0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
+  ARRAY['UNI', 'WETH'],
+  'uniswap-v3', 'Uniswap V3', 'Uniswap V3',
+  6780.00, 0.00, 320.00, 6460.00,
+  '0x3456789abcdef0123456789abcdef01234567890', 'backrun_specialist', 'backrun_bot',
+  'post_transaction_opportunity', 89.5, 'executed'
+),
+
+-- Backrun 2: After liquidation
+(
+  'backrun', 'ethereum', 18501050, '2025-10-15 22:00:00',
+  '0xvwx234...target',
+  ARRAY['0xwxy345...backrun'],
+  ARRAY['0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'],
+  ARRAY['WETH', 'USDC'],
+  'aave-v3', 'Aave V3', 'Uniswap V3',
+  4320.00, 0.00, 280.00, 4040.00,
+  '0x456789abcdef0123456789abcdef012345678901', 'liquidation_backrunner', 'backrun_bot',
+  'post_transaction_opportunity', 91.0, 'confirmed'
+);
+
+-- Verify data
+SELECT 
+  opportunity_type,
+  COUNT(*) as count,
+  SUM(mev_profit_usd) as total_profit,
+  AVG(confidence_score) as avg_confidence
+FROM mev_opportunities
+GROUP BY opportunity_type
+ORDER BY opportunity_type;
+
