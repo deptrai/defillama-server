@@ -2,11 +2,15 @@
  * Smart Money API Routes
  * Story: 3.1.1 - Smart Money Identification
  * Story: 3.1.2 - Trade Pattern Analysis
+ * Story: 3.1.3 - Performance Attribution
  *
  * Endpoints:
  * - GET /v1/analytics/smart-money/wallets - List smart money wallets
  * - GET /v1/analytics/smart-money/wallets/:address/patterns - Get wallet patterns
  * - GET /v1/analytics/smart-money/wallets/:address/trades - Get wallet trades
+ * - GET /v1/analytics/smart-money/wallets/:address/performance - Get performance attribution
+ * - GET /v1/analytics/smart-money/wallets/:address/performance/snapshots - Get performance snapshots
+ * - GET /v1/analytics/smart-money/wallets/:address/performance/strategy - Get strategy attribution
  * - GET /v1/analytics/smart-money/monitoring - Monitoring dashboard (Enhancement 4)
  * - GET /v1/analytics/smart-money/monitoring/cache - Cache metrics
  * - GET /v1/analytics/smart-money/monitoring/job - Job metrics
@@ -18,6 +22,7 @@ import { Router } from 'hyper-express';
 import { errorWrapper as ew } from '../../utils';
 import * as handlers from './handlers';
 import * as patterns from './patterns-handlers';
+import * as performance from './performance-handlers';
 import * as monitoring from './monitoring';
 
 const router = new Router();
@@ -55,6 +60,13 @@ router.get('/wallets', ew(handlers.getSmartMoneyWallets));
  */
 router.get('/wallets/:address/patterns', ew(patterns.getWalletPatterns));
 router.get('/wallets/:address/trades', ew(patterns.getWalletTrades));
+
+/**
+ * Performance Attribution endpoints (Story 3.1.3)
+ */
+router.get('/wallets/:address/performance', ew(performance.getWalletPerformance));
+router.get('/wallets/:address/performance/snapshots', ew(performance.getWalletPerformanceSnapshots));
+router.get('/wallets/:address/performance/strategy', ew(performance.getWalletStrategyAttribution));
 
 /**
  * Monitoring endpoints (Enhancement 4)

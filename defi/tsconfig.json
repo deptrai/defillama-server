@@ -1,12 +1,14 @@
 {
   "ts-node": {
     "compilerOptions": {
-      "module": "commonjs"
-    }
+      "module": "commonjs",
+      "moduleResolution": "node"
+    },
+    "transpileOnly": true
   },
   "compilerOptions": {
     "target": "es2019",
-    "skipLibCheck": false,
+    "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "emitDecoratorMetadata": true,
@@ -14,7 +16,7 @@
     "strictPropertyInitialization": false,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "module": "esnext",
+    "module": "commonjs",
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "noEmit": false,

@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # Compliance API Server
+  compliance-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.compliance
+    container_name: compliance-api
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=defillama
+      - DB_PASSWORD=defillama123
+      - DB_NAME=defillama
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - compliance-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # PostgreSQL Database (reuse existing if available)
+  postgres:
+    image: postgres:15-alpine
+    container_name: compliance-postgres
+    ports:
+      - "5433:5432"  # Use different port to avoid conflict with existing
+    environment:
+      - POSTGRES_USER=defillama
+      - POSTGRES_PASSWORD=defillama123
+      - POSTGRES_DB=defillama
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./src/analytics/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - compliance-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U defillama"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  compliance-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+

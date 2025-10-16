@@ -1,6 +1,6 @@
 /**
  * Analytics Engines
- * Stories: 2.1.1 - Protocol Performance Dashboard, 2.1.2 - Yield Opportunity Scanner, 2.1.3 - Liquidity Analysis Tools, 2.2.1 - Wallet Portfolio Tracking, 2.2.2 - Holder Distribution Analysis, 2.2.3 - Cross-chain Portfolio Aggregation
+ * Stories: 2.1.1 - Protocol Performance Dashboard, 2.1.2 - Yield Opportunity Scanner, 2.1.3 - Liquidity Analysis Tools, 2.2.1 - Wallet Portfolio Tracking, 2.2.2 - Holder Distribution Analysis, 2.2.3 - Cross-chain Portfolio Aggregation, 3.1.1 - Smart Money Identification, 3.1.2 - Trade Pattern Analysis, 3.1.3 - Performance Attribution
  *
  * Central export for all analytics calculation engines
  */
@@ -40,6 +40,39 @@ export { DistributionAlertEngine } from './distribution-alert-engine';
 // Export Story 2.2.3 engines
 export { CrossChainAggregationEngine } from './cross-chain-aggregation-engine';
 
+// Export Story 3.1.1 engines
+export { SmartMoneyScorer } from './smart-money-scorer';
+
+// Export Story 3.1.2 engines
+export { TradePatternRecognizer } from './trade-pattern-recognizer';
+export { BehavioralAnalyzer } from './behavioral-analyzer';
+
+// Export Story 3.1.3 engines
+export { PerformanceCalculator } from './performance-calculator';
+export { StrategyClassifier } from './strategy-classifier';
+
+// Export Story 3.2.1 engines
+export { ContractRiskAnalyzer } from './contract-risk-analyzer';
+export { LiquidityRiskAnalyzer } from './liquidity-risk-analyzer';
+export { GovernanceRiskAnalyzer } from './governance-risk-analyzer';
+export { OperationalRiskAnalyzer } from './operational-risk-analyzer';
+export { MarketRiskAnalyzer } from './market-risk-analyzer';
+export { ProtocolRiskAggregator } from './protocol-risk-aggregator';
+
+// Export Story 3.2.2 engines
+export { RugPullDetector } from './rug-pull-detector';
+export { WashTradingDetector } from './wash-trading-detector';
+export { PumpDumpDetector } from './pump-dump-detector';
+export { SybilAttackDetector } from './sybil-attack-detector';
+
+// Export Story 3.2.3 engines
+export { SanctionsScreener } from './sanctions-screener';
+export { AMLMonitor } from './aml-monitor';
+export { KYCVerifier } from './kyc-verifier';
+export { PEPScreener } from './pep-screener';
+export { AdverseMediaScreener } from './adverse-media-screener';
+export { ComplianceScreeningEngine } from './compliance-screening-engine';
+
 // Export convenience object with all engines
 import { apyCalculator } from './apy-calculator';
 import { userMetricsEngine } from './user-metrics-engine';
@@ -61,6 +94,21 @@ import { HolderDistributionEngine } from './holder-distribution-engine';
 import { HolderBehaviorEngine } from './holder-behavior-engine';
 import { DistributionAlertEngine } from './distribution-alert-engine';
 import { CrossChainAggregationEngine } from './cross-chain-aggregation-engine';
+import { SmartMoneyScorer } from './smart-money-scorer';
+import { TradePatternRecognizer } from './trade-pattern-recognizer';
+import { BehavioralAnalyzer } from './behavioral-analyzer';
+import { PerformanceCalculator } from './performance-calculator';
+import { StrategyClassifier } from './strategy-classifier';
+import { ContractRiskAnalyzer } from './contract-risk-analyzer';
+import { LiquidityRiskAnalyzer } from './liquidity-risk-analyzer';
+import { GovernanceRiskAnalyzer } from './governance-risk-analyzer';
+import { OperationalRiskAnalyzer } from './operational-risk-analyzer';
+import { MarketRiskAnalyzer } from './market-risk-analyzer';
+import { ProtocolRiskAggregator } from './protocol-risk-aggregator';
+import { RugPullDetector } from './rug-pull-detector';
+import { WashTradingDetector } from './wash-trading-detector';
+import { PumpDumpDetector } from './pump-dump-detector';
+import { SybilAttackDetector } from './sybil-attack-detector';
 
 export const analyticsEngines = {
   // Story 2.1.1
@@ -89,6 +137,26 @@ export const analyticsEngines = {
   distributionAlert: DistributionAlertEngine.getInstance(),
   // Story 2.2.3
   crossChainAggregation: CrossChainAggregationEngine.getInstance(),
+  // Story 3.1.1
+  smartMoneyScorer: SmartMoneyScorer.getInstance(),
+  // Story 3.1.2
+  tradePatternRecognizer: TradePatternRecognizer.getInstance(),
+  behavioralAnalyzer: BehavioralAnalyzer.getInstance(),
+  // Story 3.1.3
+  performanceCalculator: PerformanceCalculator.getInstance(),
+  strategyClassifier: StrategyClassifier.getInstance(),
+  // Story 3.2.1
+  contractRiskAnalyzer: ContractRiskAnalyzer.getInstance(),
+  liquidityRiskAnalyzer: LiquidityRiskAnalyzer.getInstance(),
+  governanceRiskAnalyzer: GovernanceRiskAnalyzer.getInstance(),
+  operationalRiskAnalyzer: OperationalRiskAnalyzer.getInstance(),
+  marketRiskAnalyzer: MarketRiskAnalyzer.getInstance(),
+  protocolRiskAggregator: ProtocolRiskAggregator.getInstance(),
+  // Story 3.2.2
+  rugPullDetector: RugPullDetector.getInstance(),
+  washTradingDetector: WashTradingDetector.getInstance(),
+  pumpDumpDetector: PumpDumpDetector.getInstance(),
+  sybilAttackDetector: SybilAttackDetector.getInstance(),
 };
 
 export default analyticsEngines;

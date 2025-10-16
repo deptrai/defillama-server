@@ -13,7 +13,7 @@
  */
 
 import { Router } from 'hyper-express';
-import { errorWrapper as ew } from '../../../utils/errorWrapper';
+import { errorWrapper as ew } from '../../utils';
 import {
   getDistribution,
   getTopHolders,

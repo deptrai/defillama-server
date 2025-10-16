@@ -21,6 +21,9 @@ import liquidityMigrationsRouter from './liquidity-migrations';
 import portfolioRouter from './portfolio';
 import holdersRouter from './holders';
 import smartMoneyRouter from './smart-money';
+import riskRouter from './risk';
+import suspiciousActivitiesRouter from './suspicious-activities';
+import complianceRouter from './compliance';
 
 /**
  * Register analytics routes
@@ -52,5 +55,14 @@ export function setAnalyticsRoutes(router: HyperExpress.Router) {
 
   // Story 3.1.1: Smart Money Identification
   router.use('/analytics/smart-money', smartMoneyRouter);
+
+  // Story 3.2.1: Protocol Risk Assessment
+  router.use('/analytics/risk', riskRouter);
+
+  // Story 3.2.2: Suspicious Activity Detection
+  router.use('/analytics/suspicious-activities', suspiciousActivitiesRouter);
+
+  // Story 3.2.3: Compliance Monitoring
+  router.use('/analytics/compliance', complianceRouter);
 }
 
