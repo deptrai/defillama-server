@@ -285,16 +285,15 @@ INSERT INTO mev_market_trends (
  'DAI', 11000.00,
  68.80, 'medium');
 
--- Summary statistics
-SELECT 
-  chain_id,
-  COUNT(*) as days_tracked,
-  SUM(total_mev_volume_usd) as total_mev_volume,
-  AVG(total_mev_volume_usd) as avg_daily_volume,
-  AVG(unique_bots) as avg_unique_bots,
-  AVG(execution_rate_pct) as avg_execution_rate,
-  AVG(market_efficiency_score) as avg_efficiency_score
-FROM mev_market_trends
-GROUP BY chain_id
-ORDER BY total_mev_volume DESC;
-
+-- Summary statistics (commented out - use for verification)
+-- SELECT
+--   chain_id,
+--   COUNT(*) as days_tracked,
+--   SUM(total_mev_volume_usd) as total_mev_volume,
+--   AVG(total_mev_volume_usd) as avg_daily_volume,
+--   AVG(unique_bots) as avg_unique_bots,
+--   AVG(execution_rate_pct) as avg_execution_rate,
+--   AVG(market_efficiency_score) as avg_efficiency_score
+-- FROM mev_market_trends
+-- GROUP BY chain_id
+-- ORDER BY total_mev_volume DESC;

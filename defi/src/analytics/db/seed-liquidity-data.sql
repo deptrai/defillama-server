@@ -180,19 +180,19 @@ BEGIN
 
   -- Migrations from Uniswap V2 to V3 (higher capital efficiency)
   INSERT INTO liquidity_migrations (from_protocol_id, to_protocol_id, chain_id, wallet_address, amount_usd, token_symbols, from_pool_id, to_pool_id, from_pool_address, to_pool_address, migration_timestamp, time_between_exit_entry, reason, from_apy, to_apy, apy_difference, from_tvl, to_tvl, is_complete_exit, migration_pct) VALUES
-  ('uniswap-v2', 'uniswap-v3', 'ethereum', '0x0000000000000000000000000000000000000006', 50000, ARRAY['USDC', 'ETH'], pool_usdc_eth_v2, pool_usdc_eth_v3_005, '0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc', '0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640', NOW() - INTERVAL '10 days', 45, 'higher_apy', 12.5, 18.2, 5.7, 380000000, 520000000, true, 1.0),
-  ('uniswap-v2', 'uniswap-v3', 'ethereum', '0x0000000000000000000000000000000000000007', 30000, ARRAY['DAI', 'ETH'], pool_dai_eth_v2, pool_usdc_eth_v3_03, '0xa478c2975ab1ea89e8196811f51a7b7ade33eb11', '0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8', NOW() - INTERVAL '8 days', 60, 'higher_apy', 11.8, 16.5, 4.7, 125000000, 280000000, true, 1.0),
-  ('uniswap-v2', 'uniswap-v3', 'ethereum', '0x0000000000000000000000000000000000000008', 36000, ARRAY['ETH', 'USDT'], pool_eth_usdt_v2, pool_eth_usdt_v3, '0x0d4a11d5eeaac28ec3f61d100daf4d40471f1852', '0x4e68ccd3e89f51c3074ca5072bbac773960dfa36', NOW() - INTERVAL '5 days', 30, 'higher_apy', 13.2, 19.8, 6.6, 450000000, 195000000, true, 1.0);
+  ('uniswap-v2', 'uniswap-v3', 'ethereum', '0x0000000000000000000000000000000000000006', 50000, ARRAY['USDC', 'ETH']::TEXT[], pool_usdc_eth_v2, pool_usdc_eth_v3_005, '0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc', '0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640', NOW() - INTERVAL '10 days', 45, 'higher_apy', 12.5, 18.2, 5.7, 380000000, 520000000, true, 1.0),
+  ('uniswap-v2', 'uniswap-v3', 'ethereum', '0x0000000000000000000000000000000000000007', 30000, ARRAY['DAI', 'ETH']::TEXT[], pool_dai_eth_v2, pool_usdc_eth_v3_03, '0xa478c2975ab1ea89e8196811f51a7b7ade33eb11', '0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8', NOW() - INTERVAL '8 days', 60, 'higher_apy', 11.8, 16.5, 4.7, 125000000, 280000000, true, 1.0),
+  ('uniswap-v2', 'uniswap-v3', 'ethereum', '0x0000000000000000000000000000000000000008', 36000, ARRAY['ETH', 'USDT']::TEXT[], pool_eth_usdt_v2, pool_eth_usdt_v3, '0x0d4a11d5eeaac28ec3f61d100daf4d40471f1852', '0x4e68ccd3e89f51c3074ca5072bbac773960dfa36', NOW() - INTERVAL '5 days', 30, 'higher_apy', 13.2, 19.8, 6.6, 450000000, 195000000, true, 1.0);
 
   -- Migrations to Curve (lower IL risk)
   INSERT INTO liquidity_migrations (from_protocol_id, to_protocol_id, chain_id, wallet_address, amount_usd, token_symbols, from_pool_id, to_pool_id, from_pool_address, to_pool_address, migration_timestamp, time_between_exit_entry, reason, from_apy, to_apy, apy_difference, from_tvl, to_tvl, is_complete_exit, migration_pct) VALUES
-  ('uniswap-v2', 'curve', 'ethereum', '0x000000000000000000000000000000000000000b', 35000, ARRAY['DAI', 'USDC', 'USDT'], pool_dai_eth_v2, pool_curve_3pool, '0xa478c2975ab1ea89e8196811f51a7b7ade33eb11', '0xbebc44782c7db0a1a60cb6fe97d0b483032ff1c7', NOW() - INTERVAL '15 days', 90, 'risk_reduction', 11.8, 8.5, -3.3, 125000000, 850000000, true, 1.0),
-  ('balancer', 'curve', 'ethereum', '0x000000000000000000000000000000000000000c', 104000, ARRAY['USDC', 'ETH'], pool_bal_stable, pool_curve_3pool, '0x96646936b91d6b9d7d0c47c496afbf3d6ec7b6f8', '0xbebc44782c7db0a1a60cb6fe97d0b483032ff1c7', NOW() - INTERVAL '6 days', 120, 'risk_reduction', 9.2, 8.5, -0.7, 125000000, 850000000, true, 1.0);
+  ('uniswap-v2', 'curve', 'ethereum', '0x000000000000000000000000000000000000000b', 35000, ARRAY['DAI', 'USDC', 'USDT']::TEXT[], pool_dai_eth_v2, pool_curve_3pool, '0xa478c2975ab1ea89e8196811f51a7b7ade33eb11', '0xbebc44782c7db0a1a60cb6fe97d0b483032ff1c7', NOW() - INTERVAL '15 days', 90, 'risk_reduction', 11.8, 8.5, -3.3, 125000000, 850000000, true, 1.0),
+  ('balancer', 'curve', 'ethereum', '0x000000000000000000000000000000000000000c', 104000, ARRAY['USDC', 'ETH']::TEXT[], pool_bal_stable, pool_curve_3pool, '0x96646936b91d6b9d7d0c47c496afbf3d6ec7b6f8', '0xbebc44782c7db0a1a60cb6fe97d0b483032ff1c7', NOW() - INTERVAL '6 days', 120, 'risk_reduction', 9.2, 8.5, -0.7, 125000000, 850000000, true, 1.0);
 
   -- Migrations from Ethereum to L2s (lower fees)
   INSERT INTO liquidity_migrations (from_protocol_id, to_protocol_id, chain_id, wallet_address, amount_usd, token_symbols, from_pool_id, to_pool_id, from_pool_address, to_pool_address, migration_timestamp, time_between_exit_entry, reason, from_apy, to_apy, apy_difference, from_tvl, to_tvl, is_complete_exit, migration_pct) VALUES
-  ('uniswap-v2', 'sushiswap', 'arbitrum', '0x0000000000000000000000000000000000000009', 24000, ARRAY['ETH', 'USDC'], pool_usdc_eth_v2, pool_arb_eth_usdc, '0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc', '0x905dfcd5649217c42684f23958568e533c711aa3', NOW() - INTERVAL '7 days', 180, 'incentives', 12.5, 22.8, 10.3, 380000000, 85000000, true, 1.0),
-  ('balancer', 'uniswap-v3', 'arbitrum', '0x000000000000000000000000000000000000000a', 20000, ARRAY['BAL', 'ETH'], pool_bal_eth, pool_arb_eth_usdc_v3_005, '0x5c6ee304399dbdb9c8ef030ab642b10820db8f56', '0xc31e54c7a869b9fcbecc14363cf510d1c41fa443', NOW() - INTERVAL '12 days', 240, 'incentives', 15.2, 24.5, 9.3, 45000000, 125000000, true, 1.0);
+  ('uniswap-v2', 'sushiswap', 'arbitrum', '0x0000000000000000000000000000000000000009', 24000, ARRAY['ETH', 'USDC']::TEXT[], pool_usdc_eth_v2, pool_arb_eth_usdc, '0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc', '0x905dfcd5649217c42684f23958568e533c711aa3', NOW() - INTERVAL '7 days', 180, 'incentives', 12.5, 22.8, 10.3, 380000000, 85000000, true, 1.0),
+  ('balancer', 'uniswap-v3', 'arbitrum', '0x000000000000000000000000000000000000000a', 20000, ARRAY['BAL', 'ETH']::TEXT[], pool_bal_eth, pool_arb_eth_usdc_v3_005, '0x5c6ee304399dbdb9c8ef030ab642b10820db8f56', '0xc31e54c7a869b9fcbecc14363cf510d1c41fa443', NOW() - INTERVAL '12 days', 240, 'incentives', 15.2, 24.5, 9.3, 45000000, 125000000, true, 1.0);
 
   -- Additional migrations (generate 92 more with variations)
   -- Migrations within same protocol (pool hopping)
@@ -203,7 +203,7 @@ BEGIN
     'ethereum',
     '0x' || lpad(to_hex(generate_series), 40, '0'),
     (random() * 50000 + 5000)::DECIMAL(20,2),
-    ARRAY['ETH', 'USDC'],
+    ARRAY['ETH', 'USDC']::TEXT[],
     NOW() - (random() * 30 || ' days')::INTERVAL,
     (random() * 180 + 15)::INTEGER,
     CASE
@@ -240,7 +240,7 @@ BEGIN
     END,
     '0x' || lpad(to_hex(generate_series + 100), 40, '0'),
     (random() * 80000 + 10000)::DECIMAL(20,2),
-    ARRAY['ETH', 'USDC'],
+    ARRAY['ETH', 'USDC']::TEXT[],
     NOW() - (random() * 60 || ' days')::INTERVAL,
     (random() * 300 + 30)::INTEGER,
     CASE

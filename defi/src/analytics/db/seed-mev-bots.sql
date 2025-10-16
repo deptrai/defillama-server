@@ -22,7 +22,7 @@ INSERT INTO mev_bots (
   5250000.00, 1250, 1125, 125, 90.00,
   4200.00, 125000.00, 5125000.00,
   '2023-01-15 08:00:00', '2025-10-15 23:45:00', 639, 45000,
-  ARRAY['sandwich', 'arbitrage', 'liquidation'], ARRAY['uniswap-v3', 'curve', 'aave'], ARRAY['WETH', 'USDC', 'DAI'], ARRAY['uniswap', 'sushiswap', 'curve'],
+  ARRAY['sandwich', 'arbitrage', 'liquidation']::TEXT[], ARRAY['uniswap-v3', 'curve', 'aave']::TEXT[], ARRAY['WETH', 'USDC', 'DAI']::TEXT[], ARRAY['uniswap', 'sushiswap', 'curve']::TEXT[],
   95.00, TRUE, TRUE, TRUE, TRUE,
   45.50, 250.00, 12.50
 );
@@ -41,7 +41,7 @@ INSERT INTO mev_bots (
   3800000.00, 2100, 1890, 210, 90.00,
   1809.52, 105000.00, 3695000.00,
   '2023-03-20 10:30:00', '2025-10-15 22:15:00', 574, 38000,
-  ARRAY['sandwich'], ARRAY['uniswap-v3', 'uniswap-v2'], ARRAY['WETH', 'USDC'], ARRAY['uniswap', 'sushiswap'],
+  ARRAY['sandwich']::TEXT[], ARRAY['uniswap-v3', 'uniswap-v2']::TEXT[], ARRAY['WETH', 'USDC']::TEXT[], ARRAY['uniswap', 'sushiswap']::TEXT[],
   85.00, TRUE, FALSE, TRUE, FALSE,
   50.00, 300.00, 15.00
 );
@@ -60,7 +60,7 @@ INSERT INTO mev_bots (
   2150000.00, 3500, 3150, 350, 90.00,
   614.29, 87500.00, 2062500.00,
   '2023-02-10 14:20:00', '2025-10-15 21:30:00', 613, 42000,
-  ARRAY['arbitrage'], ARRAY['uniswap-v3', 'curve', 'balancer'], ARRAY['WETH', 'USDC', 'USDT'], ARRAY['uniswap', 'curve', 'balancer'],
+  ARRAY['arbitrage']::TEXT[], ARRAY['uniswap-v3', 'curve', 'balancer']::TEXT[], ARRAY['WETH', 'USDC', 'USDT']::TEXT[], ARRAY['uniswap', 'curve', 'balancer']::TEXT[],
   80.00, FALSE, FALSE, TRUE, TRUE,
   35.00, 180.00, 8.00
 );
@@ -79,7 +79,7 @@ INSERT INTO mev_bots (
   1950000.00, 450, 405, 45, 90.00,
   4333.33, 22500.00, 1927500.00,
   '2023-04-05 09:15:00', '2025-10-15 20:00:00', 558, 28000,
-  ARRAY['liquidation'], ARRAY['aave', 'compound', 'maker'], ARRAY['WETH', 'WBTC', 'USDC'], ARRAY[],
+  ARRAY['liquidation']::TEXT[], ARRAY['aave', 'compound', 'maker']::TEXT[], ARRAY['WETH', 'WBTC', 'USDC']::TEXT[], ARRAY[]::TEXT[],
   90.00, TRUE, TRUE, FALSE, TRUE,
   55.00, 400.00, 18.00
 );
@@ -98,7 +98,7 @@ INSERT INTO mev_bots (
   1650000.00, 1800, 1620, 180, 90.00,
   916.67, 90000.00, 1560000.00,
   '2023-05-12 11:45:00', '2025-10-15 19:30:00', 521, 32000,
-  ARRAY['frontrun'], ARRAY['uniswap-v3', 'opensea'], ARRAY['WETH', 'USDC'], ARRAY['uniswap'],
+  ARRAY['frontrun']::TEXT[], ARRAY['uniswap-v3', 'opensea']::TEXT[], ARRAY['WETH', 'USDC']::TEXT[], ARRAY['uniswap']::TEXT[],
   75.00, TRUE, FALSE, FALSE, FALSE,
   60.00, 500.00, 20.00
 );
@@ -117,7 +117,7 @@ INSERT INTO mev_bots (
   850000.00, 2500, 2125, 375, 85.00,
   340.00, 12500.00, 837500.00,
   '2023-06-20 13:00:00', '2025-10-15 18:45:00', 482, 55000,
-  ARRAY['sandwich', 'arbitrage'], ARRAY['uniswap-v3', 'camelot'], ARRAY['WETH', 'USDC', 'ARB'], ARRAY['uniswap', 'camelot'],
+  ARRAY['sandwich', 'arbitrage']::TEXT[], ARRAY['uniswap-v3', 'camelot']::TEXT[], ARRAY['WETH', 'USDC', 'ARB']::TEXT[], ARRAY['uniswap', 'camelot']::TEXT[],
   65.00, FALSE, FALSE, TRUE, FALSE,
   0.15, 2.50, 0.05
 );
@@ -136,7 +136,7 @@ INSERT INTO mev_bots (
   320000.00, 1200, 960, 240, 80.00,
   266.67, 36000.00, 284000.00,
   '2024-01-10 15:30:00', '2025-10-15 17:00:00', 279, 18000,
-  ARRAY['backrun'], ARRAY['uniswap-v2'], ARRAY['WETH'], ARRAY['uniswap'],
+  ARRAY['backrun']::TEXT[], ARRAY['uniswap-v2']::TEXT[], ARRAY['WETH']::TEXT[], ARRAY['uniswap']::TEXT[],
   45.00, FALSE, FALSE, FALSE, FALSE,
   40.00, 150.00, 10.00
 );
@@ -155,7 +155,7 @@ INSERT INTO mev_bots (
   450000.00, 3200, 2720, 480, 85.00,
   140.63, 8000.00, 442000.00,
   '2023-08-15 12:00:00', '2025-10-15 16:15:00', 427, 48000,
-  ARRAY['sandwich'], ARRAY['quickswap', 'uniswap-v3'], ARRAY['WMATIC', 'USDC'], ARRAY['quickswap', 'uniswap'],
+  ARRAY['sandwich']::TEXT[], ARRAY['quickswap', 'uniswap-v3']::TEXT[], ARRAY['WMATIC', 'USDC']::TEXT[], ARRAY['quickswap', 'uniswap']::TEXT[],
   55.00, FALSE, FALSE, FALSE, FALSE,
   80.00, 500.00, 25.00
 );
@@ -174,7 +174,7 @@ INSERT INTO mev_bots (
   280000.00, 1800, 1530, 270, 85.00,
   155.56, 4500.00, 275500.00,
   '2024-03-01 10:00:00', '2025-10-15 15:30:00', 229, 25000,
-  ARRAY['arbitrage'], ARRAY['uniswap-v3', 'aerodrome'], ARRAY['WETH', 'USDC'], ARRAY['uniswap', 'aerodrome'],
+  ARRAY['arbitrage']::TEXT[], ARRAY['uniswap-v3', 'aerodrome']::TEXT[], ARRAY['WETH', 'USDC']::TEXT[], ARRAY['uniswap', 'aerodrome']::TEXT[],
   60.00, FALSE, FALSE, TRUE, FALSE,
   0.08, 1.20, 0.03
 );
@@ -193,7 +193,7 @@ INSERT INTO mev_bots (
   520000.00, 2200, 1870, 330, 85.00,
   236.36, 5500.00, 514500.00,
   '2023-09-10 14:30:00', '2025-10-15 14:45:00', 401, 35000,
-  ARRAY['sandwich', 'arbitrage'], ARRAY['uniswap-v3', 'velodrome'], ARRAY['WETH', 'USDC', 'OP'], ARRAY['uniswap', 'velodrome'],
+  ARRAY['sandwich', 'arbitrage']::TEXT[], ARRAY['uniswap-v3', 'velodrome']::TEXT[], ARRAY['WETH', 'USDC', 'OP']::TEXT[], ARRAY['uniswap', 'velodrome']::TEXT[],
   70.00, FALSE, FALSE, TRUE, FALSE,
   0.12, 2.00, 0.04
 );

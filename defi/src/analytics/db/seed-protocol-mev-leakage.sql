@@ -18,7 +18,7 @@ INSERT INTO protocol_mev_leakage (
   arbitrage_mev_usd, arbitrage_count,
   liquidation_mev_usd, liquidation_count,
   total_user_loss_usd, avg_loss_per_affected_tx_usd,
-  unique_bots, top_bot_addresses,
+  unique_bots, top_bot_address,
   protocol_volume_usd, mev_to_volume_ratio_pct,
   leakage_severity, leakage_score
 ) VALUES
@@ -31,7 +31,7 @@ INSERT INTO protocol_mev_leakage (
  30000.00, 95,
  10000.00, 15,
  195000.00, 104.00,
- 45, ARRAY['0x000000000035B5e5ad9019092C665357240f594e', '0x6b75d8AF000000e20B7a7DDf000Ba900b4009A80', '0x00000000003b3cc22aF3aE1EAc0440BcEe416B40'],
+ 45, '0x000000000035B5e5ad9019092C665357240f594e',
  125000000.00, 0.23,
  'high', 78.50),
 
@@ -44,7 +44,7 @@ INSERT INTO protocol_mev_leakage (
  32000.00, 100,
  8000.00, 12,
  205000.00, 103.54,
- 47, ARRAY['0x000000000035B5e5ad9019092C665357240f594e', '0x6b75d8AF000000e20B7a7DDf000Ba900b4009A80', '0x00000000003b3cc22aF3aE1EAc0440BcEe416B40'],
+ 47, '0x000000000035B5e5ad9019092C665357240f594e',
  132000000.00, 0.23,
  'high', 79.20),
 
@@ -57,7 +57,7 @@ INSERT INTO protocol_mev_leakage (
  35000.00, 110,
  7000.00, 10,
  185000.00, 104.52,
- 43, ARRAY['0x000000000035B5e5ad9019092C665357240f594e', '0x6b75d8AF000000e20B7a7DDf000Ba900b4009A80', '0x00000000003b3cc22aF3aE1EAc0440BcEe416B40'],
+ 43, '0x000000000035B5e5ad9019092C665357240f594e',
  118000000.00, 0.23,
  'high', 77.80),
 
@@ -70,7 +70,7 @@ INSERT INTO protocol_mev_leakage (
  30000.00, 95,
  8000.00, 12,
  218000.00, 103.81,
- 48, ARRAY['0x000000000035B5e5ad9019092C665357240f594e', '0x6b75d8AF000000e20B7a7DDf000Ba900b4009A80', '0x00000000003b3cc22aF3aE1EAc0440BcEe416B40'],
+ 48, '0x000000000035B5e5ad9019092C665357240f594e',
  140000000.00, 0.22,
  'high', 80.50),
 
@@ -83,7 +83,7 @@ INSERT INTO protocol_mev_leakage (
  33000.00, 105,
  7000.00, 10,
  202000.00, 99.75,
- 46, ARRAY['0x000000000035B5e5ad9019092C665357240f594e', '0x6b75d8AF000000e20B7a7DDf000Ba900b4009A80', '0x00000000003b3cc22aF3aE1EAc0440BcEe416B40'],
+ 46, '0x000000000035B5e5ad9019092C665357240f594e',
  135000000.00, 0.22,
  'high', 79.00),
 
@@ -96,7 +96,7 @@ INSERT INTO protocol_mev_leakage (
  32000.00, 100,
  8000.00, 12,
  212000.00, 99.53,
- 49, ARRAY['0x000000000035B5e5ad9019092C665357240f594e', '0x6b75d8AF000000e20B7a7DDf000Ba900b4009A80', '0x00000000003b3cc22aF3aE1EAc0440BcEe416B40'],
+ 49, '0x000000000035B5e5ad9019092C665357240f594e',
  142000000.00, 0.21,
  'high', 80.20),
 
@@ -109,7 +109,7 @@ INSERT INTO protocol_mev_leakage (
  34000.00, 107,
  7000.00, 10,
  198000.00, 101.54,
- 45, ARRAY['0x000000000035B5e5ad9019092C665357240f594e', '0x6b75d8AF000000e20B7a7DDf000Ba900b4009A80', '0x00000000003b3cc22aF3aE1EAc0440BcEe416B40'],
+ 45, '0x000000000035B5e5ad9019092C665357240f594e',
  130000000.00, 0.22,
  'high', 78.80);
 
@@ -123,7 +123,7 @@ INSERT INTO protocol_mev_leakage (
   arbitrage_mev_usd, arbitrage_count,
   liquidation_mev_usd, liquidation_count,
   total_user_loss_usd, avg_loss_per_affected_tx_usd,
-  unique_bots, top_bot_addresses,
+  unique_bots, top_bot_address,
   protocol_volume_usd, mev_to_volume_ratio_pct,
   leakage_severity, leakage_score
 ) VALUES
@@ -136,7 +136,7 @@ INSERT INTO protocol_mev_leakage (
  18000.00, 58,
  2000.00, 3,
  52000.00, 61.18,
- 28, ARRAY['0x00000000003b3cc22aF3aE1EAc0440BcEe416B40', '0x5050f69a9786F081509234F1a7F4684b5E5b76C9'],
+ 28, '0x00000000003b3cc22aF3aE1EAc0440BcEe416B40',
  85000000.00, 0.11,
  'medium', 58.30),
 
@@ -149,7 +149,7 @@ INSERT INTO protocol_mev_leakage (
  18000.00, 58,
  2000.00, 3,
  58000.00, 63.04,
- 30, ARRAY['0x00000000003b3cc22aF3aE1EAc0440BcEe416B40', '0x5050f69a9786F081509234F1a7F4684b5E5b76C9'],
+ 30, '0x00000000003b3cc22aF3aE1EAc0440BcEe416B40',
  92000000.00, 0.11,
  'medium', 59.50),
 
@@ -162,7 +162,7 @@ INSERT INTO protocol_mev_leakage (
  17000.00, 55,
  2000.00, 3,
  48000.00, 61.54,
- 26, ARRAY['0x00000000003b3cc22aF3aE1EAc0440BcEe416B40', '0x5050f69a9786F081509234F1a7F4684b5E5b76C9'],
+ 26, '0x00000000003b3cc22aF3aE1EAc0440BcEe416B40',
  78000000.00, 0.11,
  'medium', 56.80),
 
@@ -175,7 +175,7 @@ INSERT INTO protocol_mev_leakage (
  19000.00, 61,
  2000.00, 3,
  62000.00, 63.27,
- 32, ARRAY['0x00000000003b3cc22aF3aE1EAc0440BcEe416B40', '0x5050f69a9786F081509234F1a7F4684b5E5b76C9'],
+ 32, '0x00000000003b3cc22aF3aE1EAc0440BcEe416B40',
  98000000.00, 0.11,
  'medium', 60.80),
 
@@ -188,7 +188,7 @@ INSERT INTO protocol_mev_leakage (
  18000.00, 58,
  2000.00, 3,
  56000.00, 62.92,
- 29, ARRAY['0x00000000003b3cc22aF3aE1EAc0440BcEe416B40', '0x5050f69a9786F081509234F1a7F4684b5E5b76C9'],
+ 29, '0x00000000003b3cc22aF3aE1EAc0440BcEe416B40',
  88000000.00, 0.11,
  'medium', 58.90),
 
@@ -201,7 +201,7 @@ INSERT INTO protocol_mev_leakage (
  19000.00, 61,
  2000.00, 3,
  60000.00, 63.16,
- 31, ARRAY['0x00000000003b3cc22aF3aE1EAc0440BcEe416B40', '0x5050f69a9786F081509234F1a7F4684b5E5b76C9'],
+ 31, '0x00000000003b3cc22aF3aE1EAc0440BcEe416B40',
  95000000.00, 0.11,
  'medium', 60.20),
 
@@ -214,7 +214,7 @@ INSERT INTO protocol_mev_leakage (
  18000.00, 58,
  2000.00, 3,
  51000.00, 62.20,
- 27, ARRAY['0x00000000003b3cc22aF3aE1EAc0440BcEe416B40', '0x5050f69a9786F081509234F1a7F4684b5E5b76C9'],
+ 27, '0x00000000003b3cc22aF3aE1EAc0440BcEe416B40',
  82000000.00, 0.11,
  'medium', 57.50);
 
@@ -228,7 +228,7 @@ INSERT INTO protocol_mev_leakage (
   arbitrage_mev_usd, arbitrage_count,
   liquidation_mev_usd, liquidation_count,
   total_user_loss_usd, avg_loss_per_affected_tx_usd,
-  unique_bots, top_bot_addresses,
+  unique_bots, top_bot_address,
   protocol_volume_usd, mev_to_volume_ratio_pct,
   leakage_severity, leakage_score
 ) VALUES
@@ -241,23 +241,22 @@ INSERT INTO protocol_mev_leakage (
  3000.00, 10,
  35000.00, 52,
  8000.00, 53.33,
- 15, ARRAY['0x57757E3D981446D585Af0D9Ae4d7DF6D64647806', '0x0000000000007F150Bd6f54c40A34d7C3d5e9f56'],
+ 15, '0x57757E3D981446D585Af0D9Ae4d7DF6D64647806',
  180000000.00, 0.03,
- 'low', 28.50),
+ 'low', 28.50);
 
 -- Continue with remaining days for Aave V3 and other protocols...
 -- (Truncated for brevity - would include 7 days for each of 10 protocols)
 
--- Summary statistics
-SELECT 
-  protocol_id,
-  protocol_name,
-  COUNT(*) as days_tracked,
-  SUM(total_mev_extracted_usd) as total_mev_7d,
-  AVG(total_mev_extracted_usd) as avg_mev_per_day,
-  AVG(affected_transaction_pct) as avg_affected_pct,
-  AVG(leakage_score) as avg_leakage_score
-FROM protocol_mev_leakage
-GROUP BY protocol_id, protocol_name
-ORDER BY total_mev_7d DESC;
-
+-- Summary statistics (commented out - use for verification)
+-- SELECT
+--   protocol_id,
+--   protocol_name,
+--   COUNT(*) as days_tracked,
+--   SUM(total_mev_extracted_usd) as total_mev_7d,
+--   AVG(total_mev_extracted_usd) as avg_mev_per_day,
+--   AVG(affected_transaction_pct) as avg_affected_pct,
+--   AVG(leakage_score) as avg_leakage_score
+-- FROM protocol_mev_leakage
+-- GROUP BY protocol_id, protocol_name
+-- ORDER BY total_mev_7d DESC;
