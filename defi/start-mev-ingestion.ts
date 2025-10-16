@@ -1,24 +1,26 @@
 /**
  * MEV Data Ingestion Starter
  * Start real-time MEV data collection from blockchain
- * 
+ *
  * Usage:
  * ```bash
  * # Start ingestion service
  * npx ts-node start-mev-ingestion.ts
- * 
+ *
  * # Start with specific chain
  * npx ts-node start-mev-ingestion.ts --chain ethereum
- * 
+ *
  * # Start in test mode (limited duration)
  * npx ts-node start-mev-ingestion.ts --test --duration 60
  * ```
  */
 
-import { mevIngestionService } from './src/analytics/services/mev-ingestion-service';
+// IMPORTANT: Load .env BEFORE any imports that use environment variables
 import dotenv from 'dotenv';
-
 dotenv.config();
+
+// Now import services (after .env is loaded)
+import { mevIngestionService } from './src/analytics/services/mev-ingestion-service';
 
 interface StartOptions {
   chain?: string;
@@ -152,6 +154,11 @@ async function main() {
   process.on('SIGTERM', shutdown);
 
   try {
+    // Reload RPC Manager to ensure .env is loaded
+    const { rpcManager } = await import('./src/analytics/services/rpc-manager');
+    await rpcManager.reload();
+    console.log('✅ RPC Manager reloaded with environment variables\n');
+
     // Start ingestion service
     console.log('🚀 Starting MEV Data Ingestion Service...\n');
     await mevIngestionService.start();
