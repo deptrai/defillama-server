@@ -150,15 +150,12 @@ export class MarketTrendCalculator {
         active_bots,
         bot_concentration_hhi,
         top_10_bots_share_pct,
-        avg_gas_cost_usd,
-        total_gas_cost_usd,
-        gas_to_profit_ratio_pct,
-        unique_protocols,
-        top_protocol_id,
-        top_protocol_volume_usd,
-        unique_tokens,
-        top_token_symbol,
-        top_token_volume_usd
+        avg_gas_price_gwei,
+        total_gas_spent_usd,
+        top_protocol_1_id,
+        top_protocol_1_volume_usd,
+        top_token_1_symbol,
+        top_token_1_volume_usd
       FROM mev_market_trends
       WHERE chain_id = $1 AND date = $2::date
       `,
@@ -170,6 +167,11 @@ export class MarketTrendCalculator {
     }
 
     const row = result.rows[0];
+
+    // Calculate gas_to_profit_ratio_pct from available data
+    const totalGasSpent = parseFloat(row.total_gas_spent_usd) || 0;
+    const totalMevVolume = parseFloat(row.total_mev_volume_usd) || 0;
+    const gasToProfitRatio = totalMevVolume > 0 ? (totalGasSpent / totalMevVolume) * 100 : 0;
 
     return {
       date: new Date(row.date),
@@ -202,15 +204,15 @@ export class MarketTrendCalculator {
       active_bots: parseInt(row.active_bots, 10),
       bot_concentration_hhi: parseFloat(row.bot_concentration_hhi),
       top_10_bots_share_pct: parseFloat(row.top_10_bots_share_pct),
-      avg_gas_cost_usd: parseFloat(row.avg_gas_cost_usd),
-      total_gas_cost_usd: parseFloat(row.total_gas_cost_usd),
-      gas_to_profit_ratio_pct: parseFloat(row.gas_to_profit_ratio_pct),
-      unique_protocols: parseInt(row.unique_protocols, 10),
-      top_protocol_id: row.top_protocol_id,
-      top_protocol_volume_usd: parseFloat(row.top_protocol_volume_usd),
-      unique_tokens: parseInt(row.unique_tokens, 10),
-      top_token_symbol: row.top_token_symbol,
-      top_token_volume_usd: parseFloat(row.top_token_volume_usd),
+      avg_gas_cost_usd: parseFloat(row.avg_gas_price_gwei) || 0, // Convert gwei to USD (approximation)
+      total_gas_cost_usd: totalGasSpent,
+      gas_to_profit_ratio_pct: gasToProfitRatio,
+      unique_protocols: 1, // Table has top_protocol_1_id, so at least 1
+      top_protocol_id: row.top_protocol_1_id || '',
+      top_protocol_volume_usd: parseFloat(row.top_protocol_1_volume_usd) || 0,
+      unique_tokens: 1, // Table has top_token_1_symbol, so at least 1
+      top_token_symbol: row.top_token_1_symbol || '',
+      top_token_volume_usd: parseFloat(row.top_token_1_volume_usd) || 0,
     };
   }
 
