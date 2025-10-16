@@ -22,6 +22,14 @@ import {
   SandwichTransaction,
   MEVStatus,
 } from './mev-types';
+import {
+  SANDWICH_DETECTOR_CONFIG,
+  getMinConfidenceForProfit,
+  getGasPremiumMultiplier,
+  getChainConfig,
+} from './detector-config';
+import { EnhancedConfidenceScorer, MultiFactorConfidenceInput } from './enhanced-confidence-scorer';
+import { DetectorAccuracyTracker } from '../services/detector-accuracy-tracker';
 
 // ============================================================================
 // Types
@@ -47,17 +55,21 @@ interface SandwichPattern {
 
 export class SandwichDetector {
   private static instance: SandwichDetector;
-  private readonly DETECTOR_VERSION = 'v1.0.0';
+  private readonly DETECTOR_VERSION = 'v2.0.0'; // Updated version
   private blockchainDataService: BlockchainDataService;
+  private confidenceScorer: EnhancedConfidenceScorer;
+  private accuracyTracker: DetectorAccuracyTracker;
 
-  // Detection thresholds
-  private readonly MIN_PROFIT_USD = 100; // Minimum profit to consider
-  private readonly MAX_TIMEFRAME_SECONDS = 60; // Max time between transactions
-  private readonly MIN_CONFIDENCE_SCORE = 75; // Minimum confidence to report
-  private readonly GAS_PRICE_PREMIUM_THRESHOLD = 1.1; // 10% higher gas price
+  // Detection thresholds (now using centralized config)
+  private readonly MIN_PROFIT_USD = SANDWICH_DETECTOR_CONFIG.min_profit_usd; // Lowered to $10
+  private readonly MAX_TIMEFRAME_SECONDS = SANDWICH_DETECTOR_CONFIG.max_timeframe_seconds;
+  private readonly MIN_CONFIDENCE_SCORE = SANDWICH_DETECTOR_CONFIG.min_confidence_score;
+  private readonly GAS_PRICE_PREMIUM_THRESHOLD = SANDWICH_DETECTOR_CONFIG.gas_price_premium_threshold; // Increased to 15%
 
   private constructor() {
     this.blockchainDataService = BlockchainDataService.getInstance();
+    this.confidenceScorer = EnhancedConfidenceScorer.getInstance();
+    this.accuracyTracker = DetectorAccuracyTracker.getInstance();
   }
 
   public static getInstance(): SandwichDetector {
