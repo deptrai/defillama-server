@@ -101,6 +101,13 @@ export {
   ProtocolAttributionAnalyzer,
 } from './profit-attribution-analyzers';
 
+// Export Story 4.1.3 engines (Protocol Leakage Analysis)
+export {
+  ProtocolLeakageCalculator,
+  LeakageBreakdownAnalyzer,
+  UserImpactCalculator,
+} from './protocol-leakage-analyzers';
+
 // Export convenience object with all engines
 import { apyCalculator } from './apy-calculator';
 import { userMetricsEngine } from './user-metrics-engine';
