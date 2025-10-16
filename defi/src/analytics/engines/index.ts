@@ -93,6 +93,14 @@ export { BotPerformanceCalculator } from './bot-performance-calculator';
 export { BotStrategyAnalyzer } from './bot-strategy-analyzer';
 export { BotSophisticationScorer } from './bot-sophistication-scorer';
 
+// Export Story 4.1.3 engines (Profit Attribution)
+export { MEVProfitAttributor } from './mev-profit-attributor';
+export {
+  BotAttributionAnalyzer,
+  StrategyAttributionAnalyzer,
+  ProtocolAttributionAnalyzer,
+} from './profit-attribution-analyzers';
+
 // Export convenience object with all engines
 import { apyCalculator } from './apy-calculator';
 import { userMetricsEngine } from './user-metrics-engine';
