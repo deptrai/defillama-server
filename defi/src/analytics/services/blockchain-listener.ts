@@ -217,20 +217,20 @@ export class BlockchainListener {
         this.detectors.backrun.detectBackrunning(this.config.chainId, block.number),
       ]);
 
-      // Collect all opportunities
-      if (sandwich.opportunities.length > 0) {
+      // Collect all opportunities (with null checks)
+      if (sandwich?.opportunities?.length > 0) {
         opportunities.push(...sandwich.opportunities);
       }
-      if (frontrun.opportunities.length > 0) {
+      if (frontrun?.opportunities?.length > 0) {
         opportunities.push(...frontrun.opportunities);
       }
-      if (arbitrage.opportunities.length > 0) {
+      if (arbitrage?.opportunities?.length > 0) {
         opportunities.push(...arbitrage.opportunities);
       }
-      if (liquidation.opportunities.length > 0) {
+      if (liquidation?.opportunities?.length > 0) {
         opportunities.push(...liquidation.opportunities);
       }
-      if (backrun.opportunities.length > 0) {
+      if (backrun?.opportunities?.length > 0) {
         opportunities.push(...backrun.opportunities);
       }
     } catch (error) {
