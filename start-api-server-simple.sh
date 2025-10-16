@@ -16,19 +16,25 @@ fi
 # Navigate to defi directory
 cd /Users/mac_1/Documents/GitHub/defillama/defillama-server/defi
 
-# Load nvm and use Node 20
+# Load nvm and use Node version from .nvmrc (auto-detect)
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-nvm use 20
+
+# Auto-install and use Node version from .nvmrc if exists
+if [ -f .nvmrc ]; then
+    echo "📌 Found .nvmrc file, using Node $(cat .nvmrc)"
+    nvm install
+    nvm use
+else
+    echo "⚠️  No .nvmrc file found, using current Node version"
+fi
 
 # Set environment variables
-export API_PORT=5010
-export WS_PORT=5011
+export PORT=5010
 export NODE_ENV=development
 
 echo "📦 Environment:"
-echo "   API_PORT: $API_PORT"
-echo "   WS_PORT: $WS_PORT"
+echo "   PORT: $PORT"
 echo "   NODE_ENV: $NODE_ENV"
 echo "   Node Version: $(node --version)"
 echo "   npm Version: $(npm --version)"
