@@ -81,6 +81,11 @@ export { ArbitrageDetector } from './arbitrage-detector';
 export { LiquidationDetector } from './liquidation-detector';
 export { BackrunDetector } from './backrun-detector';
 
+// Export Story 4.1.1 utilities (Phase 3)
+export { ProfitCalculator, profitCalculator } from './profit-calculator';
+export { ConfidenceScorer, confidenceScorer } from './confidence-scorer';
+export { TransactionSimulator, transactionSimulator } from './transaction-simulator';
+
 // Export convenience object with all engines
 import { apyCalculator } from './apy-calculator';
 import { userMetricsEngine } from './user-metrics-engine';
@@ -122,6 +127,9 @@ import { FrontrunDetector } from './frontrun-detector';
 import { ArbitrageDetector } from './arbitrage-detector';
 import { LiquidationDetector } from './liquidation-detector';
 import { BackrunDetector } from './backrun-detector';
+import { profitCalculator } from './profit-calculator';
+import { confidenceScorer } from './confidence-scorer';
+import { transactionSimulator } from './transaction-simulator';
 
 export const analyticsEngines = {
   // Story 2.1.1
@@ -176,6 +184,10 @@ export const analyticsEngines = {
   arbitrageDetector: ArbitrageDetector.getInstance(),
   liquidationDetector: LiquidationDetector.getInstance(),
   backrunDetector: BackrunDetector.getInstance(),
+  // Story 4.1.1 utilities
+  profitCalculator,
+  confidenceScorer,
+  transactionSimulator,
 };
 
 export default analyticsEngines;

@@ -1,7 +1,7 @@
 /**
  * MEV Detection Types
  * Story: 4.1.1 - MEV Opportunity Detection
- * 
+ *
  * Type definitions for MEV opportunity detection, analysis, and protection
  */
 
@@ -20,44 +20,44 @@ export type RiskCategory = 'low' | 'medium' | 'high' | 'critical';
 
 export interface MEVOpportunity {
   id?: string;
-  
+
   // Opportunity Info
   opportunity_type: MEVOpportunityType;
   chain_id: string;
   block_number: number;
   timestamp: Date;
-  
+
   // Transaction Details
   target_tx_hash?: string;
   mev_tx_hashes?: string[];
-  
+
   // Tokens Involved
   token_addresses?: string[];
   token_symbols?: string[];
-  
+
   // Protocol Info
   protocol_id?: string;
   protocol_name?: string;
   dex_name?: string;
-  
+
   // Financial Metrics
   mev_profit_usd: number;
   victim_loss_usd?: number;
   gas_cost_usd?: number;
   net_profit_usd?: number;
-  
+
   // MEV Bot Info
   bot_address?: string;
   bot_name?: string;
   bot_type?: string;
-  
+
   // Detection Metadata
   detection_method: DetectionMethod;
   confidence_score: number; // 0-100
-  
+
   // Status
   status: MEVStatus;
-  
+
   // Timestamps
   created_at?: Date;
   updated_at?: Date;
@@ -81,12 +81,12 @@ export interface SandwichTransaction {
 
 export interface SandwichOpportunity extends MEVOpportunity {
   opportunity_type: 'sandwich';
-  
+
   // Sandwich-specific fields
   frontrun_tx?: SandwichTransaction;
   victim_tx: SandwichTransaction;
   backrun_tx?: SandwichTransaction;
-  
+
   // Metrics
   price_impact_pct: number;
   slippage_extracted_pct: number;
@@ -124,11 +124,11 @@ export interface FrontrunTransaction {
 
 export interface FrontrunOpportunity extends MEVOpportunity {
   opportunity_type: 'frontrun';
-  
+
   // Frontrun-specific fields
   frontrun_tx: FrontrunTransaction;
   target_tx: FrontrunTransaction;
-  
+
   // Metrics
   price_impact_pct: number;
   frontrun_profit_usd: number;
@@ -164,11 +164,11 @@ export interface BackrunTransaction {
 
 export interface BackrunOpportunity extends MEVOpportunity {
   opportunity_type: 'backrun';
-  
+
   // Backrun-specific fields
   trigger_tx: BackrunTransaction;
   backrun_tx: BackrunTransaction;
-  
+
   // Metrics
   price_movement_pct: number;
   backrun_profit_usd: number;
@@ -211,11 +211,11 @@ export interface ArbitrageRoute {
 
 export interface ArbitrageOpportunity extends MEVOpportunity {
   opportunity_type: 'arbitrage';
-  
+
   // Arbitrage-specific fields
   route: ArbitrageRoute;
   dex_prices: DEXPrice[];
-  
+
   // Metrics
   price_difference_pct: number;
   gross_profit_usd: number;
@@ -254,12 +254,12 @@ export interface LendingPosition {
 
 export interface LiquidationOpportunity extends MEVOpportunity {
   opportunity_type: 'liquidation';
-  
+
   // Liquidation-specific fields
   position: LendingPosition;
   liquidation_amount: number;
   liquidation_bonus_pct: number;
-  
+
   // Metrics
   health_factor: number;
   liquidation_profit_usd: number;
@@ -369,29 +369,121 @@ export interface MEVBot {
   bot_name?: string;
   bot_type?: string;
   verified: boolean;
-  
+
   // Performance Metrics
   total_mev_extracted: number;
   total_transactions: number;
   success_rate: number;
   avg_profit_per_tx: number;
-  
+
   // Activity Metrics
   first_seen: Date;
   last_active?: Date;
   active_days: number;
-  
+
   // Strategy Analysis
   preferred_opportunity_types?: MEVOpportunityType[];
   preferred_protocols?: string[];
   preferred_tokens?: string[];
-  
+
   // Sophistication
   sophistication_score?: number;
   uses_flashbots: boolean;
   uses_private_mempool: boolean;
-  
+
   created_at?: Date;
   updated_at?: Date;
 }
 
+
+
+// ============================================================================
+// Utility Types (Phase 3)
+// ============================================================================
+
+/**
+ * Profit Calculation Input
+ */
+export interface ProfitCalculationInput {
+  gross_profit_usd: number;
+  gas_cost_usd: number;
+  slippage_pct?: number;
+  protocol_fees_usd?: number;
+  other_costs_usd?: number;
+}
+
+/**
+ * Profit Calculation Result
+ */
+export interface ProfitCalculationResult {
+  gross_profit_usd: number;
+  total_costs_usd: number;
+  net_profit_usd: number;
+  profit_margin_pct: number;
+  roi_pct: number;
+}
+
+/**
+ * Confidence Factors
+ */
+export interface ConfidenceFactors {
+  // Pattern strength
+  pattern_match_quality?: 'exact' | 'strong' | 'moderate' | 'weak';
+  confirming_signals?: number;
+  pattern_complexity?: 'simple' | 'moderate' | 'complex';
+
+  // Historical accuracy
+  historical_success_rate?: number; // 0-100
+  historical_sample_size?: number;
+  days_since_last_update?: number;
+
+  // Data quality
+  data_completeness_pct?: number; // 0-100
+  data_source_reliability?: 'high' | 'medium' | 'low';
+  data_age_seconds?: number;
+
+  // Execution feasibility
+  liquidity_sufficient?: boolean;
+  gas_price_acceptable?: boolean;
+  timing_window_seconds?: number;
+  competition_level?: 'low' | 'medium' | 'high';
+}
+
+/**
+ * Confidence Score
+ */
+export interface ConfidenceScore {
+  overall_score: number; // 0-100
+  pattern_strength_score: number;
+  historical_accuracy_score: number;
+  data_quality_score: number;
+  execution_feasibility_score: number;
+  confidence_level: 'very_high' | 'high' | 'medium' | 'low' | 'very_low';
+}
+
+/**
+ * Simulation Input
+ */
+export interface SimulationInput {
+  chain_id: string;
+  from_token: string;
+  to_token: string;
+  amount_in: number;
+  dex?: string;
+  liquidity_usd?: number;
+  price_ratio?: number;
+  gas_price_gwei?: number;
+}
+
+/**
+ * Simulation Result
+ */
+export interface SimulationResult {
+  success: boolean;
+  amount_out: number;
+  price_impact_pct: number;
+  gas_cost_usd: number;
+  slippage_pct: number;
+  execution_time_ms: number;
+  error_message?: string;
+}
