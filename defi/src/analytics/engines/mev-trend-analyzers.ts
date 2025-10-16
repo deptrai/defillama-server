@@ -172,12 +172,12 @@ export class MarketTrendCalculator {
         ORDER BY volume DESC
         LIMIT 5
       )
-      SELECT 
+      SELECT
         a.*,
-        ARRAY_AGG(DISTINCT tp.protocol_id ORDER BY tp.volume DESC) FILTER (WHERE tp.protocol_id IS NOT NULL) as top_protocol_ids,
-        ARRAY_AGG(DISTINCT tp.volume ORDER BY tp.volume DESC) FILTER (WHERE tp.volume IS NOT NULL) as top_protocol_volumes,
-        ARRAY_AGG(DISTINCT tt.primary_token_symbol ORDER BY tt.volume DESC) FILTER (WHERE tt.primary_token_symbol IS NOT NULL) as top_token_symbols,
-        ARRAY_AGG(DISTINCT tt.volume ORDER BY tt.volume DESC) FILTER (WHERE tt.volume IS NOT NULL) as top_token_volumes
+        ARRAY_AGG(tp.protocol_id ORDER BY tp.volume DESC) FILTER (WHERE tp.protocol_id IS NOT NULL) as top_protocol_ids,
+        ARRAY_AGG(tp.volume ORDER BY tp.volume DESC) FILTER (WHERE tp.volume IS NOT NULL) as top_protocol_volumes,
+        ARRAY_AGG(tt.primary_token_symbol ORDER BY tt.volume DESC) FILTER (WHERE tt.primary_token_symbol IS NOT NULL) as top_token_symbols,
+        ARRAY_AGG(tt.volume ORDER BY tt.volume DESC) FILTER (WHERE tt.volume IS NOT NULL) as top_token_volumes
       FROM aggregated a
       LEFT JOIN top_protocols tp ON true
       LEFT JOIN top_tokens tt ON true

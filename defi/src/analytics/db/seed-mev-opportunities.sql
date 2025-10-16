@@ -24,7 +24,7 @@ INSERT INTO mev_opportunities (
   ARRAY['USDC', 'WETH']::TEXT[],
   'uniswap-v3', 'Uniswap V3', 'Uniswap V3',
   15420.50, 8230.25, 450.30, 14970.20,
-  '0x1a2b3c4d5e6f7890abcdef1234567890abcdef12', 'jaredfromsubway.eth', 'sandwich_bot',
+  '0x000000000035B5e5ad9019092C665357240f594e', 'jaredfromsubway.eth', 'sandwich_bot',
   'pattern_matching', 92.5, 'confirmed'
 ),
 
@@ -37,7 +37,7 @@ INSERT INTO mev_opportunities (
   ARRAY['PEPE', 'WETH']::TEXT[],
   'uniswap-v2', 'Uniswap V2', 'Uniswap V2',
   8750.00, 4320.50, 320.00, 8430.00,
-  '0x2b3c4d5e6f7890abcdef1234567890abcdef1234', 'mev_bot_alpha', 'sandwich_bot',
+  '0x6b75d8AF000000e20B7a7DDf000Ba900b4009A80', 'mev_bot_alpha', 'sandwich_bot',
   'pattern_matching', 88.0, 'executed'
 ),
 
@@ -50,7 +50,7 @@ INSERT INTO mev_opportunities (
   ARRAY['ARB', 'USDC']::TEXT[],
   'uniswap-v3', 'Uniswap V3', 'Uniswap V3',
   2340.00, 1150.00, 45.00, 2295.00,
-  '0x3c4d5e6f7890abcdef1234567890abcdef123456', 'arb_sandwich_bot', 'sandwich_bot',
+  '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8', 'arb_sandwich_bot', 'sandwich_bot',
   'pattern_matching', 85.5, 'confirmed'
 ),
 
@@ -63,7 +63,7 @@ INSERT INTO mev_opportunities (
   ARRAY['USDT', 'WETH']::TEXT[],
   'uniswap-v3', 'Uniswap V3', 'Uniswap V3',
   0.00, 0.00, 280.00, -280.00,
-  '0x4d5e6f7890abcdef1234567890abcdef12345678', 'failed_sandwich_bot', 'sandwich_bot',
+  '0x3DdfA8eC3052539b6C9549F12cEA2C295cfF5296', 'failed_sandwich_bot', 'sandwich_bot',
   'pattern_matching', 75.0, 'failed'
 ),
 
@@ -76,7 +76,7 @@ INSERT INTO mev_opportunities (
   ARRAY['LINK', 'WETH']::TEXT[],
   'uniswap-v3', 'Uniswap V3', 'Uniswap V3',
   5680.00, 2890.00, 35.00, 5645.00,
-  '0x5e6f7890abcdef1234567890abcdef1234567890', 'op_sandwich_master', 'sandwich_bot',
+  '0x56178a0d5F301bAf6CF3e1Cd53d9863437345Bf9', 'op_sandwich_master', 'sandwich_bot',
   'pattern_matching', 90.0, 'executed'
 );
 
@@ -98,7 +98,7 @@ INSERT INTO mev_opportunities (
   ARRAY['UNI', 'WETH']::TEXT[],
   'uniswap-v3', 'Uniswap V3', 'Uniswap V3',
   12500.00, 6200.00, 380.00, 12120.00,
-  '0x6f7890abcdef1234567890abcdef12345678901a', 'frontrun_master', 'frontrun_bot',
+  '0x7F268357A8c2552623316e2562D90e642bB538E5', 'frontrun_master', 'frontrun_bot',
   'price_impact_estimation', 87.0, 'confirmed'
 ),
 
@@ -111,7 +111,7 @@ INSERT INTO mev_opportunities (
   ARRAY['ETH']::TEXT[],
   'nft-collection', 'Bored Ape Yacht Club', NULL,
   8900.00, 0.00, 520.00, 8380.00,
-  '0x7890abcdef1234567890abcdef12345678901abc', 'nft_sniper_bot', 'frontrun_bot',
+  '0x4838B106FCe9647Bdf1E7877BF73cE8B0BAD5f97', 'nft_sniper_bot', 'frontrun_bot',
   'price_impact_estimation', 82.5, 'executed'
 ),
 
@@ -124,7 +124,7 @@ INSERT INTO mev_opportunities (
   ARRAY['USDC', 'WETH']::TEXT[],
   'uniswap-v3', 'Uniswap V3', 'Uniswap V3',
   4560.00, 2100.00, 25.00, 4535.00,
-  '0x890abcdef1234567890abcdef12345678901abcd', 'base_frontrun_bot', 'frontrun_bot',
+  '0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5', 'base_frontrun_bot', 'frontrun_bot',
   'price_impact_estimation', 79.0, 'confirmed'
 ),
 
@@ -137,7 +137,7 @@ INSERT INTO mev_opportunities (
   ARRAY['DAI', 'WETH']::TEXT[],
   'uniswap-v2', 'Uniswap V2', 'Uniswap V2',
   0.00, 0.00, 650.00, -650.00,
-  '0x90abcdef1234567890abcdef12345678901abcde', 'failed_frontrun_bot', 'frontrun_bot',
+  '0x220866B1A2219f40e72f5c628B65D54268cA3A9D', 'failed_frontrun_bot', 'frontrun_bot',
   'price_impact_estimation', 70.0, 'failed'
 );
 
@@ -159,7 +159,7 @@ INSERT INTO mev_opportunities (
   ARRAY['USDC', 'WETH']::TEXT[],
   'multi-dex', 'Uniswap V3 → Sushiswap', 'Uniswap V3, Sushiswap',
   3240.00, 0.00, 420.00, 2820.00,
-  '0xa0bcdef1234567890abcdef12345678901abcdef', 'arb_bot_pro', 'arbitrage_bot',
+  '0x00000000003b3cc22aF3aE1EAc0440BcEe416B40', 'arb_bot_pro', 'arbitrage_bot',
   'multi_dex_price_comparison', 94.0, 'executed'
 ),
 
@@ -172,7 +172,7 @@ INSERT INTO mev_opportunities (
   ARRAY['DAI', 'USDC']::TEXT[],
   'multi-dex', 'Curve → Balancer', 'Curve, Balancer',
   1850.00, 0.00, 280.00, 1570.00,
-  '0xb0cdef1234567890abcdef12345678901abcdef1', 'stable_arb_bot', 'arbitrage_bot',
+  '0x000000000035B5e5ad9019092C665357240f594e', 'stable_arb_bot', 'arbitrage_bot',
   'multi_dex_price_comparison', 96.5, 'executed'
 ),
 
@@ -185,7 +185,7 @@ INSERT INTO mev_opportunities (
   ARRAY['USDC']::TEXT[],
   'cross-chain', 'Ethereum → Arbitrum', 'Uniswap V3',
   5670.00, 0.00, 850.00, 4820.00,
-  '0xc0def1234567890abcdef12345678901abcdef12', 'cross_chain_arb_bot', 'arbitrage_bot',
+  '0x6b75d8AF000000e20B7a7DDf000Ba900b4009A80', 'cross_chain_arb_bot', 'arbitrage_bot',
   'cross_chain_price_comparison', 91.0, 'confirmed'
 ),
 
@@ -198,7 +198,7 @@ INSERT INTO mev_opportunities (
   ARRAY['WBTC', 'WETH']::TEXT[],
   'multi-dex', 'Uniswap V2 → Sushiswap → Curve', 'Multiple DEXes',
   12340.00, 0.00, 680.00, 11660.00,
-  '0xd0ef1234567890abcdef12345678901abcdef123', 'flash_arb_master', 'arbitrage_bot',
+  '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8', 'flash_arb_master', 'arbitrage_bot',
   'multi_dex_price_comparison', 93.5, 'executed'
 ),
 
@@ -211,7 +211,7 @@ INSERT INTO mev_opportunities (
   ARRAY['UNI', 'WETH']::TEXT[],
   'multi-dex', 'Uniswap V3 → Sushiswap', 'Uniswap V3, Sushiswap',
   450.00, 0.00, 520.00, -70.00,
-  '0xe0f1234567890abcdef12345678901abcdef1234', 'small_arb_bot', 'arbitrage_bot',
+  '0x3DdfA8eC3052539b6C9549F12cEA2C295cfF5296', 'small_arb_bot', 'arbitrage_bot',
   'multi_dex_price_comparison', 88.0, 'detected'
 );
 
@@ -233,7 +233,7 @@ INSERT INTO mev_opportunities (
   ARRAY['WETH', 'USDC']::TEXT[],
   'aave-v3', 'Aave V3', NULL,
   8950.00, 0.00, 450.00, 8500.00,
-  '0xf01234567890abcdef12345678901abcdef12345', 'aave_liquidator_bot', 'liquidation_bot',
+  '0x56178a0d5F301bAf6CF3e1Cd53d9863437345Bf9', 'aave_liquidator_bot', 'liquidation_bot',
   'health_factor_monitoring', 98.0, 'executed'
 ),
 
@@ -246,7 +246,7 @@ INSERT INTO mev_opportunities (
   ARRAY['WBTC', 'DAI']::TEXT[],
   'compound-v3', 'Compound V3', NULL,
   15670.00, 0.00, 520.00, 15150.00,
-  '0x0123456789abcdef0123456789abcdef01234567', 'compound_liquidator', 'liquidation_bot',
+  '0x7F268357A8c2552623316e2562D90e642bB538E5', 'compound_liquidator', 'liquidation_bot',
   'health_factor_monitoring', 97.5, 'executed'
 ),
 
@@ -259,7 +259,7 @@ INSERT INTO mev_opportunities (
   ARRAY['WETH', 'DAI']::TEXT[],
   'makerdao', 'MakerDAO', NULL,
   22340.00, 0.00, 680.00, 21660.00,
-  '0x123456789abcdef0123456789abcdef012345678', 'maker_liquidator_pro', 'liquidation_bot',
+  '0x4838B106FCe9647Bdf1E7877BF73cE8B0BAD5f97', 'maker_liquidator_pro', 'liquidation_bot',
   'health_factor_monitoring', 99.0, 'executed'
 ),
 
@@ -272,7 +272,7 @@ INSERT INTO mev_opportunities (
   ARRAY['USDC', 'DAI']::TEXT[],
   'aave-v3', 'Aave V3', NULL,
   0.00, 0.00, 380.00, -380.00,
-  '0x23456789abcdef0123456789abcdef0123456789', 'slow_liquidator', 'liquidation_bot',
+  '0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5', 'slow_liquidator', 'liquidation_bot',
   'health_factor_monitoring', 95.0, 'failed'
 );
 
@@ -294,7 +294,7 @@ INSERT INTO mev_opportunities (
   ARRAY['UNI', 'WETH']::TEXT[],
   'uniswap-v3', 'Uniswap V3', 'Uniswap V3',
   6780.00, 0.00, 320.00, 6460.00,
-  '0x3456789abcdef0123456789abcdef01234567890', 'backrun_specialist', 'backrun_bot',
+  '0x220866B1A2219f40e72f5c628B65D54268cA3A9D', 'backrun_specialist', 'backrun_bot',
   'post_transaction_opportunity', 89.5, 'executed'
 ),
 
@@ -307,7 +307,7 @@ INSERT INTO mev_opportunities (
   ARRAY['WETH', 'USDC']::TEXT[],
   'aave-v3', 'Aave V3', 'Uniswap V3',
   4320.00, 0.00, 280.00, 4040.00,
-  '0x456789abcdef0123456789abcdef012345678901', 'liquidation_backrunner', 'backrun_bot',
+  '0x00000000003b3cc22aF3aE1EAc0440BcEe416B40', 'liquidation_backrunner', 'backrun_bot',
   'post_transaction_opportunity', 91.0, 'confirmed'
 );
 
