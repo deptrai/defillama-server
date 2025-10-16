@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: defillama
       POSTGRES_PASSWORD: defillama123
     ports:
-      - "5432:5432"
+      - "5004:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./dev-metrics/db-scripts:/docker-entrypoint-initdb.d
@@ -24,7 +24,7 @@ services:
     image: redis:7-alpine
     container_name: defillama-redis
     ports:
-      - "6379:6379"
+      - "5005:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -39,7 +39,7 @@ services:
     image: "amazon/dynamodb-local:latest"
     container_name: dynamodb-local
     ports:
-      - "8000:8000"
+      - "5006:8000"
     volumes:
       - "./docker/dynamodb:/home/dynamodblocal/data"
     working_dir: /home/dynamodblocal
