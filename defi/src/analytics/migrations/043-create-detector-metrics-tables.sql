@@ -56,7 +56,7 @@ CREATE INDEX idx_detector_metrics_chain_date ON mev_detector_metrics(chain_id, d
 
 CREATE TABLE IF NOT EXISTS mev_detection_validations (
   id SERIAL PRIMARY KEY,
-  opportunity_id VARCHAR(100) NOT NULL REFERENCES mev_opportunities(opportunity_id),
+  opportunity_id UUID NOT NULL REFERENCES mev_opportunities(id) ON DELETE CASCADE,
   detector_type VARCHAR(50) NOT NULL,
   
   -- Validation status
@@ -129,7 +129,7 @@ CREATE INDEX idx_detector_config_history_effective ON mev_detector_config_histor
 
 CREATE TABLE IF NOT EXISTS mev_confidence_factors (
   id SERIAL PRIMARY KEY,
-  opportunity_id VARCHAR(100) NOT NULL REFERENCES mev_opportunities(opportunity_id),
+  opportunity_id UUID NOT NULL REFERENCES mev_opportunities(id) ON DELETE CASCADE,
   
   -- Overall confidence
   overall_confidence DECIMAL(5,2) NOT NULL,
