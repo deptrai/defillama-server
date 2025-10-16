@@ -24,6 +24,7 @@ import {
   LiquidationDetector,
   BackrunDetector,
 } from '../engines';
+import { rpcManager } from './rpc-manager';
 
 interface BlockchainListenerConfig {
   rpcUrl: string;
@@ -74,9 +75,8 @@ export class BlockchainListener {
     }
 
     try {
-      // Connect to WebSocket provider
-      this.provider = new ethers.WebSocketProvider(this.config.rpcUrl);
-      await this.provider.ready;
+      // Get provider from RPC Manager (with automatic failover)
+      this.provider = await rpcManager.getProvider(this.config.chainId);
 
       console.log(`✅ Connected to ${this.config.chainId} blockchain`);
       this.isRunning = true;
