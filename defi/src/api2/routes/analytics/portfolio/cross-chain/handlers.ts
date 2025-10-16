@@ -4,7 +4,7 @@
  */
 
 import type { Request, Response } from 'hyper-express';
-import { CrossChainAggregationEngine } from '../../../../analytics/engines/cross-chain-aggregation-engine';
+import { CrossChainAggregationEngine } from '../../../../../analytics/engines/cross-chain-aggregation-engine';
 import {
   validateUserId,
   validateChainId,
