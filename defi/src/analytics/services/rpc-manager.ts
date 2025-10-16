@@ -339,6 +339,21 @@ export class RPCManager {
   }
 
   /**
+   * Reload chain configurations from environment
+   * Useful when environment variables change at runtime
+   */
+  public async reload(): Promise<void> {
+    // Cleanup existing providers
+    await this.cleanup();
+
+    // Clear chains
+    this.chains.clear();
+
+    // Re-initialize from environment
+    this.initializeChains();
+  }
+
+  /**
    * Cleanup all providers
    */
   public async cleanup(): Promise<void> {

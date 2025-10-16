@@ -3,9 +3,9 @@
  * Test automatic failover and RPC rotation
  */
 
-import { rpcManager } from './src/analytics/services/rpc-manager';
 import dotenv from 'dotenv';
 import path from 'path';
+import { rpcManager } from './src/analytics/services/rpc-manager';
 
 // Load .env file
 const envPath = path.join(__dirname, '.env');
@@ -13,6 +13,7 @@ console.log(`Loading .env from: ${envPath}`);
 const result = dotenv.config({ path: envPath });
 if (result.error) {
   console.error('Error loading .env:', result.error);
+  process.exit(1);
 } else {
   console.log('✅ .env loaded successfully');
   console.log(`ETHEREUM_RPC: ${process.env.ETHEREUM_RPC ? 'SET' : 'NOT SET'}`);
@@ -26,6 +27,11 @@ async function main() {
   console.log('\n');
 
   try {
+    // Reload RPC Manager after .env is loaded
+    console.log('🔄 Reloading RPC Manager with new environment variables...\n');
+    await rpcManager.reload();
+    console.log('✅ RPC Manager reloaded successfully\n');
+
     // Test 1: Get initial status
     console.log('📊 Test 1: Initial RPC Status\n');
     const initialStatus = rpcManager.getStatus();
