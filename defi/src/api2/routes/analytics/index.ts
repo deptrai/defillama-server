@@ -24,6 +24,7 @@ import smartMoneyRouter from './smart-money';
 import riskRouter from './risk';
 import suspiciousActivitiesRouter from './suspicious-activities';
 import complianceRouter from './compliance';
+import registerMEVRoutes from './mev';
 
 /**
  * Register analytics routes
@@ -64,5 +65,8 @@ export function setAnalyticsRoutes(router: HyperExpress.Router) {
 
   // Story 3.2.3: Compliance Monitoring
   router.use('/analytics/compliance', complianceRouter);
+
+  // Story 4.1.1: MEV Opportunity Detection
+  registerMEVRoutes(router);
 }
 
