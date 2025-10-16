@@ -31,6 +31,7 @@ import {
   OpportunityDistributionAnalyzer,
   BotCompetitionAnalyzer,
 } from '../../../../analytics/engines';
+import { registerMEVIngestionRoutes } from './ingestion';
 import { MEVProtectionAnalyzer } from '../../../../analytics/engines/mev-protection-analyzer';
 
 // ============================================================================
@@ -516,5 +517,8 @@ export default function registerMEVRoutes(router: HyperExpress.Router) {
   router.get('/v1/analytics/mev/trends', async (req: any, res: any) => {
     return getMarketTrends(req, res);
   });
+
+  // MEV Data Ingestion routes (Real-time blockchain integration)
+  registerMEVIngestionRoutes(router);
 }
 
