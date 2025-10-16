@@ -104,7 +104,95 @@ export class ProtocolLeakageCalculator {
   }
 
   /**
-   * Calculate daily MEV leakage for a protocol
+   * Get daily MEV leakage for a protocol from pre-aggregated table
+   * This queries the protocol_mev_leakage table which contains pre-calculated data
+   */
+  public async getLeakage(
+    protocolId: string,
+    chainId: string,
+    dateStr: string
+  ): Promise<ProtocolLeakage> {
+    // Query pre-aggregated protocol_mev_leakage table
+    const result = await query<any>(
+      `
+      SELECT
+        protocol_id,
+        protocol_name,
+        chain_id,
+        date,
+        total_mev_extracted_usd,
+        total_transactions,
+        total_affected_transactions,
+        affected_transaction_pct,
+        sandwich_mev_usd,
+        sandwich_count,
+        frontrun_mev_usd,
+        frontrun_count,
+        backrun_mev_usd,
+        backrun_count,
+        arbitrage_mev_usd,
+        arbitrage_count,
+        liquidation_mev_usd,
+        liquidation_count,
+        total_user_loss_usd,
+        avg_loss_per_affected_tx_usd,
+        unique_affected_users,
+        unique_bots,
+        top_bot_address,
+        top_bot_extracted_usd,
+        top_bot_share_pct,
+        protocol_volume_usd,
+        mev_to_volume_ratio_pct,
+        leakage_severity,
+        leakage_score
+      FROM protocol_mev_leakage
+      WHERE protocol_id = $1 AND chain_id = $2 AND date = $3::date
+      `,
+      [protocolId, chainId, dateStr]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error(`No data found for protocol ${protocolId} on chain ${chainId} for date ${dateStr}`);
+    }
+
+    const row = result.rows[0];
+
+    return {
+      protocol_id: row.protocol_id,
+      protocol_name: row.protocol_name,
+      chain_id: row.chain_id,
+      date: new Date(row.date),
+      total_mev_extracted_usd: parseFloat(row.total_mev_extracted_usd),
+      total_transactions: parseInt(row.total_transactions, 10),
+      total_affected_transactions: parseInt(row.total_affected_transactions, 10),
+      affected_transaction_pct: parseFloat(row.affected_transaction_pct),
+      sandwich_mev_usd: parseFloat(row.sandwich_mev_usd),
+      sandwich_count: parseInt(row.sandwich_count, 10),
+      frontrun_mev_usd: parseFloat(row.frontrun_mev_usd),
+      frontrun_count: parseInt(row.frontrun_count, 10),
+      backrun_mev_usd: parseFloat(row.backrun_mev_usd),
+      backrun_count: parseInt(row.backrun_count, 10),
+      arbitrage_mev_usd: parseFloat(row.arbitrage_mev_usd),
+      arbitrage_count: parseInt(row.arbitrage_count, 10),
+      liquidation_mev_usd: parseFloat(row.liquidation_mev_usd),
+      liquidation_count: parseInt(row.liquidation_count, 10),
+      total_user_loss_usd: parseFloat(row.total_user_loss_usd),
+      avg_loss_per_affected_tx_usd: parseFloat(row.avg_loss_per_affected_tx_usd),
+      unique_affected_users: parseInt(row.unique_affected_users, 10),
+      unique_bots: parseInt(row.unique_bots, 10),
+      top_bot_address: row.top_bot_address,
+      top_bot_extracted_usd: parseFloat(row.top_bot_extracted_usd),
+      top_bot_share_pct: parseFloat(row.top_bot_share_pct),
+      protocol_volume_usd: parseFloat(row.protocol_volume_usd),
+      mev_to_volume_ratio_pct: parseFloat(row.mev_to_volume_ratio_pct),
+      leakage_severity: row.leakage_severity as LeakageSeverity,
+      leakage_score: parseFloat(row.leakage_score),
+    };
+  }
+
+  /**
+   * Calculate daily MEV leakage for a protocol from mev_profit_attribution
+   * This is used when real-time calculation is needed from raw MEV data
    */
   public async calculateLeakage(
     protocolId: string,
@@ -115,7 +203,7 @@ export class ProtocolLeakageCalculator {
     const result = await query<any>(
       `
       WITH protocol_data AS (
-        SELECT 
+        SELECT
           protocol_id,
           protocol_name,
           chain_id,

@@ -112,14 +112,118 @@ export class MarketTrendCalculator {
   }
 
   /**
-   * Calculate daily market trend
+   * Get daily market trend from pre-aggregated table
+   * This queries the mev_market_trends table which contains pre-calculated data
+   */
+  public async getTrend(chainId: string, dateStr: string): Promise<MarketTrend> {
+    // Query pre-aggregated mev_market_trends table
+    const result = await query<any>(
+      `
+      SELECT
+        date,
+        chain_id,
+        total_mev_volume_usd,
+        total_opportunities,
+        total_executed_opportunities,
+        execution_rate_pct,
+        sandwich_count,
+        sandwich_volume_usd,
+        sandwich_share_pct,
+        frontrun_count,
+        frontrun_volume_usd,
+        frontrun_share_pct,
+        backrun_count,
+        backrun_volume_usd,
+        backrun_share_pct,
+        arbitrage_count,
+        arbitrage_volume_usd,
+        arbitrage_share_pct,
+        liquidation_count,
+        liquidation_volume_usd,
+        liquidation_share_pct,
+        avg_profit_per_opportunity_usd,
+        median_profit_usd,
+        max_profit_usd,
+        min_profit_usd,
+        unique_bots,
+        new_bots,
+        active_bots,
+        bot_concentration_hhi,
+        top_10_bots_share_pct,
+        avg_gas_cost_usd,
+        total_gas_cost_usd,
+        gas_to_profit_ratio_pct,
+        unique_protocols,
+        top_protocol_id,
+        top_protocol_volume_usd,
+        unique_tokens,
+        top_token_symbol,
+        top_token_volume_usd
+      FROM mev_market_trends
+      WHERE chain_id = $1 AND date = $2::date
+      `,
+      [chainId, dateStr]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error(`No data found for chain ${chainId} for date ${dateStr}`);
+    }
+
+    const row = result.rows[0];
+
+    return {
+      date: new Date(row.date),
+      chain_id: row.chain_id,
+      total_mev_volume_usd: parseFloat(row.total_mev_volume_usd),
+      total_opportunities: parseInt(row.total_opportunities, 10),
+      total_executed_opportunities: parseInt(row.total_executed_opportunities, 10),
+      execution_rate_pct: parseFloat(row.execution_rate_pct),
+      sandwich_count: parseInt(row.sandwich_count, 10),
+      sandwich_volume_usd: parseFloat(row.sandwich_volume_usd),
+      sandwich_share_pct: parseFloat(row.sandwich_share_pct),
+      frontrun_count: parseInt(row.frontrun_count, 10),
+      frontrun_volume_usd: parseFloat(row.frontrun_volume_usd),
+      frontrun_share_pct: parseFloat(row.frontrun_share_pct),
+      backrun_count: parseInt(row.backrun_count, 10),
+      backrun_volume_usd: parseFloat(row.backrun_volume_usd),
+      backrun_share_pct: parseFloat(row.backrun_share_pct),
+      arbitrage_count: parseInt(row.arbitrage_count, 10),
+      arbitrage_volume_usd: parseFloat(row.arbitrage_volume_usd),
+      arbitrage_share_pct: parseFloat(row.arbitrage_share_pct),
+      liquidation_count: parseInt(row.liquidation_count, 10),
+      liquidation_volume_usd: parseFloat(row.liquidation_volume_usd),
+      liquidation_share_pct: parseFloat(row.liquidation_share_pct),
+      avg_profit_per_opportunity_usd: parseFloat(row.avg_profit_per_opportunity_usd),
+      median_profit_usd: parseFloat(row.median_profit_usd),
+      max_profit_usd: parseFloat(row.max_profit_usd),
+      min_profit_usd: parseFloat(row.min_profit_usd),
+      unique_bots: parseInt(row.unique_bots, 10),
+      new_bots: parseInt(row.new_bots, 10),
+      active_bots: parseInt(row.active_bots, 10),
+      bot_concentration_hhi: parseFloat(row.bot_concentration_hhi),
+      top_10_bots_share_pct: parseFloat(row.top_10_bots_share_pct),
+      avg_gas_cost_usd: parseFloat(row.avg_gas_cost_usd),
+      total_gas_cost_usd: parseFloat(row.total_gas_cost_usd),
+      gas_to_profit_ratio_pct: parseFloat(row.gas_to_profit_ratio_pct),
+      unique_protocols: parseInt(row.unique_protocols, 10),
+      top_protocol_id: row.top_protocol_id,
+      top_protocol_volume_usd: parseFloat(row.top_protocol_volume_usd),
+      unique_tokens: parseInt(row.unique_tokens, 10),
+      top_token_symbol: row.top_token_symbol,
+      top_token_volume_usd: parseFloat(row.top_token_volume_usd),
+    };
+  }
+
+  /**
+   * Calculate daily market trend from mev_profit_attribution
+   * This is used when real-time calculation is needed from raw MEV data
    */
   public async calculateTrend(chainId: string, date: Date): Promise<MarketTrend> {
     // Aggregate from mev_profit_attribution
     const result = await query<any>(
       `
       WITH daily_data AS (
-        SELECT 
+        SELECT
           chain_id,
           date,
           opportunity_type,

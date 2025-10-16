@@ -411,9 +411,9 @@ async function getProtocolLeakage(req: any, res: any) {
       return errorResponse(res, 'chain_id and date are required', 400);
     }
 
-    // Calculate leakage
+    // Get leakage from pre-aggregated table (pass date as string for proper timezone handling)
     const calculator = ProtocolLeakageCalculator.getInstance();
-    const leakage = await calculator.calculateLeakage(protocolId, chain_id, new Date(date));
+    const leakage = await calculator.getLeakage(protocolId, chain_id, date);
 
     // Get breakdown
     const breakdownAnalyzer = LeakageBreakdownAnalyzer.getInstance();
@@ -432,7 +432,7 @@ async function getProtocolLeakage(req: any, res: any) {
       user_impact: userImpact,
     });
   } catch (error: any) {
-    return errorResponse(res, error.message, 400);
+    return errorResponse(res, error.message, 404); // Use 404 for not found
   }
 }
 
@@ -449,17 +449,16 @@ async function getMarketTrends(req: any, res: any) {
       return errorResponse(res, 'chain_id and date are required', 400);
     }
 
-    // Calculate trend
+    // Get trend from pre-aggregated table (pass date as string for proper timezone handling)
     const calculator = MarketTrendCalculator.getInstance();
-    const trend = await calculator.calculateTrend(chain_id, new Date(date));
+    const trend = await calculator.getTrend(chain_id, date);
 
     // Get opportunity distribution
     const distributionAnalyzer = OpportunityDistributionAnalyzer.getInstance();
     const distribution = distributionAnalyzer.analyzeDistribution(trend);
 
-    // Get bot competition
-    const competitionAnalyzer = BotCompetitionAnalyzer.getInstance();
-    const competition = await competitionAnalyzer.analyzeCompetition(chain_id, new Date(date));
+    // Note: Bot competition data is already included in the trend object
+    // (unique_bots, bot_concentration_hhi, top_10_bots_share_pct)
 
     // Add caching headers (10 minutes - data changes less frequently)
     addCacheHeaders(res, 600);
@@ -467,10 +466,9 @@ async function getMarketTrends(req: any, res: any) {
     return successResponse(res, {
       trend,
       opportunity_distribution: distribution,
-      bot_competition: competition,
     });
   } catch (error: any) {
-    return errorResponse(res, error.message, 400);
+    return errorResponse(res, error.message, 404); // Use 404 for not found
   }
 }
 
