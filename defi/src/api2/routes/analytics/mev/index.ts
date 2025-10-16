@@ -21,6 +21,15 @@ import {
   ArbitrageDetector,
   LiquidationDetector,
   BackrunDetector,
+  BotPerformanceCalculator,
+  BotStrategyAnalyzer,
+  BotSophisticationScorer,
+  ProtocolLeakageCalculator,
+  LeakageBreakdownAnalyzer,
+  UserImpactCalculator,
+  MarketTrendCalculator,
+  OpportunityDistributionAnalyzer,
+  BotCompetitionAnalyzer,
 } from '../../../../analytics/engines';
 import { MEVProtectionAnalyzer } from '../../../../analytics/engines/mev-protection-analyzer';
 
@@ -308,6 +317,140 @@ async function analyzeProtection(req: any, res: any) {
   }
 }
 
+/**
+ * GET /v1/analytics/mev/bots
+ * Get MEV bot analytics
+ * Story: 4.1.3 - Advanced MEV Analytics
+ */
+async function getBotAnalytics(req: any, res: any) {
+  try {
+    const { chain_id, limit = 100, offset = 0 } = req.query_parameters;
+
+    // Get bots from database
+    let sql = `SELECT * FROM mev_bots`;
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (chain_id) {
+      sql += ` WHERE chain_id = $${paramIndex++}`;
+      values.push(chain_id);
+    }
+
+    sql += ` ORDER BY total_mev_extracted_usd DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+    values.push(limit, offset);
+
+    const result = await query(sql, values);
+
+    // Enrich with analytics
+    const performanceCalculator = BotPerformanceCalculator.getInstance();
+    const strategyAnalyzer = BotStrategyAnalyzer.getInstance();
+    const sophisticationScorer = BotSophisticationScorer.getInstance();
+
+    const enrichedBots = await Promise.all(
+      result.rows.map(async (bot: any) => {
+        try {
+          const [performance, strategy, sophistication] = await Promise.all([
+            performanceCalculator.calculatePerformance(bot.bot_address, bot.chain_id),
+            strategyAnalyzer.analyzeStrategy(bot.bot_address, bot.chain_id),
+            sophisticationScorer.calculateScore(bot.bot_address, bot.chain_id),
+          ]);
+
+          return {
+            ...bot,
+            performance,
+            strategy,
+            sophistication,
+          };
+        } catch (error) {
+          return bot; // Return basic bot data if enrichment fails
+        }
+      })
+    );
+
+    return successResponse(res, {
+      bots: enrichedBots,
+      pagination: {
+        limit: parseInt(limit, 10),
+        offset: parseInt(offset, 10),
+        total: enrichedBots.length,
+      },
+    });
+  } catch (error: any) {
+    return errorResponse(res, error.message, 400);
+  }
+}
+
+/**
+ * GET /v1/analytics/mev/protocols/:protocolId/leakage
+ * Get protocol MEV leakage analysis
+ * Story: 4.1.3 - Advanced MEV Analytics
+ */
+async function getProtocolLeakage(req: any, res: any) {
+  try {
+    const { protocolId } = req.path_parameters;
+    const { chain_id, date } = req.query_parameters;
+
+    if (!chain_id || !date) {
+      return errorResponse(res, 'chain_id and date are required', 400);
+    }
+
+    // Calculate leakage
+    const calculator = ProtocolLeakageCalculator.getInstance();
+    const leakage = await calculator.calculateLeakage(protocolId, chain_id, new Date(date));
+
+    // Get breakdown
+    const breakdownAnalyzer = LeakageBreakdownAnalyzer.getInstance();
+    const breakdown = await breakdownAnalyzer.analyzeBreakdown(leakage);
+
+    // Get user impact
+    const impactCalculator = UserImpactCalculator.getInstance();
+    const userImpact = await impactCalculator.calculateImpact(leakage);
+
+    return successResponse(res, {
+      leakage,
+      breakdown,
+      user_impact: userImpact,
+    });
+  } catch (error: any) {
+    return errorResponse(res, error.message, 400);
+  }
+}
+
+/**
+ * GET /v1/analytics/mev/trends
+ * Get MEV market trends
+ * Story: 4.1.3 - Advanced MEV Analytics
+ */
+async function getMarketTrends(req: any, res: any) {
+  try {
+    const { chain_id, date } = req.query_parameters;
+
+    if (!chain_id || !date) {
+      return errorResponse(res, 'chain_id and date are required', 400);
+    }
+
+    // Calculate trend
+    const calculator = MarketTrendCalculator.getInstance();
+    const trend = await calculator.calculateTrend(chain_id, new Date(date));
+
+    // Get opportunity distribution
+    const distributionAnalyzer = OpportunityDistributionAnalyzer.getInstance();
+    const distribution = distributionAnalyzer.analyzeDistribution(trend);
+
+    // Get bot competition
+    const competitionAnalyzer = BotCompetitionAnalyzer.getInstance();
+    const competition = await competitionAnalyzer.analyzeCompetition(chain_id, new Date(date));
+
+    return successResponse(res, {
+      trend,
+      opportunity_distribution: distribution,
+      bot_competition: competition,
+    });
+  } catch (error: any) {
+    return errorResponse(res, error.message, 400);
+  }
+}
+
 // ============================================================================
 // Route Registration
 // ============================================================================
@@ -336,6 +479,21 @@ export default function registerMEVRoutes(router: HyperExpress.Router) {
   // Analyze protection (Story 4.1.2)
   router.post('/v1/analytics/mev/protection/analyze', async (req: any, res: any) => {
     return analyzeProtection(req, res);
+  });
+
+  // Bot analytics (Story 4.1.3)
+  router.get('/v1/analytics/mev/bots', async (req: any, res: any) => {
+    return getBotAnalytics(req, res);
+  });
+
+  // Protocol leakage (Story 4.1.3)
+  router.get('/v1/analytics/mev/protocols/:protocolId/leakage', async (req: any, res: any) => {
+    return getProtocolLeakage(req, res);
+  });
+
+  // Market trends (Story 4.1.3)
+  router.get('/v1/analytics/mev/trends', async (req: any, res: any) => {
+    return getMarketTrends(req, res);
   });
 }
 
