@@ -24,6 +24,13 @@ import {
   LendingPosition,
   MEVStatus,
 } from './mev-types';
+import {
+  LIQUIDATION_DETECTOR_CONFIG,
+  getMinConfidenceForProfit,
+  getChainConfig,
+} from './detector-config';
+import { EnhancedConfidenceScorer } from './enhanced-confidence-scorer';
+import { DetectorAccuracyTracker } from '../services/detector-accuracy-tracker';
 
 // ============================================================================
 // Liquidation Detector
@@ -31,14 +38,16 @@ import {
 
 export class LiquidationDetector {
   private static instance: LiquidationDetector;
-  private readonly DETECTOR_VERSION = 'v1.0.0';
+  private readonly DETECTOR_VERSION = 'v2.0.0'; // Updated version
   private blockchainDataService: BlockchainDataService;
+  private confidenceScorer: EnhancedConfidenceScorer;
+  private accuracyTracker: DetectorAccuracyTracker;
 
-  // Detection thresholds
-  private readonly MIN_PROFIT_USD = 100;
+  // Detection thresholds (now using centralized config)
+  private readonly MIN_PROFIT_USD = LIQUIDATION_DETECTOR_CONFIG.min_profit_usd; // Lowered to $10
   private readonly HEALTH_FACTOR_THRESHOLD = 1.0; // Below 1.0 = liquidatable
   private readonly MIN_POSITION_SIZE_USD = 1000; // Minimum position size
-  private readonly MIN_CONFIDENCE_SCORE = 75;
+  private readonly MIN_CONFIDENCE_SCORE = LIQUIDATION_DETECTOR_CONFIG.min_confidence_score;
 
   // Protocol configurations
   private readonly SUPPORTED_PROTOCOLS = {
@@ -49,6 +58,8 @@ export class LiquidationDetector {
 
   private constructor() {
     this.blockchainDataService = BlockchainDataService.getInstance();
+    this.confidenceScorer = EnhancedConfidenceScorer.getInstance();
+    this.accuracyTracker = DetectorAccuracyTracker.getInstance();
   }
 
   public static getInstance(): LiquidationDetector {

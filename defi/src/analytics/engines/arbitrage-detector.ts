@@ -25,6 +25,13 @@ import {
   ArbitrageRoute,
   MEVStatus,
 } from './mev-types';
+import {
+  ARBITRAGE_DETECTOR_CONFIG,
+  getMinConfidenceForProfit,
+  getChainConfig,
+} from './detector-config';
+import { EnhancedConfidenceScorer } from './enhanced-confidence-scorer';
+import { DetectorAccuracyTracker } from '../services/detector-accuracy-tracker';
 
 // ============================================================================
 // Arbitrage Detector
@@ -32,14 +39,16 @@ import {
 
 export class ArbitrageDetector {
   private static instance: ArbitrageDetector;
-  private readonly DETECTOR_VERSION = 'v1.0.0';
+  private readonly DETECTOR_VERSION = 'v2.0.0'; // Updated version
   private blockchainDataService: BlockchainDataService;
+  private confidenceScorer: EnhancedConfidenceScorer;
+  private accuracyTracker: DetectorAccuracyTracker;
 
-  // Detection thresholds
-  private readonly MIN_PROFIT_USD = 100;
+  // Detection thresholds (now using centralized config)
+  private readonly MIN_PROFIT_USD = ARBITRAGE_DETECTOR_CONFIG.min_profit_usd; // Lowered to $10
   private readonly MIN_PRICE_DIFFERENCE_PCT = 0.5; // 0.5% minimum price difference
   private readonly MIN_LIQUIDITY_USD = 50000; // Minimum liquidity required
-  private readonly MIN_CONFIDENCE_SCORE = 75;
+  private readonly MIN_CONFIDENCE_SCORE = ARBITRAGE_DETECTOR_CONFIG.min_confidence_score;
   private readonly SLIPPAGE_PCT = 0.3; // Estimated slippage
 
   // Supported DEXes
@@ -53,6 +62,8 @@ export class ArbitrageDetector {
 
   private constructor() {
     this.blockchainDataService = BlockchainDataService.getInstance();
+    this.confidenceScorer = EnhancedConfidenceScorer.getInstance();
+    this.accuracyTracker = DetectorAccuracyTracker.getInstance();
   }
 
   public static getInstance(): ArbitrageDetector {

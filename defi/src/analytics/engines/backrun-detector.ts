@@ -24,6 +24,13 @@ import {
   BackrunTransaction,
   MEVStatus,
 } from './mev-types';
+import {
+  BACKRUN_DETECTOR_CONFIG,
+  getMinConfidenceForProfit,
+  getChainConfig,
+} from './detector-config';
+import { EnhancedConfidenceScorer } from './enhanced-confidence-scorer';
+import { DetectorAccuracyTracker } from '../services/detector-accuracy-tracker';
 
 // ============================================================================
 // Backrun Detector
@@ -31,18 +38,22 @@ import {
 
 export class BackrunDetector {
   private static instance: BackrunDetector;
-  private readonly DETECTOR_VERSION = 'v1.0.0';
+  private readonly DETECTOR_VERSION = 'v2.0.0'; // Updated version
   private blockchainDataService: BlockchainDataService;
+  private confidenceScorer: EnhancedConfidenceScorer;
+  private accuracyTracker: DetectorAccuracyTracker;
 
-  // Detection thresholds
-  private readonly MIN_PROFIT_USD = 100;
+  // Detection thresholds (now using centralized config)
+  private readonly MIN_PROFIT_USD = BACKRUN_DETECTOR_CONFIG.min_profit_usd; // Lowered to $10
   private readonly MIN_PRICE_MOVEMENT_PCT = 1.0; // Minimum 1% price movement
   private readonly MAX_TIMING_SECONDS = 30; // Max time after trigger transaction
   private readonly MIN_LIQUIDITY_USD = 10000; // Minimum liquidity required
-  private readonly MIN_CONFIDENCE_SCORE = 75;
+  private readonly MIN_CONFIDENCE_SCORE = BACKRUN_DETECTOR_CONFIG.min_confidence_score;
 
   private constructor() {
     this.blockchainDataService = BlockchainDataService.getInstance();
+    this.confidenceScorer = EnhancedConfidenceScorer.getInstance();
+    this.accuracyTracker = DetectorAccuracyTracker.getInstance();
   }
 
   public static getInstance(): BackrunDetector {

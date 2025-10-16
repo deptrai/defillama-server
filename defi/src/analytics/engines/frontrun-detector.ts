@@ -24,6 +24,14 @@ import {
   FrontrunTransaction,
   MEVStatus,
 } from './mev-types';
+import {
+  FRONTRUN_DETECTOR_CONFIG,
+  getMinConfidenceForProfit,
+  getGasPremiumMultiplier,
+  getChainConfig,
+} from './detector-config';
+import { EnhancedConfidenceScorer } from './enhanced-confidence-scorer';
+import { DetectorAccuracyTracker } from '../services/detector-accuracy-tracker';
 
 // ============================================================================
 // Frontrun Detector
@@ -31,18 +39,22 @@ import {
 
 export class FrontrunDetector {
   private static instance: FrontrunDetector;
-  private readonly DETECTOR_VERSION = 'v1.0.0';
+  private readonly DETECTOR_VERSION = 'v2.0.0'; // Updated version
   private blockchainDataService: BlockchainDataService;
+  private confidenceScorer: EnhancedConfidenceScorer;
+  private accuracyTracker: DetectorAccuracyTracker;
 
-  // Detection thresholds
-  private readonly MIN_PROFIT_USD = 100;
+  // Detection thresholds (now using centralized config)
+  private readonly MIN_PROFIT_USD = FRONTRUN_DETECTOR_CONFIG.min_profit_usd; // Lowered to $10
   private readonly MIN_TARGET_VALUE_USD = 10000; // Minimum target transaction value
   private readonly MIN_PRICE_IMPACT_PCT = 1.0; // Minimum 1% price impact
-  private readonly MIN_CONFIDENCE_SCORE = 75;
-  private readonly GAS_PRICE_PREMIUM_THRESHOLD = 1.2; // 20% higher gas price
+  private readonly MIN_CONFIDENCE_SCORE = FRONTRUN_DETECTOR_CONFIG.min_confidence_score;
+  private readonly GAS_PRICE_PREMIUM_THRESHOLD = FRONTRUN_DETECTOR_CONFIG.gas_price_premium_threshold; // 20%
 
   private constructor() {
     this.blockchainDataService = BlockchainDataService.getInstance();
+    this.confidenceScorer = EnhancedConfidenceScorer.getInstance();
+    this.accuracyTracker = DetectorAccuracyTracker.getInstance();
   }
 
   public static getInstance(): FrontrunDetector {
