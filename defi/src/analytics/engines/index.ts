@@ -108,6 +108,13 @@ export {
   UserImpactCalculator,
 } from './protocol-leakage-analyzers';
 
+// Export Story 4.1.3 engines (MEV Trend Analysis)
+export {
+  MarketTrendCalculator,
+  OpportunityDistributionAnalyzer,
+  BotCompetitionAnalyzer,
+} from './mev-trend-analyzers';
+
 // Export convenience object with all engines
 import { apyCalculator } from './apy-calculator';
 import { userMetricsEngine } from './user-metrics-engine';
