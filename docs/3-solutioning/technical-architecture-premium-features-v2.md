@@ -123,7 +123,7 @@ Transform DeFiLlama from a free TVL tracking platform into a **comprehensive pre
 1. **EPIC-1**: Alerts & Notifications (5 features, 130 points, Q4 2025)
 2. **EPIC-2**: Tax & Compliance (1 feature, 80 points, Q4 2025)
 3. **EPIC-3**: Portfolio Management (6 features, 110 points, Q1 2026)
-4. **EPIC-4**: Gas & Trading Optimization (6 features, 140 points, Q2 2026)
+4. **EPIC-4**: Gas & Trading Optimization (9 features, 191 points, Q2 2026)
 5. **EPIC-5**: Security & Risk Management (4 features, 80 points, Q3 2026)
 6. **EPIC-6**: Advanced Analytics & AI (3 features, 100 points, Q3 2026)
 
@@ -213,10 +213,13 @@ Transform DeFiLlama from a free TVL tracking platform into a **comprehensive pre
 │                    APPLICATION LAYER (PREMIUM - NEW)                        │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  Alerts Service  │  Tax Service     │  Portfolio Service │  Gas & Trading  │
-│  (EPIC-1)        │  (EPIC-2)        │  (EPIC-3)          │  (EPIC-4)       │
+│  (EPIC-4)        │  (EPIC-2)        │  (EPIC-3)          │  (EPIC-4)       │
 │  - Whale alerts  │  - Tax calc      │  - Multi-chain     │  - Gas optimize │
 │  - Price alerts  │  - Reports       │  - Performance     │  - DEX routing  │
-│  - Gas alerts    │  - Multi-juris   │  - Asset alloc     │  - Slippage     │
+│  - Gas alerts    │  - Multi-juris   │  - Asset alloc     │  - MEV protect  │
+│                  │                  │                    │  - Yield farming│
+│                  │                  │                    │  - Bridging     │
+│                  │                  │                    │  - Copy trading │
 │                  │                  │                    │                 │
 │  Security Service│  Analytics Service│  Subscription Svc │  Notification   │
 │  (EPIC-5)        │  (EPIC-6)        │  (NEW)             │  Service (NEW)  │
@@ -316,10 +319,10 @@ Transform DeFiLlama from a free TVL tracking platform into a **comprehensive pre
 - **Compression**: Compress snapshots in TimescaleDB (10:1 ratio)
 
 **4. Gas & Trading Service** (EPIC-4)
-- **Responsibility**: Gas optimization, DEX aggregation, order routing, slippage protection
-- **Dependencies**: Price API, DEX APIs, Blockchain RPCs
-- **Data**: Gas predictions, trade routes, slippage data
-- **APIs**: REST (gas estimates, trade routes)
+- **Responsibility**: Gas optimization, DEX aggregation, order routing, slippage protection, MEV protection, yield farming, cross-chain bridging, copy trading
+- **Dependencies**: Price API, DEX APIs, Blockchain RPCs, Bridge APIs, Yield APIs
+- **Data**: Gas predictions, trade routes, slippage data, yield pools, bridges, trader performance
+- **APIs**: REST (gas estimates, trade routes, yield recommendations, bridge comparison, trader leaderboards)
 
 **5. Security Service** (EPIC-5)
 - **Responsibility**: Transaction scanning, contract analysis, risk scoring, fraud detection
@@ -573,12 +576,19 @@ SELECT create_hypertable('portfolio_snapshots', 'timestamp');
 
 ### 3.4 EPIC-4: Gas & Trading Service
 
-**Purpose**: Gas optimization, DEX aggregation, order routing
+**Purpose**: Gas optimization, DEX aggregation, order routing, yield farming, bridging, copy trading
 
 **Components**:
-- **Gas Predictor**: ML model for gas price prediction
-- **DEX Aggregator**: Find best trade routes across DEXs
+- **Gas Predictor**: ML model for gas price prediction (LSTM, 75-80% accuracy)
+- **Gas Optimizer**: Batching and timing optimization for gas savings
+- **DEX Aggregator**: Find best trade routes across 100+ DEXs
 - **Slippage Calculator**: Calculate and protect against slippage
+- **MEV Protector**: Protect against MEV attacks (Flashbots integration)
+- **Limit Order Engine**: Advanced limit order functionality
+- **Transaction Simulator**: Simulate trades before execution (95%+ accuracy)
+- **Yield Aggregator**: Compare yields across 1,000+ pools
+- **Bridge Aggregator**: Compare and execute cross-chain bridges (20+ bridges)
+- **Copy Trading Engine**: Follow and copy top traders
 
 ### 3.5 EPIC-5: Security Service
 
@@ -903,6 +913,133 @@ CREATE TABLE trade_routes (
 CREATE INDEX idx_trade_routes_user_id ON trade_routes(user_id);
 CREATE INDEX idx_trade_routes_chain ON trade_routes(chain);
 
+-- Yield Farming (EPIC-4, F-016)
+CREATE TABLE yield_pools (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  chain VARCHAR(50) NOT NULL,
+  protocol VARCHAR(100) NOT NULL,
+  pool_address VARCHAR(100) NOT NULL,
+  apy NUMERIC NOT NULL,
+  tvl NUMERIC NOT NULL,
+  fees NUMERIC NOT NULL,
+  il_risk NUMERIC NOT NULL,
+  risk_score NUMERIC NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_yield_pools_chain ON yield_pools(chain);
+CREATE INDEX idx_yield_pools_apy ON yield_pools(apy DESC);
+
+-- Cross-Chain Bridges (EPIC-4, F-017)
+CREATE TABLE bridges (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(100) NOT NULL,
+  source_chain VARCHAR(50) NOT NULL,
+  dest_chain VARCHAR(50) NOT NULL,
+  fee NUMERIC NOT NULL,
+  estimated_time INTEGER NOT NULL, -- seconds
+  security_rating NUMERIC NOT NULL,
+  tvl NUMERIC NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_bridges_chains ON bridges(source_chain, dest_chain);
+
+CREATE TABLE bridge_transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES premium_users(id),
+  bridge_id UUID NOT NULL REFERENCES bridges(id),
+  source_chain VARCHAR(50) NOT NULL,
+  dest_chain VARCHAR(50) NOT NULL,
+  asset VARCHAR(100) NOT NULL,
+  amount NUMERIC NOT NULL,
+  fee NUMERIC NOT NULL,
+  status VARCHAR(20) NOT NULL, -- pending, completed, failed
+  tx_hash VARCHAR(100),
+  created_at TIMESTAMP DEFAULT NOW(),
+  completed_at TIMESTAMP
+);
+
+CREATE INDEX idx_bridge_transactions_user_id ON bridge_transactions(user_id);
+CREATE INDEX idx_bridge_transactions_status ON bridge_transactions(status);
+
+-- Copy Trading (EPIC-4, F-018)
+CREATE TABLE traders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  address VARCHAR(100) NOT NULL UNIQUE,
+  username VARCHAR(100),
+  bio TEXT,
+  strategy VARCHAR(100),
+  chains VARCHAR(200),
+  followers_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_traders_address ON traders(address);
+
+CREATE TABLE trader_performance (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  trader_id UUID NOT NULL REFERENCES traders(id),
+  timestamp TIMESTAMP NOT NULL,
+  total_pnl NUMERIC NOT NULL,
+  roi NUMERIC NOT NULL,
+  sharpe_ratio NUMERIC NOT NULL,
+  win_rate NUMERIC NOT NULL,
+  max_drawdown NUMERIC NOT NULL,
+  volatility NUMERIC NOT NULL,
+  trades_count INTEGER NOT NULL
+);
+
+SELECT create_hypertable('trader_performance', 'timestamp');
+CREATE INDEX idx_trader_performance_trader_id ON trader_performance(trader_id);
+
+CREATE TABLE copy_trades (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES premium_users(id),
+  trader_id UUID NOT NULL REFERENCES traders(id),
+  copy_ratio NUMERIC NOT NULL, -- 0.1-1.0
+  max_position_size NUMERIC NOT NULL,
+  stop_loss NUMERIC NOT NULL,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_copy_trades_user_id ON copy_trades(user_id);
+CREATE INDEX idx_copy_trades_trader_id ON copy_trades(trader_id);
+
+-- Limit Orders (EPIC-4, F-015c)
+CREATE TABLE limit_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES premium_users(id),
+  chain VARCHAR(50) NOT NULL,
+  token_in VARCHAR(100) NOT NULL,
+  token_out VARCHAR(100) NOT NULL,
+  amount_in NUMERIC NOT NULL,
+  target_price NUMERIC NOT NULL,
+  status VARCHAR(20) NOT NULL, -- pending, executed, cancelled, expired
+  created_at TIMESTAMP DEFAULT NOW(),
+  executed_at TIMESTAMP,
+  expires_at TIMESTAMP
+);
+
+CREATE INDEX idx_limit_orders_user_id ON limit_orders(user_id);
+CREATE INDEX idx_limit_orders_status ON limit_orders(status);
+
+-- MEV Protection (EPIC-4, F-015b)
+CREATE TABLE mev_protection_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES premium_users(id),
+  chain VARCHAR(50) NOT NULL,
+  tx_hash VARCHAR(100) NOT NULL,
+  mev_service VARCHAR(50) NOT NULL, -- flashbots, eden, mev_blocker
+  protected BOOLEAN NOT NULL,
+  savings NUMERIC,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_mev_protection_logs_user_id ON mev_protection_logs(user_id);
+CREATE INDEX idx_mev_protection_logs_tx_hash ON mev_protection_logs(tx_hash);
+
 -- Security & Risk (EPIC-5)
 CREATE TABLE risk_scores (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1026,11 +1163,35 @@ WS     /v1/portfolio/stream                # Real-time updates (WebSocket)
 
 **Gas & Trading Service (EPIC-4)**:
 ```
+# Gas Optimization
 GET    /v1/gas/estimate                    # Get gas estimate
 GET    /v1/gas/predictions                 # Get gas predictions
+GET    /v1/gas/optimization                # Get gas optimization recommendations
+
+# Trading
 POST   /v1/trading/routes                  # Get trade routes
 POST   /v1/trading/simulate                # Simulate trade
 GET    /v1/trading/slippage                # Get slippage estimate
+POST   /v1/trading/limit-order             # Create limit order
+GET    /v1/trading/limit-orders            # Get limit orders
+POST   /v1/trading/mev-protect             # Enable MEV protection
+
+# Yield Farming
+GET    /v1/yield/pools                     # Get yield pools
+GET    /v1/yield/recommendations           # Get yield recommendations
+GET    /v1/yield/calculate                 # Calculate real yield
+
+# Cross-Chain Bridges
+GET    /v1/bridges/compare                 # Compare bridge options
+POST   /v1/bridges/execute                 # Execute bridge transaction
+GET    /v1/bridges/history                 # Get bridge history
+
+# Copy Trading
+GET    /v1/copy-trading/leaderboard        # Get trader leaderboard
+GET    /v1/copy-trading/trader/:id         # Get trader details
+POST   /v1/copy-trading/follow             # Follow trader
+POST   /v1/copy-trading/unfollow           # Unfollow trader
+GET    /v1/copy-trading/following          # Get followed traders
 ```
 
 **Security Service (EPIC-5)**:
@@ -1743,12 +1904,27 @@ defillama-server/
 │   │   ├── gas-trading/            # EPIC-4: Gas & Trading Service
 │   │   │   ├── controllers/
 │   │   │   │   ├── gas.controller.ts
-│   │   │   │   └── trading.controller.ts
+│   │   │   │   ├── trading.controller.ts
+│   │   │   │   ├── yield.controller.ts
+│   │   │   │   ├── bridge.controller.ts
+│   │   │   │   └── copy-trading.controller.ts
 │   │   │   ├── services/
 │   │   │   │   ├── gas-predictor.service.ts
+│   │   │   │   ├── gas-optimizer.service.ts
 │   │   │   │   ├── dex-aggregator.service.ts
-│   │   │   │   └── slippage-calculator.service.ts
+│   │   │   │   ├── slippage-calculator.service.ts
+│   │   │   │   ├── mev-protector.service.ts
+│   │   │   │   ├── limit-order-engine.service.ts
+│   │   │   │   ├── transaction-simulator.service.ts
+│   │   │   │   ├── yield-aggregator.service.ts
+│   │   │   │   ├── bridge-aggregator.service.ts
+│   │   │   │   └── copy-trading-engine.service.ts
 │   │   │   ├── models/
+│   │   │   │   ├── gas-prediction.model.ts
+│   │   │   │   ├── trade-route.model.ts
+│   │   │   │   ├── yield-pool.model.ts
+│   │   │   │   ├── bridge.model.ts
+│   │   │   │   └── trader.model.ts
 │   │   │   ├── dto/
 │   │   │   ├── gas-trading.module.ts
 │   │   │   └── gas-trading.spec.ts
