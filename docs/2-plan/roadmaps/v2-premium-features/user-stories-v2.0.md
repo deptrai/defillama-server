@@ -41,11 +41,13 @@ So that [benefit]
 
 ---
 
-## 🎯 EPIC-1: ALERTS & NOTIFICATIONS (130 Story Points)
+## 🎯 EPIC-1: ALERTS & NOTIFICATIONS (150 Story Points)
 
-**Timeline**: Q4 2025 (Months 1-3)  
-**Priority**: P0 (Critical)  
+**Timeline**: Q4 2025 (Months 1-3)
+**Priority**: P0 (Critical)
 **Revenue Target**: $7.5M ARR (30%)
+
+**Note**: Original EPIC estimate was 130 points. Added 20 points for integration/testing/dashboard features based on detailed story breakdown.
 
 ### Feature 1.1: Whale Movement Alerts (34 points)
 
