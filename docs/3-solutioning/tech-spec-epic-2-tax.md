@@ -322,12 +322,44 @@ export class TaxCalculatorService {
   ): Promise<CostBasisResult> {
     // Calculate cost basis using specified method
   }
-  
+
   async calculateGainLoss(
     transactions: Transaction[],
     costBasis: CostBasisResult
   ): Promise<GainLossResult> {
     // Calculate capital gains/losses
+  }
+
+  async applyWashSaleRules(
+    transactions: Transaction[],
+    gainLoss: GainLossResult
+  ): Promise<GainLossResult> {
+    // Apply US wash sale rules (IRS Publication 550)
+    // Wash sale occurs when:
+    // 1. Sell asset at a loss
+    // 2. Buy "substantially identical" asset within 30 days before or after
+    // 3. Loss is disallowed and added to cost basis of new position
+
+    // Example:
+    // Day 1: Buy 1 ETH at $2000
+    // Day 10: Sell 1 ETH at $1500 (loss: $500)
+    // Day 15: Buy 1 ETH at $1600
+    // Result: $500 loss disallowed, new cost basis = $1600 + $500 = $2100
+  }
+
+  async calculateStakingRewardsTax(
+    stakingRewards: StakingReward[]
+  ): Promise<TaxableIncome> {
+    // Calculate taxable income from staking rewards
+    // Staking rewards are taxed as ordinary income at fair market value
+    // when received (IRS Notice 2014-21)
+  }
+
+  async calculateNFTTax(
+    nftTransactions: NFTTransaction[]
+  ): Promise<GainLossResult> {
+    // Calculate capital gains/losses for NFT transactions
+    // NFTs are treated as collectibles (28% max tax rate in US)
   }
 }
 ```

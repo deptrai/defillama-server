@@ -279,6 +279,42 @@ Transform DeFiLlama from a free TVL tracking platform into a **comprehensive pre
 - **Data**: Portfolio snapshots, performance metrics, asset allocations
 - **APIs**: REST (portfolio data), WebSocket (real-time updates)
 
+**Multi-Chain Data Fetching Strategy**:
+```
+┌─────────────────────────────────────────────────────────────┐
+│           PORTFOLIO AGGREGATOR (Background Job)             │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  1. Fetch user wallet addresses (125K users)                │
+│  2. Parallel fetch balances from 100+ chains                │
+│     - Batch size: 10 chains per batch                       │
+│     - Concurrency: 10 parallel batches                      │
+│     - Rate limiting: 100 req/s per chain                    │
+│     - Timeout: 5s per chain                                 │
+│  3. Aggregate balances across chains                        │
+│  4. Calculate total portfolio value (USD)                   │
+│  5. Store snapshot in TimescaleDB                           │
+│  6. Publish update via WebSocket                            │
+│                                                             │
+│  Frequency: Every 1 hour (configurable)                     │
+│  Duration: ~10-15 minutes for 125K users                    │
+│  Cost: ~$50-75/month (Lambda + RPC calls)                   │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Data Consistency Strategy**:
+- **Eventual Consistency**: Portfolio snapshots updated every 1 hour
+- **Real-time Updates**: WebSocket pushes updates when new snapshot available
+- **Cache Strategy**: Redis cache for latest snapshot (TTL: 1 hour)
+- **Fallback**: If RPC fails, use cached data from previous snapshot
+
+**Performance Optimization**:
+- **Parallel Fetching**: 10 chains × 10 batches = 100 chains in parallel
+- **Connection Pooling**: Reuse RPC connections across requests
+- **Caching**: Cache chain metadata, token prices (TTL: 5 minutes)
+- **Compression**: Compress snapshots in TimescaleDB (10:1 ratio)
+
 **4. Gas & Trading Service** (EPIC-4)
 - **Responsibility**: Gas optimization, DEX aggregation, order routing, slippage protection
 - **Dependencies**: Price API, DEX APIs, Blockchain RPCs
@@ -846,6 +882,84 @@ SELECT create_hypertable('gas_predictions', 'timestamp');
 SELECT add_retention_policy('gas_predictions', INTERVAL '30 days');
 ```
 
+**Premium Database Tables (Additional)**:
+
+```sql
+-- Gas & Trading (EPIC-4)
+CREATE TABLE trade_routes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES premium_users(id),
+  chain VARCHAR(50) NOT NULL,
+  token_in VARCHAR(100) NOT NULL,
+  token_out VARCHAR(100) NOT NULL,
+  amount_in NUMERIC NOT NULL,
+  amount_out NUMERIC NOT NULL,
+  route JSONB NOT NULL,
+  gas_estimate NUMERIC NOT NULL,
+  slippage NUMERIC NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_trade_routes_user_id ON trade_routes(user_id);
+CREATE INDEX idx_trade_routes_chain ON trade_routes(chain);
+
+-- Security & Risk (EPIC-5)
+CREATE TABLE risk_scores (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  address VARCHAR(255) NOT NULL,
+  chain VARCHAR(50) NOT NULL,
+  risk_score INTEGER NOT NULL, -- 0-100
+  risk_factors JSONB NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_risk_scores_address ON risk_scores(address);
+CREATE INDEX idx_risk_scores_risk_score ON risk_scores(risk_score);
+
+-- Analytics & AI (EPIC-6)
+CREATE TABLE dashboards (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES premium_users(id),
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  layout JSONB NOT NULL,
+  widgets JSONB NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_dashboards_user_id ON dashboards(user_id);
+
+CREATE TABLE predictions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  asset VARCHAR(100) NOT NULL,
+  chain VARCHAR(50) NOT NULL,
+  prediction_type VARCHAR(50) NOT NULL, -- 'price', 'tvl', 'volume'
+  current_value NUMERIC NOT NULL,
+  predicted_value NUMERIC NOT NULL,
+  confidence NUMERIC NOT NULL, -- 0-1
+  prediction_date TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_predictions_asset ON predictions(asset);
+CREATE INDEX idx_predictions_prediction_date ON predictions(prediction_date);
+
+-- Portfolio Assets (EPIC-3)
+CREATE TABLE portfolio_assets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES premium_users(id),
+  chain VARCHAR(50) NOT NULL,
+  asset VARCHAR(100) NOT NULL,
+  balance NUMERIC NOT NULL,
+  value_usd NUMERIC NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_portfolio_assets_user_id ON portfolio_assets(user_id);
+CREATE INDEX idx_portfolio_assets_chain ON portfolio_assets(chain);
+```
+
 ### 5.3 Data Sharing Strategy
 
 **Cross-Database Data Access**:
@@ -1192,6 +1306,59 @@ CREATE POLICY alert_rules_user_policy ON alert_rules
 - Deploy to 5% of traffic
 - Monitor metrics for 1 hour
 - Gradually increase to 100%
+
+### 8.4 Infrastructure Cost Breakdown
+
+**Monthly Cost Estimate** (125K premium users, 50K req/min):
+
+| Service | Configuration | Monthly Cost | Notes |
+|---------|--------------|--------------|-------|
+| **Compute** | | | |
+| Lambda | 50M requests/month, 512MB, 3s avg | $150-200 | API endpoints, event processing |
+| ECS Fargate | 4 tasks × 2 vCPU × 4GB × 24/7 | $300-400 | WebSocket, background jobs |
+| **Database** | | | |
+| RDS Premium DB | db.r6g.xlarge (4 vCPU, 32GB) | $300-400 | Premium user data, alerts, tax |
+| RDS TimescaleDB | db.r6g.large (2 vCPU, 16GB) | $150-200 | Portfolio snapshots, time-series |
+| ElastiCache Redis | cache.r6g.large (2 vCPU, 13GB) | $150-200 | Caching, sessions, rate limits |
+| DynamoDB | 10M reads, 5M writes/month | $50-100 | WebSocket connection state |
+| **Storage** | | | |
+| S3 | 500GB storage, 1TB transfer | $50-75 | Tax reports, backups |
+| **Networking** | | | |
+| API Gateway | 50M requests/month | $175-225 | REST + WebSocket APIs |
+| CloudFront | 1TB transfer, 10M requests | $85-100 | CDN for static assets |
+| Data Transfer | 2TB outbound | $180-200 | Data transfer costs |
+| **Monitoring** | | | |
+| CloudWatch | Logs, metrics, alarms | $50-75 | Basic monitoring |
+| Datadog | APM, distributed tracing | $200-300 | Advanced monitoring (optional) |
+| **Security** | | | |
+| KMS | 10K requests/month | $5-10 | Encryption key management |
+| Secrets Manager | 50 secrets | $20-30 | Secret storage |
+| **Total (without Datadog)** | | **$1,665-2,215/month** | ~$20K-27K/year |
+| **Total (with Datadog)** | | **$1,865-2,515/month** | ~$22K-30K/year |
+
+**Cost Per User**:
+- 125K users → **$13.32-20.12/user/month**
+- Target ARPU: $16.67/user/month ($200/year)
+- **Gross Margin**: 17-20% (before other costs)
+
+**Cost Optimization Strategies**:
+1. **Reserved Instances**: Save 30-40% on RDS, ElastiCache (commit 1-3 years)
+2. **Savings Plans**: Save 20-30% on Lambda, Fargate (commit 1-3 years)
+3. **S3 Intelligent-Tiering**: Auto-move cold data to cheaper storage
+4. **CloudFront Caching**: Reduce origin requests by 80-90%
+5. **Lambda Optimization**: Reduce memory, execution time
+6. **Database Optimization**: Use read replicas, connection pooling
+
+**Projected Cost Savings** (with optimization):
+- Reserved Instances: -$200-300/month
+- Savings Plans: -$100-150/month
+- S3 Tiering: -$20-30/month
+- CloudFront Caching: -$50-75/month
+- **Total Savings**: -$370-555/month (-20-25%)
+
+**Optimized Monthly Cost**: **$1,295-1,960/month** (~$15.5K-23.5K/year)
+**Optimized Cost Per User**: **$10.36-15.68/user/month**
+**Optimized Gross Margin**: 38-42% (before other costs)
 
 ---
 
