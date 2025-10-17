@@ -132,8 +132,8 @@ Xây dựng nền tảng DeFi analytics và management toàn diện với **25 t
 - High user engagement (daily active users)
 - Foundation cho các features khác
 
-**Timeline**: Q4 2025 (Tháng 1-3, 22 tuần)  
-**Story Points**: 130 points  
+**Timeline**: Q4 2025 (Tháng 1-3, 22 tuần)
+**Story Points**: 150 points
 **Priority**: ⭐⭐⭐⭐⭐ P0 (Critical)
 
 ### 3.2 Features trong EPIC
@@ -146,8 +146,10 @@ Xây dựng nền tảng DeFi analytics và management toàn diện với **25 t
 | F-005 | Protocol Risk Alerts | 21 | 3 tuần | P0 |
 | F-006 | Alert Automation | 21 | 2 tuần | P1 |
 | | **Infrastructure** | 20 | 2 tuần | P0 |
+| | **Testing** | 10 | 1 tuần | P0 |
+| | **UI/UX** | 10 | 1 tuần | P0 |
 
-**Tổng**: 130 story points, 16 tuần development + 2 tuần testing/deployment
+**Tổng**: 150 story points, 18 tuần development + 2 tuần testing/deployment
 
 ### 3.3 Technical Components
 
