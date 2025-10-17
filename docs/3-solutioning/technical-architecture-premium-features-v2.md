@@ -331,10 +331,10 @@ Transform DeFiLlama from a free TVL tracking platform into a **comprehensive pre
 - **APIs**: REST (security scans, risk scores)
 
 **6. Analytics Service** (EPIC-6)
-- **Responsibility**: AI predictions, custom dashboards, advanced analytics
-- **Dependencies**: All premium services, ML models
-- **Data**: Predictions, dashboard configs, analytics data
-- **APIs**: REST (predictions, dashboards)
+- **Responsibility**: Backtesting engine, AI market insights, custom dashboards
+- **Dependencies**: All premium services, ML models, Historical data providers
+- **Data**: Backtesting strategies, AI predictions, dashboard configs, analytics data
+- **APIs**: REST (backtesting, predictions, dashboards)
 
 **2 Shared Services**:
 
@@ -349,6 +349,26 @@ Transform DeFiLlama from a free TVL tracking platform into a **comprehensive pre
 - **Dependencies**: SendGrid, SNS, FCM
 - **Data**: Notification templates, delivery status
 - **APIs**: Internal (send notifications)
+
+**3 Enabler EPICs** (Cross-Cutting Concerns):
+
+**EPIC-7: Cross-EPIC Integration**
+- **Type**: Integration patterns, not a separate service
+- **Scope**: Integration between premium services (e.g., alerts + portfolio, tax + portfolio)
+- **Implementation**: Shared interfaces, event-driven communication, API composition
+- **Examples**: Portfolio-based alerts, tax reports from portfolio data, unified analytics dashboard
+
+**EPIC-8: DevOps & Infrastructure**
+- **Type**: Infrastructure components, not a service
+- **Scope**: CI/CD pipeline, database management, infrastructure as code, monitoring & alerting
+- **Implementation**: GitHub Actions, AWS CDK, Terraform, CloudWatch, Datadog
+- **Examples**: Automated deployments, database migrations, infrastructure provisioning, log aggregation
+
+**EPIC-9: Documentation**
+- **Type**: Documentation artifacts, not a service
+- **Scope**: API documentation, user documentation, developer documentation
+- **Implementation**: OpenAPI specs, Swagger UI, user guides, runbooks
+- **Examples**: API reference, user tutorials, deployment guides, troubleshooting docs
 
 ### 2.3 Data Flow Patterns
 
