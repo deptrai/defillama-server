@@ -20,23 +20,26 @@
 
 ### 1.1 EPIC Summary
 
-**EPIC-4: Gas & Trading Optimization** provides gas fee optimization and DEX aggregation for optimal trading.
+**EPIC-4: Gas & Trading Optimization** provides gas fee optimization, DEX aggregation, yield farming, cross-chain bridging, and copy trading for optimal trading.
 
-**Business Value**: $3.75M ARR (15% of total)  
-**Story Points**: 140 points  
-**Timeline**: Q2 2026 (Months 7-9)  
+**Business Value**: $3.75M ARR (15% of total)
+**Story Points**: 191 points
+**Timeline**: Q2 2026 (Months 7-9, 28 weeks)
 **Priority**: P1 (High)
 
-### 1.2 Features (6 Features)
+### 1.2 Features (9 Features)
 
 | Feature ID | Feature Name | Story Points | Timeline |
 |------------|--------------|--------------|----------|
-| F4.1 | Gas Fee Optimization | 25 | Week 1-3 |
-| F4.2 | Gas Predictions | 25 | Week 4-6 |
-| F4.3 | DEX Aggregation | 30 | Week 7-9 |
-| F4.4 | Slippage Protection | 20 | Week 10-11 |
-| F4.5 | MEV Protection | 20 | Week 12-13 |
-| F4.6 | Trade Simulation | 20 | Week 14 |
+| F4.1 | Gas Fee Optimization | 21 | Week 1-3 |
+| F4.2 | Gas Predictions | 21 | Week 4-6 |
+| F4.3 | DEX Aggregation | 34 | Week 7-9 |
+| F4.4 | Slippage Protection | 21 | Week 10-11 |
+| F4.5 | MEV Protection | 21 | Week 12-13 |
+| F4.6 | Trade Simulation | 22 | Week 14-15 |
+| F4.7 | Yield Farming Calculator | 13 | Week 16-18 |
+| F4.8 | Cross-Chain Bridge Aggregator | 21 | Week 19-22 |
+| F4.9 | Copy Trading Beta | 17 | Week 23-28 |
 
 ### 1.3 Success Metrics
 
@@ -324,6 +327,279 @@ export class DEXAggregatorService {
 - **ECS Fargate**: ML Model (gas prediction)
 - **TimescaleDB**: RDS (db.r6g.large)
 - **Redis**: ElastiCache (cache.r6g.large)
+
+---
+
+## 8. NEW FEATURES SPECIFICATIONS
+
+### 8.1 Feature F4.7: Yield Farming Calculator
+
+**Purpose**: Compare yields across 1,000+ pools and calculate real returns
+
+**Components**:
+- **Yield Aggregator**: Fetch APY data from protocols
+- **Real Yield Calculator**: Calculate APY - fees - IL
+- **Risk Scorer**: Calculate risk-adjusted yield
+
+**API Endpoints**:
+```
+GET /v1/yield/pools?chain=ethereum&protocol=aave
+Response: {
+  "pools": [
+    {
+      "poolId": "aave-usdc",
+      "protocol": "Aave",
+      "apy": 5.2,
+      "tvl": 1000000000,
+      "fees": 0.1,
+      "ilRisk": 0,
+      "riskScore": 8.5
+    }
+  ]
+}
+
+GET /v1/yield/recommendations?minApy=5&maxRisk=5
+Response: {
+  "recommendations": [
+    {
+      "poolId": "aave-usdc",
+      "realYield": 5.1,
+      "riskAdjustedYield": 0.6
+    }
+  ]
+}
+```
+
+**Database Schema**:
+```sql
+CREATE TABLE yield_pools (
+  id UUID PRIMARY KEY,
+  chain VARCHAR(50),
+  protocol VARCHAR(100),
+  pool_address VARCHAR(100),
+  apy NUMERIC,
+  tvl NUMERIC,
+  fees NUMERIC,
+  il_risk NUMERIC,
+  risk_score NUMERIC,
+  updated_at TIMESTAMP
+);
+```
+
+**Integration**:
+- **DeFiLlama Yields API**: Fetch APY data
+- **Protocol APIs**: Aave, Compound, Curve, Convex
+
+**Performance**:
+- **Update Frequency**: 15 minutes
+- **API Response Time**: <500ms
+- **Pools Supported**: 1,000+ pools
+
+---
+
+### 8.2 Feature F4.8: Cross-Chain Bridge Aggregator
+
+**Purpose**: Compare and execute cross-chain bridges across 20+ bridges
+
+**Components**:
+- **Bridge Aggregator**: Fetch bridge options
+- **Security Rater**: Calculate bridge security ratings
+- **Route Optimizer**: Find optimal bridge route
+
+**API Endpoints**:
+```
+GET /v1/bridges/compare?sourceChain=ethereum&destChain=arbitrum&asset=ETH&amount=1
+Response: {
+  "bridges": [
+    {
+      "bridgeId": "stargate",
+      "name": "Stargate",
+      "fee": 0.001,
+      "estimatedTime": 300,
+      "securityRating": 9.5
+    },
+    {
+      "bridgeId": "across",
+      "name": "Across",
+      "fee": 0.0005,
+      "estimatedTime": 180,
+      "securityRating": 9.0
+    }
+  ],
+  "bestBridge": "across"
+}
+
+POST /v1/bridges/execute
+Request: {
+  "bridgeId": "across",
+  "sourceChain": "ethereum",
+  "destChain": "arbitrum",
+  "asset": "ETH",
+  "amount": 1
+}
+Response: {
+  "transactionId": "uuid",
+  "status": "pending",
+  "txHash": "0x..."
+}
+```
+
+**Database Schema**:
+```sql
+CREATE TABLE bridges (
+  id UUID PRIMARY KEY,
+  name VARCHAR(100),
+  source_chain VARCHAR(50),
+  dest_chain VARCHAR(50),
+  fee NUMERIC,
+  estimated_time INTEGER,
+  security_rating NUMERIC,
+  tvl NUMERIC,
+  updated_at TIMESTAMP
+);
+
+CREATE TABLE bridge_transactions (
+  id UUID PRIMARY KEY,
+  user_id UUID,
+  bridge_id UUID,
+  source_chain VARCHAR(50),
+  dest_chain VARCHAR(50),
+  asset VARCHAR(100),
+  amount NUMERIC,
+  fee NUMERIC,
+  status VARCHAR(20),
+  tx_hash VARCHAR(100),
+  created_at TIMESTAMP,
+  completed_at TIMESTAMP
+);
+```
+
+**Integration**:
+- **Bridge APIs**: Stargate, Across, Hop, Synapse, Multichain, Celer, Connext, Wormhole, LayerZero
+- **Security APIs**: L2Beat, DeFiSafety
+
+**Performance**:
+- **Update Frequency**: 5 minutes
+- **API Response Time**: <500ms
+- **Bridges Supported**: 20+ bridges
+- **Success Rate**: 98%+
+
+---
+
+### 8.3 Feature F4.9: Copy Trading Beta
+
+**Purpose**: Follow and copy trades from top DeFi traders
+
+**Components**:
+- **Trader Ranker**: Rank traders by performance
+- **Trade Copier**: Copy trades in real-time
+- **Risk Manager**: Enforce position limits and stop loss
+
+**API Endpoints**:
+```
+GET /v1/copy-trading/leaderboard?sortBy=roi&timeframe=30d
+Response: {
+  "traders": [
+    {
+      "traderId": "uuid",
+      "address": "0x...",
+      "username": "DefiWhale",
+      "totalPnl": 100000,
+      "roi": 50.5,
+      "sharpeRatio": 2.5,
+      "winRate": 65,
+      "followersCount": 1000
+    }
+  ]
+}
+
+GET /v1/copy-trading/trader/:id
+Response: {
+  "trader": {
+    "traderId": "uuid",
+    "address": "0x...",
+    "username": "DefiWhale",
+    "bio": "Professional DeFi trader",
+    "strategy": "Swing trading",
+    "chains": "Ethereum, Arbitrum",
+    "performance": {
+      "totalPnl": 100000,
+      "roi": 50.5,
+      "sharpeRatio": 2.5,
+      "winRate": 65,
+      "maxDrawdown": 15,
+      "volatility": 20
+    },
+    "recentTrades": [...]
+  }
+}
+
+POST /v1/copy-trading/follow
+Request: {
+  "traderId": "uuid",
+  "copyRatio": 0.5,
+  "maxPositionSize": 1000,
+  "stopLoss": 10
+}
+Response: {
+  "success": true,
+  "copyTradeId": "uuid"
+}
+```
+
+**Database Schema**:
+```sql
+CREATE TABLE traders (
+  id UUID PRIMARY KEY,
+  address VARCHAR(100) UNIQUE,
+  username VARCHAR(100),
+  bio TEXT,
+  strategy VARCHAR(100),
+  chains VARCHAR(200),
+  followers_count INTEGER,
+  created_at TIMESTAMP
+);
+
+CREATE TABLE trader_performance (
+  id UUID PRIMARY KEY,
+  trader_id UUID,
+  timestamp TIMESTAMP,
+  total_pnl NUMERIC,
+  roi NUMERIC,
+  sharpe_ratio NUMERIC,
+  win_rate NUMERIC,
+  max_drawdown NUMERIC,
+  volatility NUMERIC,
+  trades_count INTEGER
+);
+
+CREATE TABLE copy_trades (
+  id UUID PRIMARY KEY,
+  user_id UUID,
+  trader_id UUID,
+  copy_ratio NUMERIC,
+  max_position_size NUMERIC,
+  stop_loss NUMERIC,
+  is_active BOOLEAN,
+  created_at TIMESTAMP
+);
+```
+
+**Integration**:
+- **Blockchain RPCs**: Track trader transactions
+- **DEX APIs**: Execute copied trades
+- **WebSocket**: Real-time trade notifications
+
+**Performance**:
+- **Trade Latency**: <5 seconds (from trader trade to copy execution)
+- **API Response Time**: <500ms
+- **Traders Tracked**: 1,000+ traders
+- **Copy Success Rate**: 95%+
+
+**Risk Management**:
+- **Position Limits**: Max position size per trade
+- **Stop Loss**: Auto-close when loss > threshold
+- **Daily Loss Limit**: Stop copying when daily loss > limit
 
 ---
 
