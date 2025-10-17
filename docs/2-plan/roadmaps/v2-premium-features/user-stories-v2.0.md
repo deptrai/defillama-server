@@ -2543,246 +2543,299 @@ So that [benefit]
 
 ## 🎯 EPIC-5: SECURITY & RISK MANAGEMENT (80 Story Points)
 
-**Timeline**: Q3 2026 (Months 10-12)
+**Timeline**: Q3 2026 (Months 10-12, 16 weeks)
 **Priority**: P1 (High)
 **Revenue Target**: $2.5M ARR (10%)
 
-### Feature 5.1: Smart Contract Audits (21 points)
+### Feature 5.1: Transaction Security Scanner (F-019) (34 points)
 
-#### Story 5.1.1: Integrate Audit Platforms (8 points)
+#### Story 5.1.1: Integrate Security Partners (8 points)
 
 **As a** system
-**I want** to integrate audit platforms
-**So that** I can fetch audit reports
+**I want** to integrate security partner APIs
+**So that** I can scan transactions for security risks
 
 **Acceptance Criteria**:
-- System integrates CertiK API
-- System integrates Immunefi API
-- System integrates OpenZeppelin API
-- System fetches audit reports for protocols
-- System supports 1000+ protocols
+- System integrates GoPlus Security API
+- System integrates Forta Network API
+- System integrates CertiK Skynet API
+- System supports 100+ chains
+- API response time <2 seconds
 
 **Technical Notes**:
-- APIs: CertiK, Immunefi, OpenZeppelin
-- Database: `audit_reports` table
-- Protocols: 1000+ protocols
+- APIs: GoPlus, Forta, CertiK
+- Database: `security_scans` table
+- Chains: 100+ chains
+- Performance: <2 seconds per scan
 
 **Dependencies**: None
 
-**Priority**: P1
+**Priority**: P0
 
 ---
 
-#### Story 5.1.2: Display Audit Reports (5 points)
+#### Story 5.1.2: Pre-Transaction Security Scanning (8 points)
 
 **As a** premium user
-**I want** to view audit reports
-**So that** I can assess protocol security
+**I want** to scan transactions before executing them
+**So that** I can avoid malicious transactions
 
 **Acceptance Criteria**:
-- User can search for protocol audits
-- User can view audit report details
-- User can view audit score
-- User can view audit findings (critical, high, medium, low)
-- Reports update weekly
+- User can scan transaction before execution
+- System detects malicious contracts
+- System detects phishing attempts
+- System detects honeypot tokens
+- System provides risk score (0-100, 0 = high risk)
+- Scan completes within 5 seconds
 
 **Technical Notes**:
-- API: `GET /v1/security/audits`
-- Database: `audit_reports` table
-- Frontend: React + ECharts
+- API: `POST /v1/security/scan/transaction`
+- Service: TransactionScannerService
+- Performance: <5 seconds
+- Database: `security_scans` table
 
 **Dependencies**: Story 5.1.1
 
-**Priority**: P1
+**Priority**: P0
 
 ---
 
-#### Story 5.1.3: Audit Alerts (5 points)
+#### Story 5.1.3: Token Approval Risk Analysis (8 points)
 
 **As a** premium user
-**I want** to receive audit alerts
-**So that** I can be notified of new audits
+**I want** to analyze token approval risks
+**So that** I can avoid risky approvals
 
 **Acceptance Criteria**:
-- User can subscribe to protocol audit alerts
-- User receives alert when new audit published
-- Alert includes: protocol, audit score, findings
-- Alert sent via email, push
+- User can scan token approval transactions
+- System detects unlimited approvals
+- System detects risky spender contracts
+- System provides approval risk score
+- System recommends safe approval amounts
 
 **Technical Notes**:
-- API: `POST /v1/alerts/rules` (audit alert)
-- Service: EventProcessor
-- Channels: SendGrid, Firebase
+- API: `POST /v1/security/scan/approval`
+- Service: TransactionScannerService
+- Database: `security_scans` table
 
 **Dependencies**: Story 5.1.2
 
-**Priority**: P2
+**Priority**: P0
 
 ---
 
-#### Story 5.1.4: Audit Comparison (3 points)
+#### Story 5.1.4: Malicious Contract Detection (5 points)
 
 **As a** premium user
-**I want** to compare protocol audits
-**So that** I can choose safer protocols
+**I want** to detect malicious contracts
+**So that** I can avoid interacting with scams
 
 **Acceptance Criteria**:
-- User can compare multiple protocol audits
-- User can view audit scores side-by-side
-- User can view audit findings comparison
-- Comparison supports up to 5 protocols
+- System detects known malicious contracts
+- System detects suspicious contract patterns
+- System checks contract against blacklists
+- System provides contract risk score
+- Detection accuracy >99%
 
 **Technical Notes**:
-- API: `GET /v1/security/audits/compare`
-- Database: `audit_reports` table
-- Frontend: React + ECharts
+- Service: ContractAnalyzerService
+- Database: `malicious_contracts` table
+- Accuracy: >99%
 
-**Dependencies**: Story 5.1.2
+**Dependencies**: Story 5.1.1
 
-**Priority**: P2
+**Priority**: P0
 
 ---
 
-### Feature 5.2: Wallet Screening (21 points)
-
-#### Story 5.2.1: Integrate Screening Services (8 points)
-
-**As a** system
-**I want** to integrate screening services
-**So that** I can screen wallet addresses
-
-**Acceptance Criteria**:
-- System integrates Chainalysis API
-- System integrates TRM Labs API
-- System integrates Elliptic API
-- System screens wallet addresses for sanctions, blacklists
-- System supports 100+ chains
-
-**Technical Notes**:
-- APIs: Chainalysis, TRM Labs, Elliptic
-- Database: `wallet_screening` table
-- Chains: 100+ chains
-
-**Dependencies**: None
-
-**Priority**: P1
-
----
-
-#### Story 5.2.2: Screen Wallet Addresses (8 points)
+#### Story 5.1.5: Scan History & Reports (3 points)
 
 **As a** premium user
-**I want** to screen wallet addresses
-**So that** I can avoid risky wallets
+**I want** to view my scan history
+**So that** I can review past security scans
 
 **Acceptance Criteria**:
-- User can screen wallet address
-- System checks sanctions lists (OFAC, UN, EU)
-- System checks blacklists (scams, hacks)
-- System displays screening results
-- Screening completes within 5 seconds
-
-**Technical Notes**:
-- API: `POST /v1/security/screen`
-- Service: ScreeningService
-- Performance: <5 seconds
-- Database: `wallet_screening` table
-
-**Dependencies**: Story 5.2.1
-
-**Priority**: P1
-
----
-
-#### Story 5.2.3: Screening Alerts (3 points)
-
-**As a** premium user
-**I want** to receive screening alerts
-**So that** I can be notified of risky wallets
-
-**Acceptance Criteria**:
-- User can enable screening alerts for portfolio wallets
-- User receives alert when wallet flagged
-- Alert includes: wallet address, risk factors
-- Alert sent via email, push
-
-**Technical Notes**:
-- API: `POST /v1/alerts/rules` (screening alert)
-- Service: EventProcessor
-- Channels: SendGrid, Firebase
-
-**Dependencies**: Story 5.2.2
-
-**Priority**: P2
-
----
-
-#### Story 5.2.4: Screening History (2 points)
-
-**As a** premium user
-**I want** to view screening history
-**So that** I can review past screenings
-
-**Acceptance Criteria**:
-- User can view list of screened wallets
+- User can view list of past scans
 - User can filter by date range, risk level
-- User can view screening details
-- History displays last 100 screenings
+- User can view scan details
+- History displays last 1000 scans
 
 **Technical Notes**:
-- API: `GET /v1/security/screening/history`
-- Database: `wallet_screening` table
-- Pagination: 50 screenings per page
+- API: `GET /v1/security/scans`
+- Database: `security_scans` table
+- Pagination: 50 scans per page
 
-**Dependencies**: Story 5.2.2
+**Dependencies**: Story 5.1.2
 
-**Priority**: P2
+**Priority**: P1
 
 ---
 
-### Feature 5.3: Risk Scoring (21 points)
+#### Story 5.1.6: Security Scan Alerts (2 points)
 
-#### Story 5.3.1: Calculate Risk Scores (8 points)
-
-**As a** system
-**I want** to calculate risk scores for protocols
-**So that** I can help users assess risks
+**As a** premium user
+**I want** to receive security scan alerts
+**So that** I can be notified of high-risk transactions
 
 **Acceptance Criteria**:
-- System calculates risk scores (0-100 scale)
-- System considers multiple risk factors (smart contract, liquidity, governance, etc.)
-- System updates risk scores daily
-- System supports 1000+ protocols
+- User can enable auto-scan for wallet transactions
+- User receives alert when high-risk transaction detected
+- Alert includes: transaction hash, risk score, risk factors
+- Alert sent via email, push, webhook
 
 **Technical Notes**:
-- Service: RiskScoringService
-- Database: `risk_scores` table
-- Factors: Smart contract risk, liquidity risk, governance risk, etc.
+- API: `POST /v1/alerts/rules` (security scan alert)
+- Service: EventProcessor
+- Channels: SendGrid, Firebase, Webhooks
+
+**Dependencies**: Story 5.1.2
+
+**Priority**: P1
+
+---
+
+### Feature 5.2: Smart Contract Risk Scoring (F-020) (21 points)
+
+#### Story 5.2.1: Contract Risk Scoring Engine (8 points)
+
+**As a** system
+**I want** to calculate smart contract risk scores
+**So that** I can help users assess contract security
+
+**Acceptance Criteria**:
+- System calculates contract risk scores (0-100, 0 = high risk)
+- System analyzes contract code for vulnerabilities
+- System checks audit status (CertiK, Trail of Bits, etc.)
+- System analyzes team transparency (doxxed team, social media)
+- System analyzes historical behavior (past exploits, rug pulls)
+- System supports 10,000+ contracts
+
+**Technical Notes**:
+- Service: ContractAnalyzerService
+- Database: `contract_risk_scores` table
+- Factors: Code analysis, audit status, team transparency, historical behavior
 - Update Frequency: Daily
 
 **Dependencies**: None
 
+**Priority**: P0
+
+---
+
+#### Story 5.2.2: Display Contract Risk Scores (5 points)
+
+**As a** premium user
+**I want** to view smart contract risk scores
+**So that** I can assess contract security before interacting
+
+**Acceptance Criteria**:
+- User can search for contract risk scores
+- User can view risk score (0-100)
+- User can view risk factor breakdown (audit, code, team, history)
+- User can view audit reports
+- Scores update daily
+
+**Technical Notes**:
+- API: `GET /v1/security/contracts/:address/risk-score`
+- Database: `contract_risk_scores` table
+- Frontend: React + ECharts
+
+**Dependencies**: Story 5.2.1
+
+**Priority**: P0
+
+---
+
+#### Story 5.2.3: Audit Status Tracking (5 points)
+
+**As a** premium user
+**I want** to view contract audit status
+**So that** I can verify contracts are audited
+
+**Acceptance Criteria**:
+- User can view audit status (audited/not audited)
+- User can view audit firms (CertiK, Trail of Bits, etc.)
+- User can view audit dates
+- User can view audit findings (critical, high, medium, low)
+- System tracks 10,000+ audited contracts
+
+**Technical Notes**:
+- API: `GET /v1/security/contracts/:address/audits`
+- Database: `contract_audits` table
+- Audit Firms: CertiK, Trail of Bits, OpenZeppelin, Quantstamp
+
+**Dependencies**: Story 5.2.1
+
+**Priority**: P0
+
+---
+
+#### Story 5.2.4: Contract Risk Alerts (3 points)
+
+**As a** premium user
+**I want** to receive contract risk alerts
+**So that** I can be notified of risky contracts
+
+**Acceptance Criteria**:
+- User can subscribe to contract risk alerts
+- User receives alert when interacting with high-risk contract
+- Alert includes: contract address, risk score, risk factors
+- Alert sent via email, push
+
+**Technical Notes**:
+- API: `POST /v1/alerts/rules` (contract risk alert)
+- Service: EventProcessor
+- Channels: SendGrid, Firebase
+
+**Dependencies**: Story 5.2.2
+
 **Priority**: P1
 
 ---
 
-#### Story 5.3.2: Display Risk Scores (5 points)
+### Feature 5.3: Wallet Security Checker (F-021) (13 points)
+
+#### Story 5.3.1: Risky Token Approval Detection (5 points)
 
 **As a** premium user
-**I want** to view risk scores
-**So that** I can assess protocol risks
+**I want** to detect risky token approvals in my wallet
+**So that** I can revoke dangerous approvals
 
 **Acceptance Criteria**:
-- User can search for protocol risk scores
-- User can view risk score (0-100)
-- User can view risk factors breakdown
-- User can view risk score history
-- Scores update daily
+- User can scan wallet for risky approvals
+- System detects unlimited approvals
+- System detects approvals to suspicious contracts
+- System detects approvals to inactive contracts
+- System provides approval risk score
 
 **Technical Notes**:
-- API: `GET /v1/security/risk-scores`
-- Database: `risk_scores` table
-- Frontend: React + ECharts
+- API: `POST /v1/security/wallet/scan`
+- Service: WalletSecurityService
+- Database: `wallet_approvals` table
+
+**Dependencies**: None
+
+**Priority**: P1
+
+---
+
+#### Story 5.3.2: One-Click Revoke Approvals (5 points)
+
+**As a** premium user
+**I want** to revoke risky approvals with one click
+**So that** I can protect my funds quickly
+
+**Acceptance Criteria**:
+- User can revoke single approval with one click
+- User can revoke multiple approvals in batch
+- System generates revoke transaction
+- System estimates gas cost
+- Revoke completes within 30 seconds
+
+**Technical Notes**:
+- API: `POST /v1/security/wallet/revoke`
+- Service: WalletSecurityService
+- Performance: <30 seconds
 
 **Dependencies**: Story 5.3.1
 
@@ -2790,71 +2843,49 @@ So that [benefit]
 
 ---
 
-#### Story 5.3.3: Risk Score Alerts (5 points)
+#### Story 5.3.3: Wallet Security Score (3 points)
 
 **As a** premium user
-**I want** to receive risk score alerts
-**So that** I can be notified of risk changes
+**I want** to view my wallet security score
+**So that** I can assess my wallet security health
 
 **Acceptance Criteria**:
-- User can subscribe to protocol risk alerts
-- User receives alert when risk score changes significantly
-- Alert includes: protocol, old score, new score, risk factors
-- Alert sent via email, push
+- User can view wallet security score (0-100, 100 = secure)
+- User can view security recommendations
+- User can view risk factors (risky approvals, suspicious transactions)
+- Score updates in real-time
 
 **Technical Notes**:
-- API: `POST /v1/alerts/rules` (risk score alert)
-- Service: EventProcessor
-- Channels: SendGrid, Firebase
+- API: `GET /v1/security/wallet/:address/score`
+- Service: WalletSecurityService
+- Database: `wallet_security_scores` table
 
-**Dependencies**: Story 5.3.2
+**Dependencies**: Story 5.3.1
 
-**Priority**: P2
+**Priority**: P1
 
 ---
 
-#### Story 5.3.4: Risk Score Comparison (3 points)
+### Feature 5.4: Protocol Health Monitor (F-022) (12 points)
 
-**As a** premium user
-**I want** to compare protocol risk scores
-**So that** I can choose safer protocols
-
-**Acceptance Criteria**:
-- User can compare multiple protocol risk scores
-- User can view risk factors side-by-side
-- User can view risk score trends
-- Comparison supports up to 5 protocols
-
-**Technical Notes**:
-- API: `GET /v1/security/risk-scores/compare`
-- Database: `risk_scores` table
-- Frontend: React + ECharts
-
-**Dependencies**: Story 5.3.2
-
-**Priority**: P2
-
----
-
-### Feature 5.4: Security Alerts (17 points)
-
-#### Story 5.4.1: Integrate Security Feeds (8 points)
+#### Story 5.4.1: Protocol Health Monitoring (5 points)
 
 **As a** system
-**I want** to integrate security feeds
-**So that** I can receive security alerts
+**I want** to monitor protocol health metrics
+**So that** I can provide early warning signals
 
 **Acceptance Criteria**:
-- System integrates Forta Network
-- System integrates GoPlus Security
-- System integrates CertiK Skynet
-- System receives real-time security alerts
-- System supports 100+ chains
+- System monitors TVL (real-time, historical)
+- System monitors user activity (active users, transactions)
+- System monitors governance health (proposal activity, voter participation)
+- System detects protocol risk indicators (TVL drain, user exodus, governance attacks)
+- System supports 500+ protocols
 
 **Technical Notes**:
-- APIs: Forta, GoPlus, CertiK
-- Database: `security_alerts` table
-- Chains: 100+ chains
+- Service: ProtocolMonitoringService
+- Database: `protocol_health` table
+- Protocols: 500+ protocols
+- Update Frequency: Real-time
 
 **Dependencies**: None
 
@@ -2862,23 +2893,23 @@ So that [benefit]
 
 ---
 
-#### Story 5.4.2: Display Security Alerts (5 points)
+#### Story 5.4.2: Display Protocol Health Scores (3 points)
 
 **As a** premium user
-**I want** to view security alerts
-**So that** I can stay informed about security threats
+**I want** to view protocol health scores
+**So that** I can assess protocol risks
 
 **Acceptance Criteria**:
-- User can view list of security alerts
-- User can filter by severity, type, chain
-- User can view alert details
-- Alerts update in real-time
+- User can search for protocol health scores
+- User can view health score (0-100, 100 = healthy)
+- User can view health metrics (TVL, users, governance)
+- User can view health score history
+- Scores update in real-time
 
 **Technical Notes**:
-- API: `GET /v1/security/alerts`
-- Database: `security_alerts` table
+- API: `GET /v1/security/protocols/:id/health`
+- Database: `protocol_health` table
 - Frontend: React + ECharts
-- Update: Real-time (WebSocket)
 
 **Dependencies**: Story 5.4.1
 
@@ -2886,45 +2917,47 @@ So that [benefit]
 
 ---
 
-#### Story 5.4.3: Security Alert Notifications (3 points)
+#### Story 5.4.3: Early Warning Alerts (3 points)
 
 **As a** premium user
-**I want** to receive security alert notifications
-**So that** I can take immediate action
+**I want** to receive early warning alerts for protocol issues
+**So that** I can exit positions before failures
 
 **Acceptance Criteria**:
-- User can subscribe to security alerts
-- User receives alert when security threat detected
-- Alert includes: threat type, severity, affected protocols
+- User can subscribe to protocol health alerts
+- User receives alert when protocol health deteriorates
+- Alert includes: protocol, health score, risk indicators
 - Alert sent via email, push, webhook
+- Early warning accuracy >95%
 
 **Technical Notes**:
-- API: `POST /v1/alerts/rules` (security alert)
+- API: `POST /v1/alerts/rules` (protocol health alert)
 - Service: EventProcessor
 - Channels: SendGrid, Firebase, Webhooks
+- Accuracy: >95%
 
 **Dependencies**: Story 5.4.2
 
-**Priority**: P0
+**Priority**: P1
 
 ---
 
-#### Story 5.4.4: Security Alert History (1 point)
+#### Story 5.4.4: Protocol Health History (1 point)
 
 **As a** premium user
-**I want** to view security alert history
-**So that** I can review past threats
+**I want** to view protocol health history
+**So that** I can analyze protocol trends
 
 **Acceptance Criteria**:
-- User can view list of past security alerts
-- User can filter by date range, severity
-- User can view alert details
-- History displays last 1000 alerts
+- User can view protocol health history
+- User can view health score trends
+- User can view historical metrics (TVL, users, governance)
+- History displays last 12 months
 
 **Technical Notes**:
-- API: `GET /v1/security/alerts/history`
-- Database: `security_alerts` table
-- Pagination: 50 alerts per page
+- API: `GET /v1/security/protocols/:id/health/history`
+- Database: `protocol_health` table (time-series)
+- Frontend: React + ECharts
 
 **Dependencies**: Story 5.4.2
 
@@ -3957,12 +3990,12 @@ So that [benefit]
 | **EPIC-2: Tax & Compliance** | 9 | 80 | ✅ COMPLETE |
 | **EPIC-3: Portfolio Management** | 24 | 110 | ✅ COMPLETE |
 | **EPIC-4: Gas & Trading Optimization** | 39 | 191 | ✅ COMPLETE |
-| **EPIC-5: Security & Risk Management** | 20 | 80 | ✅ COMPLETE |
+| **EPIC-5: Security & Risk Management** | 17 | 80 | ✅ COMPLETE |
 | **EPIC-6: Advanced Analytics & AI** | 15 | 100 | ✅ COMPLETE |
 | **EPIC-7: Cross-EPIC Integration** | 5 | 25 | ✅ COMPLETE |
 | **EPIC-8: DevOps & Infrastructure** | 10 | 50 | ✅ COMPLETE |
 | **EPIC-9: Documentation** | 8 | 25 | ✅ COMPLETE |
-| **TOTAL** | **162** | **811** | **✅ 100%** |
+| **TOTAL** | **159** | **811** | **✅ 100%** |
 
 ### Timeline
 
@@ -4017,8 +4050,8 @@ So that [benefit]
 ### Sprint Planning Ready: ✅ YES
 
 **What's Ready**:
-- ✅ 153 detailed user stories (all 9 EPICs)
-- ✅ 760 story points estimated
+- ✅ 159 detailed user stories (all 9 EPICs)
+- ✅ 811 story points estimated
 - ✅ All acceptance criteria defined (5-7 per story)
 - ✅ All technical notes provided (100% coverage)
 - ✅ All dependencies mapped
