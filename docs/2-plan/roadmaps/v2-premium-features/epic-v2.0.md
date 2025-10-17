@@ -1,10 +1,10 @@
 # EPIC Breakdown: DeFiLlama Premium Features v2.0
 
-**Phiên bản**: 2.0  
-**Ngày**: 2025-10-17  
-**Tác giả**: Luis (với Scrum Master - Bob)  
-**Trạng thái**: Draft cho Development Planning  
-**Dựa trên**: PRD v2.0, Product Brief v2.0, Roadmap v2.0
+**Phiên bản**: 2.1
+**Ngày**: 2025-10-17
+**Tác giả**: Luis (với Scrum Master - Bob)
+**Trạng thái**: Final - Ready for Implementation
+**Dựa trên**: PRD v2.0, Product Brief v2.0, Roadmap v2.0, User Stories v2.0
 
 ---
 
@@ -14,6 +14,7 @@
 | Phiên bản | Ngày | Tác giả | Thay đổi |
 |-----------|------|---------|----------|
 | 2.0 | 2025-10-17 | Luis + Bob | EPIC breakdown ban đầu dựa trên PRD v2.0 |
+| 2.1 | 2025-10-17 | Luis + Bob | Updated với actual story points từ User Stories v2.0 (760 points) |
 
 **Người phê duyệt**:
 | Vai trò | Tên | Ngày phê duyệt | Chữ ký |
@@ -38,6 +39,9 @@
 10. [Phân bổ Tài nguyên](#10-phân-bổ-tài-nguyên)
 11. [Rủi ro & Giảm thiểu](#11-rủi-ro--giảm-thiểu)
 12. [Phụ lục](#12-phụ-lục)
+13. [EPIC 7: Cross-EPIC Integration](#13-epic-7-cross-epic-integration-new) ⭐ NEW
+14. [EPIC 8: DevOps & Infrastructure](#14-epic-8-devops--infrastructure-new) ⭐ NEW
+15. [EPIC 9: Documentation](#15-epic-9-documentation-new) ⭐ NEW
 
 ---
 
@@ -77,18 +81,23 @@ Xây dựng nền tảng DeFi analytics và management toàn diện với **25 t
 
 ## 2. Cấu trúc EPIC
 
-### 2.1 Tổng quan 6 EPICs
+### 2.1 Tổng quan 9 EPICs
 
 | EPIC ID | Tên EPIC | Features | Story Points | Timeline | Priority |
 |---------|----------|----------|--------------|----------|----------|
-| EPIC-1 | Alerts & Notifications | 5 | 130 | Q4 2025 | ⭐⭐⭐⭐⭐ P0 |
+| EPIC-1 | Alerts & Notifications | 8 | 150 | Q4 2025 | ⭐⭐⭐⭐⭐ P0 |
 | EPIC-2 | Tax & Compliance | 1 | 80 | Q4 2025 | ⭐⭐⭐⭐⭐ P0 |
 | EPIC-3 | Portfolio Management | 6 | 110 | Q1 2026 | ⭐⭐⭐⭐ P1 |
 | EPIC-4 | Gas & Trading Optimization | 6 | 140 | Q2 2026 | ⭐⭐⭐ P1 |
 | EPIC-5 | Security & Risk Management | 4 | 80 | Q3 2026 | ⭐⭐⭐⭐ P1 |
 | EPIC-6 | Advanced Analytics & AI | 3 | 100 | Q3 2026 | ⭐⭐ P2 |
+| EPIC-7 | Cross-EPIC Integration | 1 | 25 | All Phases | ⭐⭐⭐⭐⭐ P0 |
+| EPIC-8 | DevOps & Infrastructure | 4 | 50 | All Phases | ⭐⭐⭐⭐⭐ P0 |
+| EPIC-9 | Documentation | 3 | 25 | All Phases | ⭐⭐⭐⭐ P1 |
 
-**Tổng**: 25 features, 640 story points, 12 tháng
+**Tổng**: 36 features, 760 story points, 14 tháng
+
+**Note**: EPIC-1 increased from 130 to 150 points (added infrastructure, integration, testing stories). Added 3 new EPICs for cross-cutting concerns (integration, DevOps, documentation).
 
 ### 2.2 Story Points Scale (Fibonacci)
 
@@ -769,16 +778,19 @@ EPIC-2 (Tax) ─────┘                         ├──> EPIC-4 (Gas &
 - 1 QA Engineer (shared)
 - 1 DevOps Engineer (shared)
 
-### 10.2 Resource Allocation by EPIC
+### 10.2 Resource Allocation by EPIC (Updated)
 
-**Q4 2025** (EPIC-1 + EPIC-2):
-- **EPIC-1 (Alerts)**: BE1, BE2, FE1, FS1 (4 engineers)
-- **EPIC-2 (Tax)**: FE2 + external tax expert (1.5 engineers)
-- **Total**: 5.5 engineers (over-allocated, need prioritization)
+**Q4 2025** (EPIC-1 + EPIC-2 + EPIC-8):
+- **EPIC-1 (Alerts)**: BE1, BE2, FE1, FE2 (4 engineers)
+- **EPIC-2 (Tax)**: FS1 + external tax expert (1.5 engineers)
+- **EPIC-8 (DevOps)**: DevOps engineer (1 engineer, parallel)
+- **Total**: 6 engineers (5 feature + 1 DevOps)
 
-**Q1 2026** (EPIC-3):
-- **EPIC-3 (Portfolio)**: All 5 engineers
-- **Total**: 5 engineers
+**Q1 2026** (EPIC-3 + EPIC-7 + EPIC-9):
+- **EPIC-3 (Portfolio)**: BE1, BE2, FE1, FE2 (4 engineers)
+- **EPIC-7 (Integration)**: FS1 (1 engineer, parallel)
+- **EPIC-9 (Documentation)**: Technical writer (0.5 engineer, parallel)
+- **Total**: 5.5 engineers
 
 **Q2 2026** (EPIC-4):
 - **EPIC-4 (Gas & Trading)**: All 5 engineers
@@ -789,40 +801,46 @@ EPIC-2 (Tax) ─────┘                         ├──> EPIC-4 (Gas &
 - **EPIC-6 (Advanced Analytics)**: FE1, FE2 (2 engineers)
 - **Total**: 5 engineers
 
-### 10.3 Sprint Planning
+### 10.3 Sprint Planning (Updated)
 
 **Sprint Duration**: 2 weeks
 **Sprints per Quarter**: 6 sprints
-**Team Velocity**: 40-50 story points/sprint
+**Team Velocity**: 45-55 story points/sprint (increased with 6 engineers)
 
 **Q4 2025** (6 sprints):
-- Sprint 1-4: EPIC-1 (130 points) → 32.5 points/sprint
-- Sprint 5-6: EPIC-2 (80 points) → 40 points/sprint
-- **Total**: 210 points (35 points/sprint average)
+- Sprint 1-5: EPIC-1 (150 points) → 30 points/sprint
+- Sprint 5-6: EPIC-2 (80 points) → 40 points/sprint (parallel)
+- Sprint 1-6: EPIC-8 (50 points) → 8.3 points/sprint (parallel, DevOps)
+- **Total**: 280 points (46.7 points/sprint average)
 
 **Q1 2026** (6 sprints):
 - Sprint 7-12: EPIC-3 (110 points) → 18.3 points/sprint
-- **Buffer**: 30-40 points for bug fixes, tech debt
+- Sprint 7-12: EPIC-7 (25 points) → 4.2 points/sprint (parallel)
+- Sprint 7-12: EPIC-9 (25 points) → 4.2 points/sprint (parallel)
+- **Total**: 160 points (26.7 points/sprint average)
+- **Buffer**: 40-50 points for bug fixes, tech debt
 
 **Q2 2026** (6 sprints):
 - Sprint 13-18: EPIC-4 (140 points) → 23.3 points/sprint
-- **Buffer**: 20-30 points
+- **Buffer**: 30-40 points
 
 **Q3 2026** (6 sprints):
 - Sprint 19-24: EPIC-5 + EPIC-6 (180 points) → 30 points/sprint
-- **Buffer**: 10-20 points
+- **Buffer**: 20-30 points
 
-### 10.4 Capacity Planning
+**Total**: 28 sprints (14 months), 760 points
 
-**Total Capacity**: 24 sprints × 45 points/sprint = 1,080 points
-**Planned Work**: 640 points (EPICs)
-**Buffer**: 440 points (40% buffer)
+### 10.4 Capacity Planning (Updated)
+
+**Total Capacity**: 28 sprints × 45 points/sprint = 1,260 points
+**Planned Work**: 760 points (9 EPICs)
+**Buffer**: 500 points (40% buffer)
 
 **Buffer Allocation**:
-- Bug fixes: 150 points (14%)
-- Tech debt: 100 points (9%)
-- Refactoring: 80 points (7%)
-- Unplanned work: 110 points (10%)
+- Bug fixes: 180 points (14%)
+- Tech debt: 120 points (10%)
+- Refactoring: 100 points (8%)
+- Unplanned work: 100 points (8%)
 
 ---
 
@@ -955,26 +973,127 @@ EPIC-2 (Tax) ─────┘                         ├──> EPIC-4 (Gas &
 | Ngày | Phiên bản | Tác giả | Thay đổi |
 |------|-----------|---------|----------|
 | 2025-10-17 | 2.0 | Luis + Bob | EPIC breakdown ban đầu |
+| 2025-10-17 | 2.1 | Luis + Bob | Updated với actual story points từ User Stories v2.0 |
+
+---
+
+## 13. EPIC-7: Cross-EPIC Integration (NEW)
+
+### 13.1 Thông tin EPIC
+
+**EPIC ID**: EPIC-7
+**Tên**: Cross-EPIC Integration
+**Mô tả**: Tích hợp liền mạch giữa các EPICs để tạo trải nghiệm người dùng thống nhất
+
+**Business Value**: Enables seamless user experience across all features
+**Story Points**: 25 points
+**Timeline**: Throughout all phases (Q4 2025 - Q3 2026)
+**Priority**: ⭐⭐⭐⭐⭐ P0 (Critical)
+
+### 13.2 Features
+
+| Feature ID | Tên Feature | Story Points | Priority |
+|------------|-------------|--------------|----------|
+| F-026 | Alerts + Portfolio Integration | 8 | P0 |
+| F-027 | Tax + Portfolio Integration | 8 | P0 |
+| F-028 | Trading + Portfolio Integration | 5 | P0 |
+| F-029 | Security + Portfolio Integration | 2 | P1 |
+| F-030 | Analytics + All EPICs Integration | 2 | P1 |
+
+**Tổng**: 5 features, 25 story points
+
+### 13.3 Dependencies
+
+**Depends on**:
+- EPIC-1 (Alerts)
+- EPIC-2 (Tax)
+- EPIC-3 (Portfolio)
+- EPIC-4 (Trading)
+- EPIC-5 (Security)
+- EPIC-6 (Analytics)
+
+**Blocks**: None (enables better UX but not blocking)
+
+---
+
+## 14. EPIC-8: DevOps & Infrastructure (NEW)
+
+### 14.1 Thông tin EPIC
+
+**EPIC ID**: EPIC-8
+**Tên**: DevOps & Infrastructure
+**Mô tả**: CI/CD, infrastructure as code, monitoring, và operational excellence
+
+**Business Value**: Enables reliable, scalable, and automated operations
+**Story Points**: 50 points
+**Timeline**: Throughout all phases (Q4 2025 - Q3 2026)
+**Priority**: ⭐⭐⭐⭐⭐ P0 (Critical)
+
+### 14.2 Features
+
+| Feature ID | Tên Feature | Story Points | Priority |
+|------------|-------------|--------------|----------|
+| F-031 | CI/CD Pipeline | 15 | P0 |
+| F-032 | Database Management | 15 | P0 |
+| F-033 | Infrastructure as Code | 10 | P0 |
+| F-034 | Monitoring & Alerting | 10 | P0 |
+
+**Tổng**: 4 features, 50 story points
+
+### 14.3 Dependencies
+
+**Depends on**: None (foundational)
+**Blocks**: All EPICs (required for deployment)
+
+---
+
+## 15. EPIC-9: Documentation (NEW)
+
+### 15.1 Thông tin EPIC
+
+**EPIC ID**: EPIC-9
+**Tên**: Documentation
+**Mô tả**: API documentation, user guides, developer documentation, runbooks
+
+**Business Value**: Enables developers and users to understand and use the platform
+**Story Points**: 25 points
+**Timeline**: Throughout all phases (Q4 2025 - Q3 2026)
+**Priority**: ⭐⭐⭐⭐ P1 (High)
+
+### 15.2 Features
+
+| Feature ID | Tên Feature | Story Points | Priority |
+|------------|-------------|--------------|----------|
+| F-035 | API Documentation | 10 | P1 |
+| F-036 | User Documentation | 10 | P1 |
+| F-037 | Developer Documentation | 5 | P1 |
+
+**Tổng**: 3 features, 25 story points
+
+### 15.3 Dependencies
+
+**Depends on**: All EPICs (documents all features)
+**Blocks**: None (enables better adoption but not blocking)
 
 ---
 
 **KẾT THÚC TÀI LIỆU**
 
-**Tổng số Trang**: ~35 trang (700 dòng)
-**Trạng thái**: Complete - Ready for User Stories creation
-**Bước tiếp theo**: Create User Stories v2.0
+**Tổng số Trang**: ~40 trang (1,100 dòng)
+**Trạng thái**: ✅ Final - Ready for Implementation
+**Bước tiếp theo**: Sprint Planning & Implementation
 
-**Thống kê EPIC**:
-- **Tổng EPICs**: 6 EPICs
-- **Tổng Features**: 25 features
-- **Tổng Story Points**: 640 points
-- **Timeline**: 12 tháng (Q4 2025 - Q3 2026)
-- **Team Size**: 5 engineers
-- **Capacity**: 1,080 points (40% buffer)
+**Thống kê EPIC** (Updated):
+- **Tổng EPICs**: 9 EPICs (6 feature + 3 enabler)
+- **Tổng Features**: 36 features
+- **Tổng Story Points**: 760 points (was 640, +120 points)
+- **Timeline**: 14 tháng (Q4 2025 - Q1 2027)
+- **Team Size**: 5-6 engineers
+- **Capacity**: 1,200 points (37% buffer)
 
-**Critical Path**:
-1. Q4 2025: EPIC-1 + EPIC-2 (MVP launch)
-2. Q1 2026: EPIC-3 (Portfolio)
+**Critical Path** (Updated):
+1. Q4 2025: EPIC-1 + EPIC-2 + EPIC-8 (MVP launch + DevOps)
+2. Q1 2026: EPIC-3 + EPIC-7 + EPIC-9 (Portfolio + Integration + Docs)
 3. Q2 2026: EPIC-4 (Gas & Trading)
 4. Q3 2026: EPIC-5 + EPIC-6 (Security & Advanced)
 
