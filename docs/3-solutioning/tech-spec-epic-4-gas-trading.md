@@ -241,42 +241,141 @@ export class GasPredictorService {
 
 **Model Architecture**:
 - **Type**: LSTM (Long Short-Term Memory) neural network
-- **Framework**: TensorFlow.js
-- **Input Features** (10 features):
-  - Current gas price (gwei)
-  - Block number
-  - Block timestamp
-  - Pending transactions count
-  - Network utilization (%)
-  - Time of day (hour)
-  - Day of week
-  - Historical gas prices (last 24 hours)
-  - Network congestion score
-  - MEV activity score
+- **Framework**: TensorFlow.js 4.15+
+- **Model Structure**:
+  - **Input Layer**: 10 features × 24 timesteps (last 24 hours)
+  - **LSTM Layer 1**: 128 units, return_sequences=True, dropout=0.2
+  - **LSTM Layer 2**: 64 units, return_sequences=False, dropout=0.2
+  - **Dense Layer 1**: 32 units, activation='relu', dropout=0.1
+  - **Output Layer**: 3 units (low, medium, high gas price predictions)
+  - **Total Parameters**: ~150K parameters
+  - **Model Size**: ~2.5 MB (compressed)
+
+**Input Features** (10 features):
+  1. **Current gas price** (gwei) - Normalized [0, 1]
+  2. **Block number** - Normalized [0, 1]
+  3. **Block timestamp** - Unix timestamp
+  4. **Pending transactions count** - Normalized [0, 1]
+  5. **Network utilization** (%) - Normalized [0, 1]
+  6. **Time of day** (hour) - Cyclical encoding (sin/cos)
+  7. **Day of week** - One-hot encoding (7 dimensions)
+  8. **Historical gas prices** (last 24 hours) - Rolling window
+  9. **Network congestion score** (0-100) - Normalized [0, 1]
+  10. **MEV activity score** (0-100) - Normalized [0, 1]
 
 **Training Data**:
-- **Source**: Historical gas prices from Etherscan, Blocknative
+- **Source**:
+  - Primary: Etherscan API (historical gas prices)
+  - Secondary: Blocknative API (real-time gas prices)
+  - Tertiary: Infura/Alchemy (block data)
 - **Time Range**: Last 12 months (365 days)
 - **Data Points**: ~8.7M data points (1 per block × 7,200 blocks/day × 365 days)
-- **Update Frequency**: Retrain weekly with new data
+- **Data Size**: ~2.5 GB (raw), ~500 MB (preprocessed)
+- **Update Frequency**: Retrain weekly with new data (every Sunday 00:00 UTC)
+- **Data Retention**: Keep last 24 months for retraining
+
+**Data Preprocessing**:
+1. **Missing Value Handling**:
+   - Forward fill for gas prices (use last known value)
+   - Interpolation for block timestamps
+   - Drop rows with >20% missing features
+2. **Outlier Removal**:
+   - Remove gas prices >99th percentile (extreme spikes)
+   - Remove gas prices <1st percentile (anomalies)
+   - Use IQR method (Interquartile Range)
+3. **Feature Normalization**:
+   - Min-Max scaling for continuous features [0, 1]
+   - Cyclical encoding for time features (sin/cos)
+   - One-hot encoding for categorical features
+4. **Sequence Creation**:
+   - Create sequences of 24 timesteps (last 24 hours)
+   - Sliding window with 1-hour stride
+   - Target: Next hour gas price (low, medium, high)
+
+**Model Training**:
+- **Train/Validation/Test Split**: 70/15/15
+- **Batch Size**: 256
+- **Epochs**: 50 (with early stopping)
+- **Optimizer**: Adam (learning_rate=0.001, beta_1=0.9, beta_2=0.999)
+- **Loss Function**: Mean Squared Error (MSE)
+- **Metrics**: MAE, RMSE, MAPE (Mean Absolute Percentage Error)
+- **Early Stopping**: Patience=5 epochs (monitor validation loss)
+- **Learning Rate Scheduler**: ReduceLROnPlateau (factor=0.5, patience=3)
+- **Training Time**: ~45-60 minutes per training run (ECS Fargate, 4 vCPU, 8 GB RAM)
 
 **Model Performance**:
 - **Accuracy**: 75-80% (within 10% of actual gas price)
 - **MAE (Mean Absolute Error)**: 3-5 gwei
 - **RMSE (Root Mean Square Error)**: 5-8 gwei
-- **Inference Time**: <100ms per prediction
+- **MAPE (Mean Absolute Percentage Error)**: 8-12%
+- **R² Score**: 0.85-0.90 (excellent fit)
+- **Inference Time**: <100ms per prediction (p95), <50ms (p50)
+- **Throughput**: 10K predictions/second (Lambda)
+
+**Model Evaluation**:
+- **Validation Set**: 15% of data (last 2 months)
+- **Test Set**: 15% of data (last 1 month)
+- **Cross-Validation**: 5-fold time-series cross-validation
+- **Metrics Tracking**: MLflow (experiment tracking)
+- **Model Versioning**: S3 (model artifacts)
+- **A/B Testing**: Compare new model vs current model (1 week)
 
 **Training Process**:
-1. **Data Collection**: Fetch historical gas prices from Etherscan API
-2. **Data Preprocessing**: Normalize features, handle missing values
-3. **Feature Engineering**: Create time-based features, rolling averages
-4. **Model Training**: Train LSTM model with 80/20 train/test split
-5. **Model Evaluation**: Evaluate on test set, calculate metrics
-6. **Model Deployment**: Deploy to ECS Fargate, serve via API
+1. **Data Collection** (10 minutes):
+   - Fetch historical gas prices from Etherscan API
+   - Fetch block data from Infura/Alchemy
+   - Store raw data in S3 (Parquet format)
+2. **Data Preprocessing** (15 minutes):
+   - Clean data (missing values, outliers)
+   - Normalize features (Min-Max scaling)
+   - Create sequences (24 timesteps)
+   - Store preprocessed data in S3
+3. **Feature Engineering** (10 minutes):
+   - Create time-based features (hour, day of week)
+   - Create rolling averages (1h, 6h, 24h)
+   - Create network congestion score
+   - Create MEV activity score
+4. **Model Training** (45-60 minutes):
+   - Train LSTM model with 80/20 train/test split
+   - Use early stopping (patience=5)
+   - Use learning rate scheduler
+   - Save best model to S3
+5. **Model Evaluation** (5 minutes):
+   - Evaluate on test set
+   - Calculate metrics (MAE, RMSE, MAPE, R²)
+   - Compare with current model
+   - Log metrics to MLflow
+6. **Model Deployment** (5 minutes):
+   - Deploy to ECS Fargate (if better than current model)
+   - Update API endpoint
+   - Monitor performance (Datadog)
+   - Rollback if performance degrades
+
+**Total Training Time**: ~90 minutes per training run (weekly)
+
+**Model Monitoring**:
+- **Metrics**: MAE, RMSE, MAPE, R², Inference Time
+- **Alerts**:
+  - MAE >10 gwei (model degradation)
+  - Inference time >200ms (performance issue)
+  - Prediction errors >20% (data drift)
+- **Retraining Triggers**:
+  - Weekly scheduled retraining (every Sunday)
+  - Performance degradation (MAE >10 gwei)
+  - Data drift detection (KL divergence >0.1)
 
 **Cost**:
-- **Training**: ~$10-20/month (ECS Fargate, 1 hour/week)
-- **Inference**: ~$50-75/month (Lambda, 1M predictions/month)
+- **Training**: ~$10-20/month (ECS Fargate, 4 vCPU, 8 GB RAM, 1.5 hours/week)
+- **Inference**: ~$50-75/month (Lambda, 1M predictions/month, 128 MB RAM)
+- **Storage**: ~$5/month (S3, 10 GB model artifacts + data)
+- **Monitoring**: ~$10/month (Datadog, MLflow)
+- **Total**: ~$75-110/month
+
+**Multi-Chain Support**:
+- **Current**: Ethereum mainnet only
+- **Planned**: Polygon, BSC, Arbitrum, Optimism (Q2 2026)
+- **Approach**: Train separate models per chain (different gas dynamics)
+- **Cost**: ~$75-110/month per chain (5 chains = $375-550/month)
 
 **DEXAggregatorService**:
 ```typescript

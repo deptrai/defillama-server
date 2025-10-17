@@ -261,22 +261,130 @@ export class PerformanceCalculatorService {
 
 ### 6.1 Unit Tests
 
-- Test portfolio aggregation
-- Test performance calculations
-- Test asset allocation
-- Target: 80% code coverage
+**Portfolio Aggregation Service**:
+- ✅ Test single wallet aggregation (1 chain, 1 wallet)
+- ✅ Test multi-wallet aggregation (10 wallets, 100+ chains)
+- ✅ Test asset deduplication across chains
+- ✅ Test balance calculation with different token decimals
+- ✅ Test USD value conversion with price feeds
+- ✅ Test error handling (RPC failures, invalid addresses)
+
+**Performance Calculation Service**:
+- ✅ Test P&L calculation (realized + unrealized)
+- ✅ Test ROI calculation (time-weighted, money-weighted)
+- ✅ Test Sharpe ratio calculation
+- ✅ Test max drawdown calculation
+- ✅ Test historical performance queries (1D, 7D, 30D, 1Y, All)
+- ✅ Test edge cases (zero balance, negative P&L)
+
+**Asset Allocation Service**:
+- ✅ Test allocation by asset type (tokens, NFTs, LP positions)
+- ✅ Test allocation by chain (Ethereum, BSC, Polygon, etc.)
+- ✅ Test allocation by protocol (Uniswap, Aave, Compound, etc.)
+- ✅ Test rebalancing suggestions
+- ✅ Test risk scoring (concentration risk, protocol risk)
+
+**Target**: 85% code coverage (increased from 80%)
+
+---
 
 ### 6.2 Integration Tests
 
-- Test multi-chain data fetching
-- Test real-time updates
-- Test historical data queries
+**Multi-Chain Data Fetching**:
+- ✅ Test fetching from 100+ chains simultaneously
+- ✅ Test RPC failover (primary → backup → tertiary)
+- ✅ Test rate limiting handling (429 errors)
+- ✅ Test data consistency across chains
+- ✅ Test timeout handling (5s timeout per chain)
+
+**Real-Time Updates**:
+- ✅ Test WebSocket connection establishment
+- ✅ Test real-time balance updates (<5s latency)
+- ✅ Test reconnection logic (auto-reconnect on disconnect)
+- ✅ Test message ordering (FIFO)
+- ✅ Test concurrent updates (10K users)
+
+**Historical Data Queries**:
+- ✅ Test TimescaleDB continuous aggregates (1h, 1d, 1w)
+- ✅ Test time-series queries (1D, 7D, 30D, 1Y, All)
+- ✅ Test data retention (90 days raw, 2 years aggregated)
+- ✅ Test query performance (<2s for 1 year data)
+
+**API Integration**:
+- ✅ Test REST API endpoints (GET /portfolio, GET /performance, etc.)
+- ✅ Test authentication (JWT validation)
+- ✅ Test authorization (user can only access own portfolio)
+- ✅ Test rate limiting (per-tier limits)
+- ✅ Test error responses (400, 401, 403, 404, 500)
+
+---
 
 ### 6.3 Performance Tests
 
-- Test 125K users × 24 snapshots/day = 3M snapshots/day
-- Test query performance (<2s)
-- Test WebSocket scalability (10K concurrent connections)
+**Load Testing**:
+- ✅ Test 125K users × 24 snapshots/day = 3M snapshots/day
+- ✅ Test 10K concurrent API requests (p95 <200ms, p99 <500ms)
+- ✅ Test 10K concurrent WebSocket connections
+- ✅ Test database write throughput (3M writes/day = 35 writes/sec)
+- ✅ Test database read throughput (10K reads/min = 167 reads/sec)
+
+**Query Performance**:
+- ✅ Test portfolio aggregation (<30s for 10 wallets, 100+ chains)
+- ✅ Test performance calculation (<2s for 1 year data)
+- ✅ Test asset allocation (<1s for 1,000 assets)
+- ✅ Test historical queries (<2s for 1 year data)
+- ✅ Test real-time updates (<5s latency)
+
+**Scalability Testing**:
+- ✅ Test horizontal scaling (Lambda auto-scaling)
+- ✅ Test database scaling (TimescaleDB read replicas)
+- ✅ Test cache scaling (Redis cluster)
+- ✅ Test WebSocket scaling (10K → 50K → 100K connections)
+
+---
+
+### 6.4 End-to-End Tests
+
+**User Flows**:
+- ✅ Test add wallet → fetch balances → view portfolio
+- ✅ Test view performance → view P&L → view ROI
+- ✅ Test view asset allocation → view rebalancing suggestions
+- ✅ Test real-time updates → balance changes → notifications
+- ✅ Test historical data → view charts → export CSV
+
+**Multi-Chain Scenarios**:
+- ✅ Test user with 10 wallets across 100+ chains
+- ✅ Test user with 1,000+ assets (tokens, NFTs, LP positions)
+- ✅ Test user with complex DeFi positions (Aave, Compound, Uniswap)
+- ✅ Test user with cross-chain assets (bridged tokens)
+
+**Edge Cases**:
+- ✅ Test empty portfolio (no assets)
+- ✅ Test single asset portfolio
+- ✅ Test portfolio with only NFTs
+- ✅ Test portfolio with only LP positions
+- ✅ Test portfolio with negative P&L
+
+---
+
+### 6.5 Security Tests
+
+**Authentication & Authorization**:
+- ✅ Test JWT validation (valid, expired, invalid)
+- ✅ Test user isolation (user A cannot access user B's portfolio)
+- ✅ Test rate limiting (per-tier limits)
+- ✅ Test API key validation (valid, invalid, revoked)
+
+**Data Security**:
+- ✅ Test encryption at rest (AES-256)
+- ✅ Test encryption in transit (TLS 1.3)
+- ✅ Test SQL injection prevention (parameterized queries)
+- ✅ Test XSS prevention (input sanitization)
+
+**Privacy**:
+- ✅ Test wallet address anonymization (optional)
+- ✅ Test data deletion (GDPR compliance)
+- ✅ Test audit logging (all operations logged)
 
 ---
 
