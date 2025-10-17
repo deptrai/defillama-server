@@ -31,12 +31,12 @@
 
 | Feature ID | Feature Name | Story Points | Timeline |
 |------------|--------------|--------------|----------|
-| F3.1 | Multi-Chain Portfolio Tracking | 25 | Week 1-3 |
-| F3.2 | Real-Time Portfolio Updates | 20 | Week 4-5 |
-| F3.3 | Performance Analytics | 20 | Week 6-7 |
-| F3.4 | Asset Allocation | 15 | Week 8-9 |
-| F3.5 | Historical Performance | 15 | Week 10-11 |
-| F3.6 | Portfolio Comparison | 15 | Week 12 |
+| F-007 | Multi-Chain Portfolio Tracking | 25 | Week 1-3 |
+| F-008 | Real-Time Portfolio Updates | 20 | Week 4-5 |
+| F-009 | Performance Analytics | 20 | Week 6-7 |
+| F-010 | Asset Allocation | 15 | Week 8-9 |
+| F-011 | Historical Performance | 15 | Week 10-11 |
+| F-012 | Portfolio Comparison | 15 | Week 12 |
 
 ### 1.3 Success Metrics
 

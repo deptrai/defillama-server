@@ -42,20 +42,25 @@
 
 **EPIC-1: Alerts & Notifications** provides real-time monitoring and alerting capabilities for DeFi activities across 100+ blockchains.
 
-**Business Value**: $7.5M ARR (30% of total)  
-**Story Points**: 130 points  
-**Timeline**: Q4 2025 (Months 1-3)  
+**Business Value**: $7.5M ARR (30% of total)
+**Story Points**: 150 points
+**Timeline**: Q4 2025 (Months 1-3, 22 weeks)
 **Priority**: P0 (Critical)
 
-### 1.2 Features (5 Features)
+### 1.2 Features (5 Features + Infrastructure)
 
 | Feature ID | Feature Name | Story Points | Timeline |
 |------------|--------------|--------------|----------|
-| F1.1 | Whale Movement Alerts | 34 | Week 1-4 |
-| F1.2 | Price Alerts Multi-Chain | 21 | Week 5-7 |
-| F1.3 | Gas Fee Alerts | 13 | Week 8-9 |
-| F1.4 | Protocol Risk Alerts | 21 | Week 10-12 |
-| F1.5 | Alert Automation | 21 | Week 13-14 |
+| F-001 | Whale Movement Alerts | 34 | Week 1-4 |
+| F-002 | Price Alerts Multi-Chain | 21 | Week 5-7 |
+| F-003 | Gas Fee Alerts | 13 | Week 8-9 |
+| F-004 | Protocol Risk Alerts | 21 | Week 10-12 |
+| F-005 | Alert Automation | 21 | Week 13-14 |
+| | **Infrastructure** | 20 | Week 15-16 |
+| | **Testing** | 10 | Week 17-18 |
+| | **UI/UX** | 10 | Week 19-20 |
+
+**Total**: 150 story points, 20 weeks development + 2 weeks testing/deployment
 
 ### 1.3 Success Metrics
 
@@ -69,7 +74,7 @@
 
 ## 2. FEATURES
 
-### 2.1 F1.1: Whale Movement Alerts
+### 2.1 F-001: Whale Movement Alerts
 
 **Description**: Real-time alerts for large token transfers (whales)
 
@@ -91,7 +96,7 @@
 - Store whale movement history (30 days)
 - Support multiple notification channels (email, webhook, push)
 
-### 2.2 F1.2: Price Alerts Multi-Chain
+### 2.2 F-002: Price Alerts Multi-Chain
 
 **Description**: Price alerts for tokens across multiple chains
 
@@ -113,7 +118,7 @@
 - Support complex conditions (AND, OR, NOT)
 - Cache hot prices in Redis
 
-### 2.3 F1.3: Gas Fee Alerts
+### 2.3 F-003: Gas Fee Alerts
 
 **Description**: Alerts for optimal gas fees
 
@@ -133,7 +138,7 @@
 - ML model for gas prediction
 - Store gas history (7 days)
 
-### 2.4 F1.4: Protocol Risk Alerts
+### 2.4 F-004: Protocol Risk Alerts
 
 **Description**: Alerts for protocol security risks
 
@@ -153,7 +158,7 @@
 - Monitor TVL changes (>20% drop)
 - Detect unusual contract activity
 
-### 2.5 F1.5: Alert Automation
+### 2.5 F-005: Alert Automation
 
 **Description**: Automated alert actions
 

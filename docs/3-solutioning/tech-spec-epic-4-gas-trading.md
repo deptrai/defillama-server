@@ -31,15 +31,15 @@
 
 | Feature ID | Feature Name | Story Points | Timeline |
 |------------|--------------|--------------|----------|
-| F4.1 | Gas Fee Optimization | 21 | Week 1-3 |
-| F4.2 | Gas Predictions | 21 | Week 4-6 |
-| F4.3 | DEX Aggregation | 34 | Week 7-9 |
-| F4.4 | Slippage Protection | 21 | Week 10-11 |
-| F4.5 | MEV Protection | 21 | Week 12-13 |
-| F4.6 | Trade Simulation | 22 | Week 14-15 |
-| F4.7 | Yield Farming Calculator | 13 | Week 16-18 |
-| F4.8 | Cross-Chain Bridge Aggregator | 21 | Week 19-22 |
-| F4.9 | Copy Trading Beta | 17 | Week 23-28 |
+| F-013 | Gas Fee Optimizer (Gas Prediction) | 21 | Week 1-3 |
+| F-013b | Gas Optimization (Batching & Timing) | 21 | Week 4-6 |
+| F-014 | Transaction Simulator | 22 | Week 7-9 |
+| F-015 | Smart Order Routing | 34 | Week 10-12 |
+| F-015b | MEV Protection | 21 | Week 13-14 |
+| F-015c | Limit Orders | 21 | Week 15-16 |
+| F-016 | Yield Farming Calculator | 13 | Week 17-19 |
+| F-017 | Cross-Chain Bridge Aggregator | 21 | Week 20-23 |
+| F-018 | Copy Trading Beta | 17 | Week 24-28 |
 
 ### 1.3 Success Metrics
 

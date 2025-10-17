@@ -36,13 +36,13 @@
 
 | Feature ID | Feature Name | Story Points | Timeline |
 |------------|--------------|--------------|----------|
-| F2.1 | Tax Reporting Suite | 80 | Week 1-8 |
-| F2.1.1 | Transaction Import | 15 | Week 1-2 |
-| F2.1.2 | Cost Basis Calculation | 20 | Week 3-4 |
-| F2.1.3 | Gain/Loss Calculation | 15 | Week 5-6 |
-| F2.1.4 | Report Generation | 15 | Week 7 |
-| F2.1.5 | Multi-Jurisdiction Support | 10 | Week 8 |
-| F2.1.6 | Tax Optimization | 5 | Week 8 |
+| F-006 | Tax Reporting Suite | 80 | Week 1-8 |
+| F-006.1 | Transaction Import | 15 | Week 1-2 |
+| F-006.2 | Cost Basis Calculation | 20 | Week 3-4 |
+| F-006.3 | Gain/Loss Calculation | 15 | Week 5-6 |
+| F-006.4 | Report Generation | 15 | Week 7 |
+| F-006.5 | Multi-Jurisdiction Support | 10 | Week 8 |
+| F-006.6 | Tax Optimization | 5 | Week 8 |
 
 ### 1.3 Success Metrics
 
@@ -56,7 +56,7 @@
 
 ## 2. FEATURES
 
-### 2.1 F2.1: Tax Reporting Suite
+### 2.1 F-006: Tax Reporting Suite
 
 **Description**: Comprehensive tax reporting for crypto transactions
 
