@@ -31,16 +31,29 @@
 
 | Feature ID | Feature Name | Story Points | Timeline |
 |------------|--------------|--------------|----------|
-| F6.1 | AI Price Predictions | 40 | Week 1-5 |
-| F6.2 | Custom Dashboards | 35 | Week 6-9 |
-| F6.3 | Advanced Analytics | 25 | Week 10-12 |
+| F-023 | Backtesting Engine | 34 | Week 1-6 |
+| F-024 | AI Market Insights Beta | 34 | Week 7-14 |
+| F-025 | Custom Dashboard Builder | 32 | Week 15-20 |
 
 ### 1.3 Success Metrics
 
-- **Prediction Accuracy**: >70% accuracy (7-day predictions)
-- **Dashboard Usage**: 30% of premium users create dashboards
-- **User Engagement**: 40% daily active users
-- **Performance**: <3s dashboard load time
+**F-023: Backtesting Engine**:
+- 15K+ users
+- 50K+ strategies backtested
+- 85%+ user satisfaction
+- <5 minutes backtest execution
+
+**F-024: AI Market Insights Beta**:
+- 20K+ users
+- 70%+ prediction accuracy
+- 80%+ user satisfaction
+- <2 seconds AI inference
+
+**F-025: Custom Dashboard Builder**:
+- 10K+ users
+- 30K+ custom dashboards created
+- 85%+ user satisfaction
+- <2 seconds dashboard load time
 
 ---
 
