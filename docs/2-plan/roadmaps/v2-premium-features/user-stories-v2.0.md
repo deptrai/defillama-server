@@ -2971,27 +2971,151 @@ So that [benefit]
 **Priority**: P2 (Medium)
 **Revenue Target**: $2.5M ARR (10%)
 
-### Feature 6.1: AI Price Predictions (34 points)
+### Feature 6.1: Backtesting Engine (F-023) (34 points)
 
-#### Story 6.1.1: Train Price Prediction ML Model (13 points)
+#### Story 6.1.1: Historical Data Integration (8 points)
 
 **As a** system
-**I want** to train price prediction ML model
-**So that** I can predict future token prices
+**I want** to integrate historical data providers
+**So that** I can provide 3+ years of historical data for backtesting
 
 **Acceptance Criteria**:
-- System trains Transformer-based neural network model
-- Model uses 15 features (historical price, volume, social sentiment, etc.)
-- Model achieves 70-75% accuracy
-- Model predicts prices for next 7 days, 30 days
-- Model retrains weekly with new data
+- System integrates historical data providers (DeFiLlama, CoinGecko, etc.)
+- System supports 100+ chains
+- System stores 3+ years of historical data (price, volume, TVL)
+- Data updates daily
+- Data quality >95% (no missing data)
 
 **Technical Notes**:
-- Model: Transformer-based neural network (TensorFlow)
-- Features: 15 features (historical price, volume, social sentiment, on-chain metrics, etc.)
-- Accuracy: 70-75% (MAPE: 10-15%)
-- Training: Weekly retraining
-- Infrastructure: AWS SageMaker
+- APIs: DeFiLlama, CoinGecko, CryptoCompare
+- Database: TimescaleDB (time-series data)
+- Chains: 100+ chains
+- Data: Price, volume, TVL, liquidity
+
+**Dependencies**: None
+
+**Priority**: P1
+
+---
+
+#### Story 6.1.2: Custom Strategy Builder (13 points)
+
+**As a** premium user
+**I want** to build custom trading strategies
+**So that** I can backtest my strategies
+
+**Acceptance Criteria**:
+- User can create strategies using visual builder
+- User can create strategies using code (JavaScript/Python)
+- User can define entry/exit conditions
+- User can define position sizing rules
+- User can define risk management rules
+- Strategies support 50+ indicators (MA, RSI, MACD, etc.)
+
+**Technical Notes**:
+- Frontend: React + Monaco Editor (code editor)
+- Backend: Strategy execution engine
+- Indicators: 50+ technical indicators
+- Languages: JavaScript, Python
+
+**Dependencies**: Story 6.1.1
+
+**Priority**: P1
+
+---
+
+#### Story 6.1.3: Backtesting Execution (8 points)
+
+**As a** premium user
+**I want** to execute backtests on my strategies
+**So that** I can validate strategies before risking real funds
+
+**Acceptance Criteria**:
+- User can run backtest on historical data
+- Backtest simulates trades (entry, exit, fees, slippage)
+- Backtest execution <5 minutes for 1 year data
+- Backtest supports multiple chains
+- Backtest supports multiple assets
+
+**Technical Notes**:
+- Service: BacktestingEngineService
+- Performance: <5 minutes for 1 year data
+- Simulation: Entry, exit, fees, slippage
+
+**Dependencies**: Story 6.1.2
+
+**Priority**: P1
+
+---
+
+#### Story 6.1.4: Performance Analytics (3 points)
+
+**As a** premium user
+**I want** to view backtest performance analytics
+**So that** I can evaluate strategy performance
+
+**Acceptance Criteria**:
+- User can view P&L (profit & loss)
+- User can view Sharpe ratio
+- User can view max drawdown
+- User can view win rate
+- User can view trade statistics
+
+**Technical Notes**:
+- API: `GET /v1/analytics/backtest/:id/performance`
+- Metrics: P&L, Sharpe ratio, max drawdown, win rate
+- Frontend: React + ECharts
+
+**Dependencies**: Story 6.1.3
+
+**Priority**: P1
+
+---
+
+#### Story 6.1.5: Strategy Optimization (2 points)
+
+**As a** premium user
+**I want** to optimize strategy parameters
+**So that** I can find optimal parameters
+
+**Acceptance Criteria**:
+- User can run parameter optimization
+- System tests multiple parameter combinations
+- System finds optimal parameters (highest Sharpe ratio)
+- Optimization completes within 30 minutes
+
+**Technical Notes**:
+- Service: StrategyOptimizerService
+- Algorithm: Grid search, genetic algorithm
+- Performance: <30 minutes
+
+**Dependencies**: Story 6.1.4
+
+**Priority**: P2
+
+---
+
+### Feature 6.2: AI Market Insights Beta (F-024) (34 points)
+
+#### Story 6.2.1: On-Chain Data Analysis (8 points)
+
+**As a** system
+**I want** to analyze on-chain data
+**So that** I can detect whale movements and DEX flows
+
+**Acceptance Criteria**:
+- System monitors whale wallets (>$1M holdings)
+- System detects large transfers (>$100K)
+- System tracks DEX flows (Uniswap, Curve, etc.)
+- System analyzes liquidity changes
+- Data updates in real-time
+
+**Technical Notes**:
+- Service: OnChainAnalyzerService
+- Data Sources: Blockchain RPCs, DeFiLlama API
+- Whale Threshold: >$1M holdings
+- Transfer Threshold: >$100K
+- Update Frequency: Real-time
 
 **Dependencies**: None
 
@@ -2999,119 +3123,151 @@ So that [benefit]
 
 ---
 
-#### Story 6.1.2: Display Price Predictions (8 points)
+#### Story 6.2.2: Social Sentiment Analysis (8 points)
 
-**As a** premium user
-**I want** to view price predictions
-**So that** I can make informed investment decisions
+**As a** system
+**I want** to analyze social sentiment
+**So that** I can detect market sentiment
 
 **Acceptance Criteria**:
-- User can view price predictions (7-day, 30-day)
-- User can view prediction confidence (%)
-- User can view historical accuracy
-- User can select token and chain
-- Predictions update daily
+- System monitors Twitter, Reddit, Discord
+- System analyzes sentiment (positive, negative, neutral)
+- System detects trending topics
+- System calculates sentiment scores (0-100)
+- Data updates hourly
 
 **Technical Notes**:
-- API: `GET /v1/analytics/predictions`
-- Database: `predictions` table (TimescaleDB)
-- Frontend: React + ECharts
+- APIs: Twitter API, Reddit API, Discord API
+- NLP: Sentiment analysis (VADER, TextBlob)
+- Sentiment Score: 0-100 (0=bearish, 100=bullish)
+- Update Frequency: Hourly
+
+**Dependencies**: None
+
+**Priority**: P2
+
+---
+
+#### Story 6.2.3: Market Trend Detection (8 points)
+
+**As a** system
+**I want** to detect market trends
+**So that** I can generate bullish/bearish signals
+
+**Acceptance Criteria**:
+- System analyzes price trends (MA, RSI, MACD)
+- System detects bullish/bearish signals
+- System calculates trend strength (0-100)
+- System supports 100+ tokens
+- Signals update hourly
+
+**Technical Notes**:
+- Indicators: MA, RSI, MACD, Bollinger Bands
+- Signals: Bullish, bearish, neutral
+- Trend Strength: 0-100
+- Update Frequency: Hourly
+
+**Dependencies**: None
+
+**Priority**: P2
+
+---
+
+#### Story 6.2.4: Price Predictions (5 points)
+
+**As a** premium user
+**I want** to view short-term price predictions
+**So that** I can make informed trading decisions
+
+**Acceptance Criteria**:
+- User can view price predictions (24h, 7d)
+- User can view prediction confidence (0-100)
+- User can view historical accuracy
+- Predictions update daily
+- Predictions support 100+ tokens
+
+**Technical Notes**:
+- API: `GET /v1/analytics/ai-insights/predictions`
+- Model: LSTM neural network
+- Timeframes: 24h, 7d
+- Confidence: 0-100
 - Update Frequency: Daily
 
-**Dependencies**: Story 6.1.1
+**Dependencies**: Story 6.2.1, 6.2.2, 6.2.3
 
 **Priority**: P2
 
 ---
 
-#### Story 6.1.3: Price Prediction Alerts (5 points)
+#### Story 6.2.5: Trading Signal Generation (3 points)
 
 **As a** premium user
-**I want** to receive price prediction alerts
-**So that** I can be notified of significant predictions
+**I want** to receive trading signals
+**So that** I can know when to buy/sell/hold
 
 **Acceptance Criteria**:
-- User can set price prediction alert thresholds
-- User receives alert when predicted price change >= threshold
-- Alert includes: token, predicted price, confidence
-- Alert sent via email, push
+- User can view trading signals (buy, sell, hold)
+- User can view signal confidence (0-100)
+- User can view signal reasoning
+- Signals update hourly
+- Signals support 100+ tokens
 
 **Technical Notes**:
-- API: `POST /v1/alerts/rules` (price prediction alert)
-- Service: EventProcessor
-- Channels: SendGrid, Firebase
+- API: `GET /v1/analytics/ai-insights/signals`
+- Signals: Buy, sell, hold
+- Confidence: 0-100
+- Reasoning: On-chain data, sentiment, trends
+- Update Frequency: Hourly
 
-**Dependencies**: Story 6.1.2
+**Dependencies**: Story 6.2.1, 6.2.2, 6.2.3
 
 **Priority**: P2
 
 ---
 
-#### Story 6.1.4: Prediction Accuracy Tracking (5 points)
+#### Story 6.2.6: AI Insights Dashboard (2 points)
 
 **As a** premium user
-**I want** to view prediction accuracy
-**So that** I can trust the predictions
+**I want** to view AI insights dashboard
+**So that** I can see all insights in one place
 
 **Acceptance Criteria**:
-- User can view prediction accuracy metrics
-- User can view accuracy by token, timeframe
-- User can view accuracy trends
-- Accuracy updates daily
+- User can view whale movements
+- User can view social sentiment
+- User can view market trends
+- User can view price predictions
+- User can view trading signals
 
 **Technical Notes**:
-- API: `GET /v1/analytics/prediction-accuracy`
-- Database: `predictions` table
-- Metrics: Accuracy, MAPE, error rate
+- API: `GET /v1/analytics/ai-insights`
+- Frontend: React + ECharts
+- Update Frequency: Real-time
 
-**Dependencies**: Story 6.1.2
+**Dependencies**: Story 6.2.1, 6.2.2, 6.2.3, 6.2.4, 6.2.5
 
 **Priority**: P2
 
 ---
 
-#### Story 6.1.5: Prediction API (3 points)
+### Feature 6.3: Custom Dashboard Builder (F-025) (32 points)
 
-**As a** developer
-**I want** to access prediction API
-**So that** I can integrate predictions into my app
-
-**Acceptance Criteria**:
-- API endpoint returns price predictions
-- API supports multiple tokens and chains
-- API includes confidence scores
-- API rate limited (100 req/min for Pro, 1000 req/min for Enterprise)
-- API documented (OpenAPI spec)
-
-**Technical Notes**:
-- API: `GET /v1/analytics/predictions/api`
-- Rate Limiting: 100 req/min (Pro), 1000 req/min (Enterprise)
-- Documentation: OpenAPI 3.0 spec
-
-**Dependencies**: Story 6.1.2
-
-**Priority**: P2
-
----
-
-### Feature 6.2: Custom Dashboards (33 points)
-
-#### Story 6.2.1: Create Dashboard Widget Library (13 points)
+#### Story 6.3.1: Dashboard Widget Library (13 points)
 
 **As a** system
 **I want** to create dashboard widget library
 **So that** users can build custom dashboards
 
 **Acceptance Criteria**:
-- System provides 20+ widget types (portfolio, performance, market, analytics, alerts)
-- Widgets are configurable (size, data source, filters)
+- System provides 50+ widget types (portfolio, alerts, charts, analytics, market, security)
+- Widgets are configurable (size, data source, filters, colors)
 - Widgets support real-time updates
 - Widgets are responsive (mobile, tablet, desktop)
+- Widgets support drag-and-drop
 
 **Technical Notes**:
-- Frontend: React + ECharts
-- Widgets: 20+ types (portfolio value, ROI, alerts, gas prices, etc.)
-- Configuration: Size, data source, filters
+- Frontend: React + ECharts + react-grid-layout
+- Widgets: 50+ types (portfolio value, ROI, alerts, gas prices, security scores, etc.)
+- Configuration: Size, data source, filters, colors
 - Update: Real-time (WebSocket)
 
 **Dependencies**: None
@@ -3120,32 +3276,56 @@ So that [benefit]
 
 ---
 
-#### Story 6.2.2: Build Custom Dashboards (8 points)
+#### Story 6.3.2: Drag-and-Drop Dashboard Builder (8 points)
 
 **As a** premium user
-**I want** to build custom dashboards
+**I want** to build custom dashboards with drag-and-drop
 **So that** I can visualize my data
 
 **Acceptance Criteria**:
 - User can create custom dashboard
-- User can add/remove widgets
+- User can drag-and-drop widgets
 - User can resize/reposition widgets
 - User can save multiple dashboards
-- User can share dashboards (public link)
+- User can switch between dashboards
 
 **Technical Notes**:
 - API: `POST /v1/analytics/dashboards`
 - Database: `dashboards` table
 - Frontend: React + react-grid-layout
-- Sharing: Public link with read-only access
+- Layouts: Grid, flex, tabs
 
-**Dependencies**: Story 6.2.1
+**Dependencies**: Story 6.3.1
 
 **Priority**: P2
 
 ---
 
-#### Story 6.2.3: Dashboard Templates (5 points)
+#### Story 6.3.3: Custom Layouts (5 points)
+
+**As a** premium user
+**I want** to customize dashboard layouts
+**So that** I can organize my data
+
+**Acceptance Criteria**:
+- User can select layout type (grid, flex, tabs)
+- User can customize grid size (columns, rows)
+- User can customize widget spacing
+- User can save layout preferences
+- Layouts are responsive
+
+**Technical Notes**:
+- Layouts: Grid (12 columns), flex, tabs
+- Configuration: Columns, rows, spacing
+- Database: `dashboard_layouts` table
+
+**Dependencies**: Story 6.3.2
+
+**Priority**: P2
+
+---
+
+#### Story 6.3.4: Dashboard Templates (3 points)
 
 **As a** premium user
 **I want** to use dashboard templates
@@ -3156,20 +3336,20 @@ So that [benefit]
 - User can select template
 - User can customize template
 - User can save customized template
-- Templates cover common use cases (portfolio, trading, security, etc.)
+- Templates cover common use cases (portfolio, trading, security, analytics)
 
 **Technical Notes**:
-- Templates: 10+ templates (portfolio, trading, security, etc.)
+- Templates: 10+ templates (portfolio, trading, security, analytics, etc.)
 - Database: `dashboard_templates` table
 - Customization: Add/remove/resize widgets
 
-**Dependencies**: Story 6.2.2
+**Dependencies**: Story 6.3.2
 
 **Priority**: P2
 
 ---
 
-#### Story 6.2.4: Dashboard Sharing (5 points)
+#### Story 6.3.5: Dashboard Sharing (3 points)
 
 **As a** premium user
 **I want** to share my dashboards
@@ -3187,152 +3367,6 @@ So that [benefit]
 - Database: `dashboard_shares` table
 - Permissions: View-only, edit
 - Embedding: iframe support
-
-**Dependencies**: Story 6.2.2
-
-**Priority**: P2
-
----
-
-#### Story 6.2.5: Dashboard Export (2 points)
-
-**As a** premium user
-**I want** to export my dashboards
-**So that** I can use them offline
-
-**Acceptance Criteria**:
-- User can export dashboard (PDF, PNG)
-- Export includes all widgets
-- Export is professionally formatted
-- Export completes within 1 minute
-
-**Technical Notes**:
-- API: `GET /v1/analytics/dashboards/export`
-- Export: PDF (PDFKit), PNG (Puppeteer)
-- Performance: <1 minute
-
-**Dependencies**: Story 6.2.2
-
-**Priority**: P2
-
----
-
-### Feature 6.3: Market Insights (33 points)
-
-#### Story 6.3.1: Aggregate Market Data (13 points)
-
-**As a** system
-**I want** to aggregate market data
-**So that** I can provide market insights
-
-**Acceptance Criteria**:
-- System aggregates data from 100+ chains
-- System aggregates data from 1000+ protocols
-- System calculates market metrics (TVL, volume, fees, etc.)
-- System updates metrics hourly
-- System stores historical data (1 year)
-
-**Technical Notes**:
-- Service: MarketAggregatorService (background job)
-- Database: `market_metrics` table (TimescaleDB)
-- Metrics: TVL, volume, fees, users, transactions
-- Update Frequency: Hourly
-- Retention: 1 year
-
-**Dependencies**: None
-
-**Priority**: P2
-
----
-
-#### Story 6.3.2: Display Market Insights (8 points)
-
-**As a** premium user
-**I want** to view market insights
-**So that** I can understand market trends
-
-**Acceptance Criteria**:
-- User can view market overview (total TVL, volume, etc.)
-- User can view top protocols by TVL, volume
-- User can view trending tokens
-- User can view market trends (daily, weekly, monthly)
-- Insights update hourly
-
-**Technical Notes**:
-- API: `GET /v1/analytics/market-insights`
-- Database: `market_metrics` table
-- Frontend: React + ECharts
-- Update Frequency: Hourly
-
-**Dependencies**: Story 6.3.1
-
-**Priority**: P2
-
----
-
-#### Story 6.3.3: Market Alerts (5 points)
-
-**As a** premium user
-**I want** to receive market alerts
-**So that** I can be notified of market changes
-
-**Acceptance Criteria**:
-- User can set market alert thresholds (TVL change, volume change, etc.)
-- User receives alert when threshold reached
-- Alert includes: metric, old value, new value
-- Alert sent via email, push
-
-**Technical Notes**:
-- API: `POST /v1/alerts/rules` (market alert)
-- Service: EventProcessor
-- Channels: SendGrid, Firebase
-
-**Dependencies**: Story 6.3.2
-
-**Priority**: P2
-
----
-
-#### Story 6.3.4: Market Reports (5 points)
-
-**As a** premium user
-**I want** to receive market reports
-**So that** I can stay informed about market trends
-
-**Acceptance Criteria**:
-- User can subscribe to market reports (daily, weekly, monthly)
-- Report includes: market overview, top protocols, trending tokens
-- Report sent via email
-- Report is professionally formatted
-
-**Technical Notes**:
-- Service: ReportService (background job)
-- Database: `market_metrics` table
-- Delivery: SendGrid (email)
-- Format: HTML email with charts
-
-**Dependencies**: Story 6.3.2
-
-**Priority**: P2
-
----
-
-#### Story 6.3.4: Market Comparison (2 points)
-
-**As a** premium user
-**I want** to compare market metrics
-**So that** I can analyze market trends
-
-**Acceptance Criteria**:
-- User can compare metrics across chains
-- User can compare metrics across protocols
-- User can view comparison charts
-- Comparison supports up to 5 items
-
-**Technical Notes**:
-- API: `GET /v1/analytics/market-insights/compare`
-- Database: `market_metrics` table
-- Frontend: React + ECharts
 
 **Dependencies**: Story 6.3.2
 
@@ -3991,11 +4025,11 @@ So that [benefit]
 | **EPIC-3: Portfolio Management** | 24 | 110 | ✅ COMPLETE |
 | **EPIC-4: Gas & Trading Optimization** | 39 | 191 | ✅ COMPLETE |
 | **EPIC-5: Security & Risk Management** | 17 | 80 | ✅ COMPLETE |
-| **EPIC-6: Advanced Analytics & AI** | 15 | 100 | ✅ COMPLETE |
+| **EPIC-6: Advanced Analytics & AI** | 16 | 100 | ✅ COMPLETE |
 | **EPIC-7: Cross-EPIC Integration** | 5 | 25 | ✅ COMPLETE |
 | **EPIC-8: DevOps & Infrastructure** | 10 | 50 | ✅ COMPLETE |
 | **EPIC-9: Documentation** | 8 | 25 | ✅ COMPLETE |
-| **TOTAL** | **159** | **811** | **✅ 100%** |
+| **TOTAL** | **160** | **811** | **✅ 100%** |
 
 ### Timeline
 
