@@ -1616,7 +1616,7 @@ So that [benefit]
 
 ---
 
-## 🎯 EPIC-4: GAS & TRADING OPTIMIZATION (140 Story Points)
+## 🎯 EPIC-4: GAS & TRADING OPTIMIZATION (191 Story Points)
 
 **Timeline**: Q2 2026 (Months 7-9)
 **Priority**: P1 (High)
@@ -2256,6 +2256,286 @@ So that [benefit]
 - Documentation: OpenAPI 3.0 spec
 
 **Dependencies**: Story 4.6.1
+
+**Priority**: P2
+
+---
+
+### Feature 4.7: Yield Farming Calculator (13 points)
+
+#### Story 4.7.1: Integrate Yield Farming Protocols (5 points)
+
+**As a** system
+**I want** to integrate yield farming protocols
+**So that** I can fetch APY data
+
+**Acceptance Criteria**:
+- System integrates 1,000+ pools across 100+ chains
+- System fetches APY data from protocols (Aave, Compound, Curve, Convex, etc.)
+- System fetches pool TVL, volume, fees
+- System updates APY data every 15 minutes
+- System supports multiple yield types (lending, LP, staking, farming)
+
+**Technical Notes**:
+- APIs: DeFiLlama Yields API, protocol APIs
+- Database: `yield_pools` table (1,000+ pools)
+- Update Frequency: 15 minutes
+- Chains: 100+ chains
+
+**Dependencies**: None
+
+**Priority**: P1
+
+---
+
+#### Story 4.7.2: Calculate Real Yields (5 points)
+
+**As a** yield farmer
+**I want** to see real yields (after fees and IL)
+**So that** I can understand actual returns
+
+**Acceptance Criteria**:
+- System calculates real yield = APY - fees - IL
+- System displays APY breakdown (base APY, rewards APY, fees, IL)
+- System calculates IL for LP positions
+- System displays risk-adjusted yield (yield/risk ratio)
+- System supports auto-compounding calculations
+
+**Technical Notes**:
+- Formula: Real Yield = APY - Trading Fees - IL - Gas Costs
+- IL Calculation: Based on price divergence
+- Risk Score: Based on protocol risk, IL risk, smart contract risk
+- Auto-compounding: Compound frequency (daily, weekly, monthly)
+
+**Dependencies**: Story 4.7.1
+
+**Priority**: P1
+
+---
+
+#### Story 4.7.3: Yield Optimization Recommendations (3 points)
+
+**As a** yield farmer
+**I want** to get yield optimization recommendations
+**So that** I can maximize my returns
+
+**Acceptance Criteria**:
+- System recommends top 10 pools by real yield
+- System recommends pools by risk-adjusted yield
+- System recommends optimal auto-compounding frequency
+- System displays historical yield trends
+- System alerts when better yield opportunities appear
+
+**Technical Notes**:
+- Recommendations: Top 10 pools by real yield, risk-adjusted yield
+- Alerts: When yield > current yield + 2%
+- Historical Data: 90 days of yield history
+- API: `GET /v1/yield/recommendations`
+
+**Dependencies**: Story 4.7.2
+
+**Priority**: P1
+
+---
+
+### Feature 4.8: Cross-Chain Bridge Aggregator (21 points)
+
+#### Story 4.8.1: Integrate Bridge APIs (8 points)
+
+**As a** system
+**I want** to integrate bridge APIs
+**So that** I can compare bridge options
+
+**Acceptance Criteria**:
+- System integrates 20+ bridges (Stargate, Across, Hop, Synapse, Multichain, etc.)
+- System fetches bridge fees, speeds, limits
+- System fetches bridge security ratings
+- System supports 100+ chains
+- System updates bridge data every 5 minutes
+
+**Technical Notes**:
+- Bridges: Stargate, Across, Hop, Synapse, Multichain, Celer, Connext, Wormhole, LayerZero, etc.
+- Database: `bridges` table (20+ bridges)
+- Update Frequency: 5 minutes
+- Chains: 100+ chains
+
+**Dependencies**: None
+
+**Priority**: P1
+
+---
+
+#### Story 4.8.2: Compare Bridge Options (5 points)
+
+**As a** multi-chain user
+**I want** to compare bridge options
+**So that** I can choose the best bridge
+
+**Acceptance Criteria**:
+- System displays bridge comparison table (fee, speed, security)
+- System highlights cheapest bridge
+- System highlights fastest bridge
+- System highlights safest bridge (highest security rating)
+- System displays estimated bridge time
+
+**Technical Notes**:
+- Comparison: Fee, speed, security, limits
+- Security Rating: Based on audit status, TVL, track record
+- Estimated Time: Based on historical bridge times
+- UI: Comparison table with sorting
+
+**Dependencies**: Story 4.8.1
+
+**Priority**: P1
+
+---
+
+#### Story 4.8.3: Execute Bridge Transactions (5 points)
+
+**As a** multi-chain user
+**I want** to execute bridge transactions
+**So that** I can move assets across chains
+
+**Acceptance Criteria**:
+- User can select source chain, destination chain, asset, amount
+- User can select preferred bridge
+- System executes bridge transaction
+- System tracks bridge transaction status
+- System notifies user when bridge completes
+
+**Technical Notes**:
+- Wallet Integration: MetaMask, WalletConnect
+- Transaction: Bridge contract interaction
+- Status Tracking: Bridge API polling
+- Notifications: Email, Telegram, push
+
+**Dependencies**: Story 4.8.2
+
+**Priority**: P1
+
+---
+
+#### Story 4.8.4: Bridge Transaction History (3 points)
+
+**As a** multi-chain user
+**I want** to see bridge transaction history
+**So that** I can track my bridges
+
+**Acceptance Criteria**:
+- System displays bridge transaction history
+- System displays bridge status (pending, completed, failed)
+- System displays bridge fees paid
+- System displays bridge time taken
+- User can filter by chain, asset, bridge
+
+**Technical Notes**:
+- Database: `bridge_transactions` table
+- API: `GET /v1/bridges/history`
+- Filters: Chain, asset, bridge, status, date range
+
+**Dependencies**: Story 4.8.3
+
+**Priority**: P2
+
+---
+
+### Feature 4.9: Copy Trading Beta (17 points)
+
+#### Story 4.9.1: Trader Leaderboards (5 points)
+
+**As a** DeFi user
+**I want** to see trader leaderboards
+**So that** I can find top traders to follow
+
+**Acceptance Criteria**:
+- System displays trader leaderboards (top 100 traders)
+- System ranks traders by P&L, ROI, Sharpe ratio, win rate
+- System displays trader performance metrics (total P&L, ROI, trades, win rate)
+- System displays trader risk metrics (max drawdown, volatility)
+- User can filter by chain, strategy, timeframe
+
+**Technical Notes**:
+- Database: `traders` table, `trader_performance` table
+- Metrics: P&L, ROI, Sharpe ratio, win rate, max drawdown, volatility
+- Filters: Chain, strategy (DeFi, NFT, meme), timeframe (7d, 30d, 90d, all)
+- API: `GET /v1/copy-trading/leaderboard`
+
+**Dependencies**: None
+
+**Priority**: P2
+
+---
+
+#### Story 4.9.2: Trader Performance Tracking (5 points)
+
+**As a** DeFi user
+**I want** to see detailed trader performance
+**So that** I can evaluate traders before following
+
+**Acceptance Criteria**:
+- System displays trader profile (bio, strategy, chains)
+- System displays trader performance chart (P&L over time)
+- System displays trader trade history (last 100 trades)
+- System displays trader portfolio (current positions)
+- System displays trader followers count
+
+**Technical Notes**:
+- Database: `trader_profiles` table, `trader_trades` table
+- Charts: P&L chart, ROI chart, drawdown chart
+- Trade History: Last 100 trades with P&L
+- Portfolio: Current positions with unrealized P&L
+
+**Dependencies**: Story 4.9.1
+
+**Priority**: P2
+
+---
+
+#### Story 4.9.3: Automated Trade Copying (5 points)
+
+**As a** DeFi user
+**I want** to automatically copy trades from traders
+**So that** I can profit from their strategies
+
+**Acceptance Criteria**:
+- User can follow traders (up to 5 traders for Pro, 20 for Enterprise)
+- User can set copy settings (copy ratio, max position size, stop loss)
+- System automatically copies trades when followed trader trades
+- System respects copy settings (ratio, limits, stop loss)
+- System notifies user when trade is copied
+
+**Technical Notes**:
+- Copy Settings: Copy ratio (10-100%), max position size ($100-$10K), stop loss (5-50%)
+- Execution: Real-time trade copying via WebSocket
+- Limits: Pro (5 traders), Enterprise (20 traders)
+- Notifications: Email, Telegram, push
+
+**Dependencies**: Story 4.9.2, Story 4.3.3 (Execute Trades)
+
+**Priority**: P2
+
+---
+
+#### Story 4.9.4: Copy Trading Risk Management (2 points)
+
+**As a** DeFi user
+**I want** risk management for copy trading
+**So that** I can limit my losses
+
+**Acceptance Criteria**:
+- System enforces position limits (max position size)
+- System enforces stop loss (auto-close when loss > threshold)
+- System enforces daily loss limit (stop copying when daily loss > limit)
+- System displays risk warnings before copying
+- User can pause/resume copying anytime
+
+**Technical Notes**:
+- Position Limits: Max position size per trade
+- Stop Loss: Auto-close when loss > threshold
+- Daily Loss Limit: Stop copying when daily loss > limit
+- Risk Warnings: Display before enabling copy trading
+
+**Dependencies**: Story 4.9.3
 
 **Priority**: P2
 
@@ -3676,13 +3956,13 @@ So that [benefit]
 | **EPIC-1: Alerts & Notifications** | 32 | 150 | ✅ COMPLETE |
 | **EPIC-2: Tax & Compliance** | 9 | 80 | ✅ COMPLETE |
 | **EPIC-3: Portfolio Management** | 24 | 110 | ✅ COMPLETE |
-| **EPIC-4: Gas & Trading Optimization** | 30 | 140 | ✅ COMPLETE |
+| **EPIC-4: Gas & Trading Optimization** | 39 | 191 | ✅ COMPLETE |
 | **EPIC-5: Security & Risk Management** | 20 | 80 | ✅ COMPLETE |
 | **EPIC-6: Advanced Analytics & AI** | 15 | 100 | ✅ COMPLETE |
 | **EPIC-7: Cross-EPIC Integration** | 5 | 25 | ✅ COMPLETE |
 | **EPIC-8: DevOps & Infrastructure** | 10 | 50 | ✅ COMPLETE |
 | **EPIC-9: Documentation** | 8 | 25 | ✅ COMPLETE |
-| **TOTAL** | **153** | **760** | **✅ 100%** |
+| **TOTAL** | **162** | **811** | **✅ 100%** |
 
 ### Timeline
 
@@ -3699,15 +3979,15 @@ So that [benefit]
 - **Total**: 160 points, 5 engineers, 3 months
 
 **Phase 3: Gas & Trading** (Q2 2026, Months 7-9)
-- EPIC-4: Gas & Trading Optimization (140 points)
-- **Total**: 140 points, 5 engineers, 3 months
+- EPIC-4: Gas & Trading Optimization (191 points)
+- **Total**: 191 points, 5 engineers, 4 months
 
 **Phase 4: Security & Advanced** (Q3 2026, Months 10-12)
 - EPIC-5: Security & Risk Management (80 points)
 - EPIC-6: Advanced Analytics & AI (100 points)
 - **Total**: 180 points, 5 engineers, 3 months
 
-**Total**: 12 months, 760 story points, $25M ARR target
+**Total**: 13 months, 811 story points, $25M ARR target
 
 ### Resource Allocation
 

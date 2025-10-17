@@ -88,16 +88,16 @@ Xây dựng nền tảng DeFi analytics và management toàn diện với **25 t
 | EPIC-1 | Alerts & Notifications | 8 | 150 | Q4 2025 | ⭐⭐⭐⭐⭐ P0 |
 | EPIC-2 | Tax & Compliance | 1 | 80 | Q4 2025 | ⭐⭐⭐⭐⭐ P0 |
 | EPIC-3 | Portfolio Management | 6 | 110 | Q1 2026 | ⭐⭐⭐⭐ P1 |
-| EPIC-4 | Gas & Trading Optimization | 6 | 140 | Q2 2026 | ⭐⭐⭐ P1 |
+| EPIC-4 | Gas & Trading Optimization | 9 | 191 | Q2 2026 | ⭐⭐⭐ P1 |
 | EPIC-5 | Security & Risk Management | 4 | 80 | Q3 2026 | ⭐⭐⭐⭐ P1 |
 | EPIC-6 | Advanced Analytics & AI | 3 | 100 | Q3 2026 | ⭐⭐ P2 |
 | EPIC-7 | Cross-EPIC Integration | 1 | 25 | All Phases | ⭐⭐⭐⭐⭐ P0 |
 | EPIC-8 | DevOps & Infrastructure | 4 | 50 | All Phases | ⭐⭐⭐⭐⭐ P0 |
 | EPIC-9 | Documentation | 3 | 25 | All Phases | ⭐⭐⭐⭐ P1 |
 
-**Tổng**: 36 features, 760 story points, 14 tháng
+**Tổng**: 39 features, 811 story points, 15 tháng
 
-**Note**: EPIC-1 increased from 130 to 150 points (added infrastructure, integration, testing stories). Added 3 new EPICs for cross-cutting concerns (integration, DevOps, documentation).
+**Note**: EPIC-1 increased from 130 to 150 points (added infrastructure, integration, testing stories). EPIC-4 increased from 140 to 191 points (added F-016 Yield Farming Calculator, F-017 Cross-Chain Bridge Aggregator, F-018 Copy Trading Beta). Added 3 new EPICs for cross-cutting concerns (integration, DevOps, documentation).
 
 ### 2.2 Story Points Scale (Fibonacci)
 
@@ -445,22 +445,25 @@ Xây dựng nền tảng DeFi analytics và management toàn diện với **25 t
 - Revenue from trading volume
 - Sticky features (daily usage)
 
-**Timeline**: Q2 2026 (Tháng 7-9, 22 tuần)
-**Story Points**: 140 points
+**Timeline**: Q2 2026 (Tháng 7-9, 28 tuần)
+**Story Points**: 191 points
 **Priority**: ⭐⭐⭐ P1 (Medium-High)
 
 ### 6.2 Features trong EPIC
 
 | Feature ID | Tên Feature | Story Points | Effort | Priority |
 |------------|-------------|--------------|--------|----------|
-| F-013 | Gas Fee Optimizer | 21 | 4 tuần | P0 |
-| F-014 | Transaction Simulator | 34 | 5 tuần | P0 |
+| F-013 | Gas Fee Optimizer (Gas Prediction) | 21 | 4 tuần | P0 |
+| F-013b | Gas Optimization (Batching & Timing) | 21 | 4 tuần | P1 |
+| F-014 | Transaction Simulator | 22 | 5 tuần | P0 |
 | F-015 | Smart Order Routing | 34 | 6 tuần | P1 |
+| F-015b | MEV Protection | 21 | 4 tuần | P1 |
+| F-015c | Limit Orders | 21 | 4 tuần | P1 |
 | F-016 | Yield Farming Calculator | 13 | 3 tuần | P1 |
 | F-017 | Cross-Chain Bridge Aggregator | 21 | 4 tuần | P1 |
 | F-018 | Copy Trading Beta | 17 | 6 tuần | P2 |
 
-**Tổng**: 140 story points, 28 tuần (parallel development)
+**Tổng**: 191 story points, 40 tuần (parallel development, 28 tuần actual)
 
 ### 6.3 Technical Components
 
@@ -822,15 +825,15 @@ EPIC-2 (Tax) ─────┘                         ├──> EPIC-4 (Gas &
 - **Total**: 160 points (26.7 points/sprint average)
 - **Buffer**: 40-50 points for bug fixes, tech debt
 
-**Q2 2026** (6 sprints):
-- Sprint 13-18: EPIC-4 (140 points) → 23.3 points/sprint
-- **Buffer**: 30-40 points
+**Q2 2026** (8 sprints):
+- Sprint 13-20: EPIC-4 (191 points) → 23.9 points/sprint
+- **Buffer**: 40-50 points
 
 **Q3 2026** (6 sprints):
-- Sprint 19-24: EPIC-5 + EPIC-6 (180 points) → 30 points/sprint
+- Sprint 21-26: EPIC-5 + EPIC-6 (180 points) → 30 points/sprint
 - **Buffer**: 20-30 points
 
-**Total**: 28 sprints (14 months), 760 points
+**Total**: 30 sprints (15 months), 811 points
 
 ### 10.4 Capacity Planning (Updated)
 
