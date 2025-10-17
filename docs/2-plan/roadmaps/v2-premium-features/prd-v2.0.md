@@ -1207,7 +1207,136 @@ interface AlertAction {
 - **User Target**: 40,000 premium users
 - **Priority**: ⭐⭐⭐⭐ HIGH
 
-_[High-level specs for 6 features: Multi-Wallet Portfolio Tracker, P&L Calculator, Impermanent Loss Tracker, Liquidity Pool Alerts, Portfolio Analytics, Portfolio Alerts]_
+---
+
+#### 4.2.1 Feature: Multi-Wallet Portfolio Tracker
+
+**Feature ID**: F-007
+**Priority**: P0 (Critical)
+**Effort**: 6 weeks
+
+**Description**: Unified portfolio tracking across unlimited wallets and 100+ chains. Real-time portfolio valuation, asset allocation, historical performance tracking, and multi-wallet aggregation.
+
+**User Story**: As a DeFi user with multiple wallets, I want to track all my assets in one place, so I can see my total portfolio value and allocation across chains.
+
+**Key Capabilities**:
+- Unlimited wallet connections (Pro/Premium tier)
+- Real-time portfolio valuation (1-minute updates)
+- Asset allocation breakdown (by token, chain, protocol)
+- Historical performance tracking (1d, 7d, 30d, 1y, all-time)
+- Multi-wallet aggregation (combine wallets into portfolios)
+- Portfolio sharing (public/private links)
+
+**Success Metrics**: 30K+ users, 150K+ wallets tracked, 95%+ data accuracy
+
+---
+
+#### 4.2.2 Feature: P&L Calculator
+
+**Feature ID**: F-008
+**Priority**: P0 (Critical)
+**Effort**: 4 weeks
+
+**Description**: Comprehensive profit & loss calculator for all DeFi activities. Tracks realized and unrealized gains/losses, calculates ROI, and provides detailed transaction-level P&L breakdown.
+
+**User Story**: As a DeFi trader, I want to see my realized and unrealized P&L across all positions, so I can understand my trading performance.
+
+**Key Capabilities**:
+- Realized P&L (closed positions)
+- Unrealized P&L (open positions)
+- ROI calculation (per token, per protocol, overall)
+- Transaction-level P&L breakdown
+- Cost basis tracking (FIFO, LIFO, HIFO)
+- P&L charts (daily, weekly, monthly)
+
+**Success Metrics**: 25K+ users, $500M+ tracked P&L, 98%+ calculation accuracy
+
+---
+
+#### 4.2.3 Feature: Impermanent Loss Tracker
+
+**Feature ID**: F-009
+**Priority**: P1 (High)
+**Effort**: 3 weeks
+
+**Description**: Real-time impermanent loss tracking for liquidity providers. Calculates IL for all LP positions, compares IL vs HODL strategy, and provides IL alerts.
+
+**User Story**: As a liquidity provider, I want to track impermanent loss on my LP positions, so I can decide when to exit or rebalance.
+
+**Key Capabilities**:
+- Real-time IL calculation (all LP positions)
+- IL vs HODL comparison
+- IL alerts (>5%, >10%, >20% IL)
+- Historical IL tracking
+- Fee earnings vs IL analysis
+- LP position recommendations
+
+**Success Metrics**: 15K+ users, 50K+ LP positions tracked, 95%+ IL accuracy
+
+---
+
+#### 4.2.4 Feature: Liquidity Pool Alerts
+
+**Feature ID**: F-010
+**Priority**: P1 (High)
+**Effort**: 4 weeks
+
+**Description**: Real-time alerts for liquidity pool events including APY changes, TVL changes, IL thresholds, and pool risks.
+
+**User Story**: As a liquidity provider, I want to receive alerts when my LP positions have significant changes, so I can react quickly.
+
+**Key Capabilities**:
+- APY change alerts (>10%, >25%, >50%)
+- TVL change alerts (>20% drain)
+- IL threshold alerts (>5%, >10%, >20%)
+- Pool risk alerts (rug pull detection)
+- Fee earnings alerts (daily, weekly)
+- Rebalancing recommendations
+
+**Success Metrics**: 20K+ LP alerts created, 95%+ alert delivery rate
+
+---
+
+#### 4.2.5 Feature: Portfolio Analytics
+
+**Feature ID**: F-011
+**Priority**: P1 (High)
+**Effort**: 3 weeks
+
+**Description**: Advanced portfolio analytics including risk metrics, diversification analysis, correlation analysis, and portfolio optimization recommendations.
+
+**User Story**: As a DeFi investor, I want to analyze my portfolio risk and diversification, so I can optimize my asset allocation.
+
+**Key Capabilities**:
+- Risk metrics (volatility, Sharpe ratio, max drawdown)
+- Diversification analysis (concentration risk)
+- Correlation analysis (asset correlations)
+- Portfolio optimization recommendations
+- Sector allocation analysis
+- Historical performance attribution
+
+**Success Metrics**: 15K+ users, 80%+ user satisfaction with analytics
+
+---
+
+#### 4.2.6 Feature: Portfolio Alerts
+
+**Feature ID**: F-012
+**Priority**: P2 (Medium)
+**Effort**: 2 weeks
+
+**Description**: Customizable portfolio-level alerts including total value alerts, allocation alerts, and performance alerts.
+
+**User Story**: As a DeFi investor, I want to receive alerts when my portfolio value or allocation changes significantly, so I can stay informed.
+
+**Key Capabilities**:
+- Total value alerts (>5%, >10%, >20% change)
+- Allocation alerts (token/chain allocation exceeds threshold)
+- Performance alerts (daily/weekly P&L)
+- Risk alerts (volatility spike, correlation change)
+- Rebalancing alerts (portfolio drift)
+
+**Success Metrics**: 10K+ portfolio alerts created, 95%+ delivery rate
 
 ---
 
@@ -1220,7 +1349,137 @@ _[High-level specs for 6 features: Multi-Wallet Portfolio Tracker, P&L Calculato
 - **User Target**: 60,000 premium users
 - **Priority**: ⭐⭐⭐ MEDIUM-HIGH
 
-_[High-level specs for 6 features: Gas Fee Optimizer, Transaction Simulator, Smart Order Routing, Yield Farming Calculator, Cross-Chain Bridge Aggregator, Copy Trading Beta]_
+---
+
+#### 4.3.1 Feature: Gas Fee Optimizer
+
+**Feature ID**: F-013
+**Priority**: P0 (Critical)
+**Effort**: 4 weeks
+
+**Description**: Advanced gas optimization tool that analyzes transactions, recommends optimal gas prices, and suggests best execution times. Includes gas price predictions and transaction batching.
+
+**User Story**: As a DeFi trader, I want to optimize my transaction gas fees, so I can save money on every transaction.
+
+**Key Capabilities**:
+- Gas price optimization (recommend optimal gas price)
+- Best execution time recommendations (when to transact)
+- Transaction batching (combine multiple transactions)
+- Gas price predictions (next 1h, 6h, 24h)
+- Gas savings calculator (estimate savings)
+- Multi-chain gas optimization (100+ chains)
+
+**Success Metrics**: 25K+ users, $500K+ total gas savings, 90%+ user satisfaction
+
+---
+
+#### 4.3.2 Feature: Transaction Simulator
+
+**Feature ID**: F-014
+**Priority**: P0 (Critical)
+**Effort**: 5 weeks
+
+**Description**: Pre-transaction simulation tool that predicts transaction outcomes, detects potential failures, and estimates gas costs before execution. Prevents failed transactions and saves gas.
+
+**User Story**: As a DeFi trader, I want to simulate transactions before executing them, so I can avoid failed transactions and unexpected outcomes.
+
+**Key Capabilities**:
+- Transaction outcome prediction (success/failure)
+- Gas cost estimation (accurate to ±5%)
+- Token balance changes preview
+- Slippage estimation
+- MEV risk detection
+- Multi-step transaction simulation (complex DeFi interactions)
+
+**Success Metrics**: 30K+ users, 95%+ simulation accuracy, 50K+ failed transactions prevented
+
+---
+
+#### 4.3.3 Feature: Smart Order Routing
+
+**Feature ID**: F-015
+**Priority**: P1 (High)
+**Effort**: 6 weeks
+
+**Description**: Intelligent order routing across 100+ DEXs to find best execution prices. Splits orders across multiple DEXs, optimizes for price and gas, and provides MEV protection.
+
+**User Story**: As a DeFi trader, I want to get the best execution price for my trades, so I can maximize my returns.
+
+**Key Capabilities**:
+- Multi-DEX routing (100+ DEXs across 100+ chains)
+- Order splitting (split large orders across DEXs)
+- Price optimization (best execution price)
+- Gas optimization (minimize total gas cost)
+- MEV protection (private transactions)
+- Slippage protection (auto-adjust slippage)
+
+**Success Metrics**: 20K+ users, $100M+ trading volume, 0.5%+ average price improvement
+
+---
+
+#### 4.3.4 Feature: Yield Farming Calculator
+
+**Feature ID**: F-016
+**Priority**: P1 (High)
+**Effort**: 3 weeks
+
+**Description**: Comprehensive yield farming calculator that compares APYs across protocols, calculates real yields (after fees and IL), and provides yield optimization recommendations.
+
+**User Story**: As a yield farmer, I want to compare yields across protocols and calculate real returns, so I can optimize my farming strategy.
+
+**Key Capabilities**:
+- APY comparison (1,000+ pools across 100+ chains)
+- Real yield calculation (APY - fees - IL)
+- Yield optimization recommendations
+- Historical yield tracking
+- Auto-compounding calculator
+- Risk-adjusted yield (yield/risk ratio)
+
+**Success Metrics**: 20K+ users, 1,000+ pools tracked, 85%+ user satisfaction
+
+---
+
+#### 4.3.5 Feature: Cross-Chain Bridge Aggregator
+
+**Feature ID**: F-017
+**Priority**: P1 (High)
+**Effort**: 4 weeks
+
+**Description**: Unified cross-chain bridge aggregator that compares bridge fees, speeds, and security across 20+ bridges. Finds optimal bridge routes and provides bridge risk ratings.
+
+**User Story**: As a multi-chain DeFi user, I want to bridge assets efficiently and safely, so I can move funds across chains with minimal cost and risk.
+
+**Key Capabilities**:
+- Multi-bridge comparison (20+ bridges)
+- Fee comparison (find cheapest bridge)
+- Speed comparison (find fastest bridge)
+- Security ratings (bridge risk scores)
+- Optimal route recommendations
+- Bridge transaction tracking
+
+**Success Metrics**: 15K+ users, $50M+ bridged volume, 98%+ successful bridges
+
+---
+
+#### 4.3.6 Feature: Copy Trading Beta
+
+**Feature ID**: F-018
+**Priority**: P2 (Medium)
+**Effort**: 6 weeks
+
+**Description**: Beta version of copy trading feature that allows users to follow and copy trades from top DeFi traders. Includes trader leaderboards, performance tracking, and automated trade copying.
+
+**User Story**: As a DeFi beginner, I want to copy trades from successful traders, so I can learn and profit from their strategies.
+
+**Key Capabilities**:
+- Trader leaderboards (top traders by P&L, ROI, Sharpe ratio)
+- Trader performance tracking (historical performance)
+- Automated trade copying (copy trades in real-time)
+- Copy settings (copy ratio, max position size, stop loss)
+- Trade notifications (when copied trader makes a trade)
+- Risk management (position limits, stop loss)
+
+**Success Metrics**: 10K+ users, 500+ traders followed, $10M+ copied volume
 
 ---
 
@@ -1233,7 +1492,160 @@ _[High-level specs for 6 features: Gas Fee Optimizer, Transaction Simulator, Sma
 - **User Target**: 125,000 premium users
 - **Priority**: ⭐⭐⭐ MEDIUM
 
-_[High-level specs for 7 features: Transaction Security Scanner, Smart Contract Risk Scoring, Wallet Security Checker, Protocol Health Monitor, Backtesting Engine, AI Market Insights Beta, Custom Dashboard Builder]_
+---
+
+#### 4.4.1 Feature: Transaction Security Scanner
+
+**Feature ID**: F-019
+**Priority**: P0 (Critical)
+**Effort**: 5 weeks
+
+**Description**: Real-time transaction security scanner that detects malicious transactions, phishing attempts, and suspicious contract interactions before execution. Integrates with security partners (GoPlus, Forta, CertiK).
+
+**User Story**: As a DeFi user, I want to scan transactions for security risks before executing them, so I can avoid scams and hacks.
+
+**Key Capabilities**:
+- Pre-transaction security scanning
+- Malicious contract detection
+- Phishing attempt detection
+- Token approval risk analysis
+- Honeypot detection
+- Security partner integration (GoPlus, Forta, CertiK)
+- Risk score (0-100, 0 = high risk)
+
+**Success Metrics**: 40K+ users, 100K+ transactions scanned daily, 99%+ scam detection rate
+
+---
+
+#### 4.4.2 Feature: Smart Contract Risk Scoring
+
+**Feature ID**: F-020
+**Priority**: P0 (Critical)
+**Effort**: 4 weeks
+
+**Description**: Comprehensive smart contract risk scoring system that analyzes contract code, audit status, team transparency, and historical behavior. Provides risk ratings for 10,000+ contracts.
+
+**User Story**: As a DeFi user, I want to check smart contract risk scores before interacting with protocols, so I can avoid risky contracts.
+
+**Key Capabilities**:
+- Contract risk scoring (0-100, 0 = high risk)
+- Audit status tracking (audited by CertiK, Trail of Bits, etc.)
+- Code analysis (detect common vulnerabilities)
+- Team transparency analysis (doxxed team, social media)
+- Historical behavior analysis (past exploits, rug pulls)
+- Risk factor breakdown (audit, code, team, history)
+
+**Success Metrics**: 10,000+ contracts scored, 30K+ users, 95%+ risk prediction accuracy
+
+---
+
+#### 4.4.3 Feature: Wallet Security Checker
+
+**Feature ID**: F-021
+**Priority**: P1 (High)
+**Effort**: 3 weeks
+
+**Description**: Wallet security health checker that scans for risky token approvals, suspicious transactions, and wallet vulnerabilities. Provides security recommendations and one-click revoke approvals.
+
+**User Story**: As a DeFi user, I want to check my wallet security and revoke risky approvals, so I can protect my funds.
+
+**Key Capabilities**:
+- Risky token approval detection
+- Suspicious transaction detection
+- Wallet vulnerability scanning
+- Security score (0-100, 100 = secure)
+- One-click revoke approvals
+- Security recommendations
+
+**Success Metrics**: 35K+ users, 500K+ approvals revoked, 90%+ user satisfaction
+
+---
+
+#### 4.4.4 Feature: Protocol Health Monitor
+
+**Feature ID**: F-022
+**Priority**: P1 (High)
+**Effort**: 4 weeks
+
+**Description**: Real-time protocol health monitoring system that tracks TVL, user activity, governance health, and protocol risks. Provides early warning signals for protocol issues.
+
+**User Story**: As a DeFi investor, I want to monitor protocol health metrics, so I can exit positions before protocol failures.
+
+**Key Capabilities**:
+- TVL monitoring (real-time, historical)
+- User activity tracking (active users, transactions)
+- Governance health (proposal activity, voter participation)
+- Protocol risk indicators (TVL drain, user exodus, governance attacks)
+- Health score (0-100, 100 = healthy)
+- Early warning alerts
+
+**Success Metrics**: 500+ protocols monitored, 25K+ users, 95%+ early warning accuracy
+
+---
+
+#### 4.4.5 Feature: Backtesting Engine
+
+**Feature ID**: F-023
+**Priority**: P1 (High)
+**Effort**: 6 weeks
+
+**Description**: Advanced backtesting engine for DeFi trading strategies. Supports historical data from 100+ chains, custom strategy building, and performance analytics.
+
+**User Story**: As a DeFi trader, I want to backtest my trading strategies on historical data, so I can validate strategies before risking real funds.
+
+**Key Capabilities**:
+- Historical data (3+ years, 100+ chains)
+- Custom strategy builder (visual + code)
+- Backtesting execution (simulate trades)
+- Performance analytics (P&L, Sharpe ratio, max drawdown)
+- Strategy optimization (parameter tuning)
+- Walk-forward analysis
+
+**Success Metrics**: 15K+ users, 50K+ strategies backtested, 85%+ user satisfaction
+
+---
+
+#### 4.4.6 Feature: AI Market Insights Beta
+
+**Feature ID**: F-024
+**Priority**: P2 (Medium)
+**Effort**: 8 weeks
+
+**Description**: Beta version of AI-powered market insights that analyze on-chain data, social sentiment, and market trends to provide actionable trading insights and predictions.
+
+**User Story**: As a DeFi trader, I want AI-powered market insights, so I can make better informed trading decisions.
+
+**Key Capabilities**:
+- On-chain data analysis (whale movements, DEX flows)
+- Social sentiment analysis (Twitter, Reddit, Discord)
+- Market trend detection (bullish/bearish signals)
+- Price predictions (short-term, 24h-7d)
+- Trading signal generation (buy/sell/hold)
+- Confidence scores (0-100)
+
+**Success Metrics**: 20K+ users, 70%+ prediction accuracy, 80%+ user satisfaction
+
+---
+
+#### 4.4.7 Feature: Custom Dashboard Builder
+
+**Feature ID**: F-025
+**Priority**: P2 (Medium)
+**Effort**: 6 weeks
+
+**Description**: Drag-and-drop custom dashboard builder that allows users to create personalized dashboards with widgets for portfolio, alerts, charts, and analytics.
+
+**User Story**: As a power user, I want to create custom dashboards with my preferred widgets and layouts, so I can monitor what matters most to me.
+
+**Key Capabilities**:
+- Drag-and-drop dashboard builder
+- 50+ widget types (portfolio, alerts, charts, analytics)
+- Custom layouts (grid, flex, tabs)
+- Widget customization (colors, sizes, data sources)
+- Dashboard templates (pre-built layouts)
+- Dashboard sharing (public/private links)
+
+**Success Metrics**: 10K+ users, 30K+ custom dashboards created, 85%+ user satisfaction
 
 ---
 
@@ -1775,6 +2187,14 @@ _[See Product Brief Section: Risks & Open Questions for detailed risks]_
 
 **END OF DOCUMENT**
 
-**Total Pages**: ~60 pages (1,240 lines)
+**Total Pages**: ~95 pages (2,110 lines)
 **Status**: Complete - Ready for EPIC and User Stories creation
 **Next Steps**: Create EPIC v2.0, User Stories v2.0, Technical Architecture v2.0
+
+**Document Statistics**:
+- **Q4 2025 MVP Features**: 6 features, DETAILED specs (900+ lines)
+- **Q1 2026 Features**: 6 features, HIGH-LEVEL specs (140 lines)
+- **Q2 2026 Features**: 6 features, HIGH-LEVEL specs (142 lines)
+- **Q3 2026 Features**: 7 features, HIGH-LEVEL specs (164 lines)
+- **Total Features**: 25 features across 4 phases
+- **Technical Sections**: Complete (architecture, security, testing, deployment)
