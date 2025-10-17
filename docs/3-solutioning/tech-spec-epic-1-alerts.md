@@ -461,6 +461,113 @@ export class EventProcessor {
 }
 ```
 
+### 6.3 Rate Limiting Details
+
+**Per-User Rate Limits**:
+
+| Tier | Alert Rules | Alerts/Day | Alerts/Hour | Webhooks/Hour |
+|------|-------------|------------|-------------|---------------|
+| **Starter** | 10 rules | 100 alerts | 10 alerts | 50 webhooks |
+| **Pro** | 50 rules | 1,000 alerts | 100 alerts | 500 webhooks |
+| **Enterprise** | Unlimited | Unlimited | 1,000 alerts | 5,000 webhooks |
+
+**Implementation**:
+```typescript
+@Injectable()
+export class RateLimiterService {
+  async checkRateLimit(
+    userId: string,
+    tier: string,
+    action: 'alert' | 'webhook'
+  ): Promise<boolean> {
+    const key = `rate_limit:${userId}:${action}:${Date.now()}`;
+    const count = await this.redis.incr(key);
+    await this.redis.expire(key, 3600); // 1 hour TTL
+
+    const limits = {
+      starter: { alert: 10, webhook: 50 },
+      pro: { alert: 100, webhook: 500 },
+      enterprise: { alert: 1000, webhook: 5000 }
+    };
+
+    return count <= limits[tier][action];
+  }
+}
+```
+
+**Rate Limit Response**:
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Rate limit exceeded. Upgrade to Pro for higher limits.",
+    "retryAfter": 3600
+  }
+}
+```
+
+### 6.4 Webhook Retry Logic
+
+**Retry Strategy**:
+- **Retry Attempts**: 5 attempts (exponential backoff)
+- **Retry Delays**: 1s, 5s, 25s, 125s, 625s (~10 minutes total)
+- **Timeout**: 30s per attempt
+- **Success Criteria**: HTTP 2xx response
+- **Failure Criteria**: HTTP 4xx/5xx or timeout
+
+**Implementation**:
+```typescript
+@Injectable()
+export class WebhookService {
+  async sendWebhook(
+    url: string,
+    payload: any,
+    attempt: number = 1
+  ): Promise<void> {
+    try {
+      const response = await axios.post(url, payload, {
+        timeout: 30000,
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (response.status >= 200 && response.status < 300) {
+        await this.logSuccess(url, payload);
+        return;
+      }
+    } catch (error) {
+      if (attempt < 5) {
+        const delay = Math.pow(5, attempt) * 1000; // Exponential backoff
+        await this.scheduleRetry(url, payload, attempt + 1, delay);
+      } else {
+        await this.logFailure(url, payload, error);
+      }
+    }
+  }
+}
+```
+
+**Webhook Delivery Guarantees**:
+- **At-Least-Once Delivery**: Webhooks may be delivered multiple times
+- **Idempotency**: Webhooks include `X-Webhook-ID` header for deduplication
+- **Signature**: Webhooks include `X-Webhook-Signature` header (HMAC-SHA256)
+
+**Webhook Payload**:
+```json
+{
+  "id": "webhook_123",
+  "timestamp": "2025-10-17T10:00:00Z",
+  "type": "alert.triggered",
+  "data": {
+    "alertId": "alert_456",
+    "ruleId": "rule_789",
+    "message": "Whale alert: 1000 ETH transferred",
+    "chain": "ethereum",
+    "txHash": "0x123..."
+  }
+}
+```
+
 ---
 
 ## 7. TESTING STRATEGY

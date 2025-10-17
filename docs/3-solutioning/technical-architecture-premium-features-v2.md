@@ -1362,6 +1362,188 @@ CREATE POLICY alert_rules_user_policy ON alert_rules
 
 ---
 
+## 9. **INTEGRATION ARCHITECTURE**
+
+### 9.1 External Integrations
+
+**Blockchain RPCs** (100+ chains):
+- **Ethereum**: Infura, Alchemy, QuickNode
+- **Polygon**: Polygon RPC, Alchemy
+- **Arbitrum**: Arbitrum RPC, Infura
+- **Other Chains**: Public RPCs, custom nodes
+
+**DEX APIs**:
+- **1inch**: DEX aggregation, trade routing
+- **Uniswap**: Liquidity pools, swap quotes
+- **Sushiswap**: Liquidity pools, swap quotes
+
+**Security APIs**:
+- **CertiK**: Smart contract audits, security scores
+- **Immunefi**: Bug bounty platform, vulnerability reports
+- **Forta**: Real-time threat detection
+
+**Payment APIs**:
+- **Stripe**: Subscription billing, payment processing
+- **Coinbase Commerce**: Crypto payments (optional)
+
+**Notification APIs**:
+- **SendGrid**: Email notifications
+- **Firebase Cloud Messaging**: Push notifications
+- **Twilio**: SMS notifications (optional)
+
+**Data APIs**:
+- **CoinGecko**: Price data, market cap
+- **DeFiLlama**: TVL data, protocol data (existing)
+- **Santiment**: On-chain metrics, social sentiment
+- **LunarCrush**: Social sentiment, influencer data
+
+### 9.2 Integration Patterns
+
+**API Gateway Pattern**:
+```
+Premium Services → API Gateway → External APIs
+                 ↓
+              Rate Limiting
+              Authentication
+              Caching
+```
+
+**Circuit Breaker Pattern**:
+- **Closed**: Normal operation
+- **Open**: Too many failures, stop calling API
+- **Half-Open**: Test if API recovered
+
+**Retry Pattern**:
+- **Exponential Backoff**: 1s, 2s, 4s, 8s, 16s
+- **Max Retries**: 5 attempts
+- **Timeout**: 30s per attempt
+
+---
+
+## 10. **DEPLOYMENT ARCHITECTURE**
+
+### 10.1 Deployment Environments
+
+**Development** (dev):
+- **Purpose**: Local development, unit testing
+- **Infrastructure**: Docker Compose, LocalStack
+- **Database**: PostgreSQL (local), Redis (local)
+- **Cost**: $0/month
+
+**Staging** (stg):
+- **Purpose**: Integration testing, QA, UAT
+- **Infrastructure**: AWS (smaller instances)
+- **Database**: RDS (db.t3.medium), ElastiCache (cache.t3.medium)
+- **Cost**: ~$200-300/month
+
+**Production** (prod):
+- **Purpose**: Live production environment
+- **Infrastructure**: AWS (full-scale)
+- **Database**: RDS (db.r6g.xlarge), ElastiCache (cache.r6g.large)
+- **Cost**: ~$1,295-1,960/month (optimized)
+
+### 10.2 CI/CD Pipeline
+
+**GitHub Actions Workflow**:
+```yaml
+name: Deploy Premium Services
+
+on:
+  push:
+    branches: [main]
+    paths: ['premium/**']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - Checkout code
+      - Run unit tests
+      - Run integration tests
+      - Run security scans (Snyk, SonarQube)
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - Build Docker images
+      - Push to ECR
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - Deploy to staging (auto)
+      - Run smoke tests
+      - Deploy to production (manual approval)
+```
+
+**Deployment Strategy**:
+1. **Commit**: Developer commits code to GitHub
+2. **Build**: GitHub Actions builds Docker images
+3. **Test**: Run unit tests, integration tests, security scans
+4. **Deploy to Staging**: Auto-deploy to staging environment
+5. **Smoke Tests**: Run smoke tests on staging
+6. **Manual Approval**: Product owner approves production deployment
+7. **Deploy to Production**: Blue-green deployment to production
+8. **Monitor**: Monitor metrics, logs, errors
+
+---
+
+## 11. **MONITORING & OBSERVABILITY**
+
+### 11.1 Monitoring Stack
+
+**CloudWatch** (AWS native):
+- **Logs**: Application logs, Lambda logs, RDS logs
+- **Metrics**: CPU, memory, disk, network
+- **Alarms**: Threshold-based alerts (email, SNS)
+
+**Datadog** (APM):
+- **APM**: Distributed tracing, service maps
+- **Logs**: Centralized log aggregation
+- **Metrics**: Custom metrics, dashboards
+- **Alerts**: Anomaly detection, forecasting
+
+### 11.2 Key Metrics
+
+**Application Metrics**:
+- **API Response Time**: p50, p95, p99
+- **Error Rate**: 4xx, 5xx errors
+- **Throughput**: Requests per second
+- **Availability**: Uptime percentage
+
+**Business Metrics**:
+- **Active Users**: Daily, weekly, monthly
+- **Alert Volume**: Alerts triggered per day
+- **Tax Reports**: Reports generated per day
+- **Revenue**: MRR, ARR, churn rate
+
+**Infrastructure Metrics**:
+- **CPU Utilization**: Lambda, ECS, RDS
+- **Memory Utilization**: Lambda, ECS, RDS
+- **Database Connections**: Active, idle
+- **Cache Hit Ratio**: Redis hit rate
+
+### 11.3 Alerting Strategy
+
+**Critical Alerts** (PagerDuty):
+- API error rate >5%
+- Database CPU >90%
+- Service downtime >5 minutes
+
+**Warning Alerts** (Slack):
+- API response time >500ms (p95)
+- Database connections >80%
+- Cache hit ratio <80%
+
+**Info Alerts** (Email):
+- Deployment completed
+- Daily metrics summary
+- Weekly cost report
+
+---
+
 ## 12. **PERFORMANCE & SCALABILITY**
 
 ### 12.1 Performance Requirements

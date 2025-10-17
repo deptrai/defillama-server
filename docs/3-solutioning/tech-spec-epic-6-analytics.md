@@ -227,6 +227,95 @@ export class DashboardBuilderService {
 }
 ```
 
+### 5.3 ML Model Training Details
+
+**Price Prediction Model**:
+
+**Model Architecture**:
+- **Type**: Transformer-based time series model
+- **Framework**: TensorFlow.js
+- **Input Features** (15 features):
+  - Historical prices (last 30 days)
+  - Trading volume
+  - Market cap
+  - TVL (Total Value Locked)
+  - Social sentiment score
+  - On-chain metrics (active addresses, transactions)
+  - Correlation with BTC/ETH
+  - Technical indicators (RSI, MACD, Bollinger Bands)
+  - News sentiment score
+  - Whale activity score
+
+**Training Data**:
+- **Source**: CoinGecko, DeFiLlama, Santiment, LunarCrush
+- **Time Range**: Last 24 months (730 days)
+- **Assets**: Top 100 crypto assets by market cap
+- **Data Points**: ~2.2M data points (100 assets × 730 days × 30 features)
+- **Update Frequency**: Retrain daily with new data
+
+**Model Performance**:
+- **Accuracy**: 70-75% (7-day predictions within 15% of actual)
+- **MAE (Mean Absolute Error)**: 8-12%
+- **RMSE (Root Mean Square Error)**: 12-18%
+- **Inference Time**: <500ms per prediction
+
+**Training Process**:
+1. **Data Collection**: Fetch historical data from APIs
+2. **Data Preprocessing**: Normalize features, handle missing values
+3. **Feature Engineering**: Create technical indicators, sentiment scores
+4. **Model Training**: Train Transformer model with 80/20 train/test split
+5. **Model Evaluation**: Evaluate on test set, calculate metrics
+6. **Model Deployment**: Deploy to ECS Fargate, serve via API
+
+**Cost**:
+- **Training**: ~$50-100/month (ECS Fargate, 1 hour/day)
+- **Inference**: ~$100-150/month (Lambda, 500K predictions/month)
+
+### 5.4 Dashboard Widget Library
+
+**Available Widgets** (20 widgets):
+
+**Portfolio Widgets**:
+1. **Portfolio Value**: Total portfolio value (USD)
+2. **Portfolio Chart**: Historical portfolio value chart
+3. **Asset Breakdown**: Pie chart of assets by value
+4. **Chain Breakdown**: Pie chart of chains by value
+5. **Category Breakdown**: Pie chart of categories (DeFi, NFT, etc.)
+
+**Performance Widgets**:
+6. **P&L Summary**: Profit/loss summary (absolute, percentage)
+7. **ROI Chart**: Return on investment chart
+8. **Sharpe Ratio**: Risk-adjusted return metric
+9. **Performance Comparison**: Compare with BTC/ETH/S&P500
+
+**Market Widgets**:
+10. **Price Chart**: Asset price chart (candlestick, line)
+11. **Volume Chart**: Trading volume chart
+12. **TVL Chart**: Total value locked chart
+13. **Market Cap**: Market capitalization
+
+**Analytics Widgets**:
+14. **AI Predictions**: Price predictions (7-day, 30-day)
+15. **Sentiment Score**: Social sentiment score
+16. **Whale Activity**: Whale transaction alerts
+17. **On-Chain Metrics**: Active addresses, transactions
+
+**Alert Widgets**:
+18. **Active Alerts**: List of active alerts
+19. **Alert History**: Recent alert history
+20. **Alert Performance**: Alert accuracy metrics
+
+**Widget Configuration**:
+```typescript
+interface WidgetConfig {
+  type: string; // Widget type (e.g., 'portfolio_value')
+  title: string; // Widget title
+  size: 'small' | 'medium' | 'large'; // Widget size
+  refreshInterval: number; // Refresh interval (seconds)
+  config: Record<string, any>; // Widget-specific config
+}
+```
+
 ---
 
 ## 6. TESTING STRATEGY

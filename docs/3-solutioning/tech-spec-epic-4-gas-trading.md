@@ -232,6 +232,49 @@ export class GasPredictorService {
 }
 ```
 
+### 5.3 ML Model Training Details
+
+**Gas Prediction Model**:
+
+**Model Architecture**:
+- **Type**: LSTM (Long Short-Term Memory) neural network
+- **Framework**: TensorFlow.js
+- **Input Features** (10 features):
+  - Current gas price (gwei)
+  - Block number
+  - Block timestamp
+  - Pending transactions count
+  - Network utilization (%)
+  - Time of day (hour)
+  - Day of week
+  - Historical gas prices (last 24 hours)
+  - Network congestion score
+  - MEV activity score
+
+**Training Data**:
+- **Source**: Historical gas prices from Etherscan, Blocknative
+- **Time Range**: Last 12 months (365 days)
+- **Data Points**: ~8.7M data points (1 per block × 7,200 blocks/day × 365 days)
+- **Update Frequency**: Retrain weekly with new data
+
+**Model Performance**:
+- **Accuracy**: 75-80% (within 10% of actual gas price)
+- **MAE (Mean Absolute Error)**: 3-5 gwei
+- **RMSE (Root Mean Square Error)**: 5-8 gwei
+- **Inference Time**: <100ms per prediction
+
+**Training Process**:
+1. **Data Collection**: Fetch historical gas prices from Etherscan API
+2. **Data Preprocessing**: Normalize features, handle missing values
+3. **Feature Engineering**: Create time-based features, rolling averages
+4. **Model Training**: Train LSTM model with 80/20 train/test split
+5. **Model Evaluation**: Evaluate on test set, calculate metrics
+6. **Model Deployment**: Deploy to ECS Fargate, serve via API
+
+**Cost**:
+- **Training**: ~$10-20/month (ECS Fargate, 1 hour/week)
+- **Inference**: ~$50-75/month (Lambda, 1M predictions/month)
+
 **DEXAggregatorService**:
 ```typescript
 @Injectable()
