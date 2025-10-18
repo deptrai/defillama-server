@@ -1,0 +1,131 @@
+# Premium PostgreSQL RDS Instance
+# Purpose: Separate database for premium features (isolation from free platform)
+# Based on: Existing DeFiLlama infrastructure patterns
+
+Resources:
+  # RDS Subnet Group (Reuse existing VPC subnets)
+  PremiumDBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupName: defillama-premium-db-subnet-${self:custom.stage}
+      DBSubnetGroupDescription: Subnet group for Premium PostgreSQL RDS
+      SubnetIds:
+        - Fn::ImportValue: defillama-${self:custom.stage}-private-subnet-1-id
+        - Fn::ImportValue: defillama-${self:custom.stage}-private-subnet-2-id
+      Tags:
+        - Key: Name
+          Value: defillama-premium-db-subnet-${self:custom.stage}
+        - Key: Environment
+          Value: ${self:custom.stage}
+  
+  # Security Group for RDS
+  PremiumDBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: defillama-premium-db-sg-${self:custom.stage}
+      GroupDescription: Security group for Premium PostgreSQL RDS
+      VpcId:
+        Fn::ImportValue: defillama-${self:custom.stage}-vpc-id
+      SecurityGroupIngress:
+        # Allow PostgreSQL access from Lambda security group
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId:
+            Fn::ImportValue: defillama-${self:custom.stage}-lambda-sg-id
+      Tags:
+        - Key: Name
+          Value: defillama-premium-db-sg-${self:custom.stage}
+        - Key: Environment
+          Value: ${self:custom.stage}
+  
+  # PostgreSQL RDS Instance
+  PremiumDBInstance:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot # Create snapshot before deletion
+    Properties:
+      DBInstanceIdentifier: defillama-premium-${self:custom.stage}
+      DBInstanceClass:
+        Fn::If:
+          - IsProd
+          - db.r6g.large # Prod: 2 vCPU, 16GB RAM
+          - db.t4g.medium # Dev: 2 vCPU, 4GB RAM
+      Engine: postgres
+      EngineVersion: "16.1"
+      MasterUsername: defillama
+      MasterUserPassword: ${file(./env.js):PREMIUM_DB_PASSWORD}
+      AllocatedStorage:
+        Fn::If:
+          - IsProd
+          - 100 # Prod: 100GB
+          - 20 # Dev: 20GB
+      StorageType: gp3
+      StorageEncrypted: true
+      KmsKeyId:
+        Fn::ImportValue: defillama-${self:custom.stage}-encryption-key-arn
+      DBSubnetGroupName:
+        Ref: PremiumDBSubnetGroup
+      VPCSecurityGroups:
+        - Ref: PremiumDBSecurityGroup
+      MultiAZ:
+        Fn::If:
+          - IsProd
+          - true # Prod: Multi-AZ for HA
+          - false # Dev: Single-AZ
+      BackupRetentionPeriod:
+        Fn::If:
+          - IsProd
+          - 7 # Prod: 7 days
+          - 1 # Dev: 1 day
+      PreferredBackupWindow: "03:00-04:00" # UTC
+      PreferredMaintenanceWindow: "sun:04:00-sun:05:00" # UTC
+      EnablePerformanceInsights:
+        Fn::If:
+          - IsProd
+          - true
+          - false
+      PerformanceInsightsRetentionPeriod:
+        Fn::If:
+          - IsProd
+          - 7
+          - Ref: AWS::NoValue
+      EnableCloudwatchLogsExports:
+        - postgresql
+      Tags:
+        - Key: Name
+          Value: defillama-premium-${self:custom.stage}
+        - Key: Environment
+          Value: ${self:custom.stage}
+        - Key: Service
+          Value: premium-features
+
+# Conditions
+Conditions:
+  IsProd:
+    Fn::Equals:
+      - ${self:custom.stage}
+      - prod
+
+# Outputs
+Outputs:
+  PremiumDBEndpoint:
+    Description: Premium PostgreSQL RDS endpoint
+    Value:
+      Fn::GetAtt: [PremiumDBInstance, Endpoint.Address]
+    Export:
+      Name: defillama-premium-${self:custom.stage}-db-endpoint
+  
+  PremiumDBPort:
+    Description: Premium PostgreSQL RDS port
+    Value:
+      Fn::GetAtt: [PremiumDBInstance, Endpoint.Port]
+    Export:
+      Name: defillama-premium-${self:custom.stage}-db-port
+  
+  PremiumDBSecurityGroupId:
+    Description: Premium PostgreSQL RDS security group ID
+    Value:
+      Ref: PremiumDBSecurityGroup
+    Export:
+      Name: defillama-premium-${self:custom.stage}-db-sg-id
+

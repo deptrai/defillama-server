@@ -1,0 +1,23 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY tsconfig.json ./
+COPY tests/mocks/discord-mock-server.ts ./tests/mocks/
+
+# Expose port
+EXPOSE 3101
+
+# Start server
+CMD ["pnpm", "ts-node", "tests/mocks/discord-mock-server.ts"]
+

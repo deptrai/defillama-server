@@ -1,0 +1,452 @@
+# DeFiLlama Premium Features v2.0 - Serverless Configuration
+# Based on: defi/serverless.yml (existing DeFi service)
+# Purpose: Deploy premium features (Alerts, Tax, Portfolio, Gas, Security, Analytics)
+# Architecture: Serverless Lambda functions, PostgreSQL RDS, Redis ElastiCache (shared)
+
+service: defillama-premium
+
+package:
+  individually: true
+  excludeDevDependencies: true
+
+provider:
+  name: aws
+  runtime: nodejs20.x # Same as existing DeFi/Coins services
+  lambdaHashingVersion: 20201221
+  memorySize: 512 # Higher than free platform (250MB) for premium features
+  region: eu-central-1 # Same region as existing services
+  endpointType: REGIONAL
+  stage: ${opt:stage, 'dev'} # dev, staging, prod
+  
+  # VPC Configuration (Reuse existing VPC from DeFi service)
+  vpc:
+    securityGroupIds:
+      - Fn::ImportValue: defillama-${self:custom.stage}-lambda-sg-id
+    subnetIds:
+      - Fn::ImportValue: defillama-${self:custom.stage}-private-subnet-1-id
+      - Fn::ImportValue: defillama-${self:custom.stage}-private-subnet-2-id
+  
+  # X-Ray Tracing (Same as existing)
+  tracing:
+    lambda: true
+    apiGateway: true
+  
+  # CloudWatch Logs (Same as existing)
+  logs:
+    restApi: true
+    websocket: true
+  
+  # IAM Role Statements
+  iamRoleStatements:
+    # X-Ray permissions
+    - Effect: Allow
+      Action:
+        - xray:PutTraceSegments
+        - xray:PutTelemetryRecords
+      Resource: "*"
+    
+    # DynamoDB permissions (Premium audit table)
+    - Effect: Allow
+      Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:BatchGetItem
+      Resource:
+        - Fn::GetAtt: [PremiumAuditTable, Arn]
+    
+    # Access to shared DynamoDB tables (secrets, auth)
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+        - dynamodb:BatchGetItem
+      Resource:
+        - "arn:aws:dynamodb:eu-central-1:856461987125:table/secrets"
+        - "arn:aws:dynamodb:eu-central-1:856461987125:table/auth"
+    
+    # CloudWatch Logs
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource:
+        - "Fn::Join":
+            - ":"
+            - - "arn:aws:logs"
+              - Ref: "AWS::Region"
+              - Ref: "AWS::AccountId"
+              - "log-group:/aws/lambda/*:*:*"
+    
+    # Lambda invocation (for warm-up)
+    - Effect: Allow
+      Action:
+        - lambda:InvokeFunction
+      Resource: "*"
+    
+    # S3 permissions (Premium reports bucket)
+    - Effect: Allow
+      Action:
+        - s3:ListBucket
+        - s3:GetObject
+        - s3:PutObject
+        - s3:DeleteObject
+      Resource:
+        - Fn::GetAtt: [PremiumReportsBucket, Arn]
+        - Fn::Join:
+            - ""
+            - - Fn::GetAtt: [PremiumReportsBucket, Arn]
+              - "/*"
+    
+    # Secrets Manager permissions (Reuse existing secrets)
+    - Effect: Allow
+      Action:
+        - secretsmanager:GetSecretValue
+        - secretsmanager:DescribeSecret
+      Resource:
+        - Fn::ImportValue: defillama-${self:custom.stage}-jwt-secret-arn
+        - Fn::ImportValue: defillama-${self:custom.stage}-api-keys-secret-arn
+    
+    # KMS permissions (Reuse existing encryption key)
+    - Effect: Allow
+      Action:
+        - kms:Decrypt
+        - kms:DescribeKey
+      Resource:
+        - Fn::ImportValue: defillama-${self:custom.stage}-encryption-key-arn
+    
+    # VPC permissions
+    - Effect: Allow
+      Action:
+        - ec2:CreateNetworkInterface
+        - ec2:DescribeNetworkInterfaces
+        - ec2:DeleteNetworkInterface
+        - ec2:AssignPrivateIpAddresses
+        - ec2:UnassignPrivateIpAddresses
+      Resource: "*"
+    
+    # SQS permissions (Reuse existing queues)
+    - Effect: Allow
+      Action:
+        - sqs:SendMessage
+        - sqs:ReceiveMessage
+        - sqs:DeleteMessage
+        - sqs:GetQueueAttributes
+      Resource:
+        - Fn::ImportValue: defillama-${self:custom.stage}-alert-queue-arn
+        - Fn::ImportValue: defillama-${self:custom.stage}-event-queue-arn
+    
+    # SNS permissions (Reuse existing topics)
+    - Effect: Allow
+      Action:
+        - sns:Publish
+      Resource:
+        - Fn::ImportValue: defillama-${self:custom.stage}-notification-topic-arn
+  
+  # Environment Variables
+  environment:
+    # Premium Database (NEW - Separate RDS instance)
+    PREMIUM_DB: ${file(./env.js):PREMIUM_DB}
+    
+    # Fallback to existing database (dev/test)
+    ALERTS_DB: ${file(./env.js):ALERTS_DB, env:ACCOUNTS_DB}
+    
+    # Redis (Shared cluster, separate DB number)
+    REDIS_HOST: ${file(./env.js):REDIS_HOST, 'localhost'}
+    REDIS_PORT: ${file(./env.js):REDIS_PORT, '6379'}
+    REDIS_PASSWORD: ${file(./env.js):REDIS_PASSWORD, ''}
+    REDIS_DB: '1' # DB 1 for premium alerts (DB 0 for free platform)
+    
+    # Blockchain RPCs (Reuse existing)
+    ETHEREUM_RPC: ${file(./env.js):ETHEREUM_RPC}
+    BSC_RPC: ${file(./env.js):BSC_RPC}
+    POLYGON_RPC: ${file(./env.js):POLYGON_RPC}
+    ARBITRUM_RPC: ${file(./env.js):ARBITRUM_RPC}
+    OPTIMISM_RPC: ${file(./env.js):OPTIMISM_RPC}
+    SOLANA_RPC: ${file(./env.js):SOLANA_RPC}
+    
+    # Webhooks (Reuse existing)
+    TEAM_WEBHOOK: ${file(./env.js):TEAM_WEBHOOK}
+    
+    # Premium-specific
+    STRIPE_SECRET_KEY: ${file(./env.js):STRIPE_SECRET_KEY}
+    SENDGRID_API_KEY: ${file(./env.js):SENDGRID_API_KEY}
+    
+    # S3 Bucket
+    PREMIUM_REPORTS_BUCKET: ${self:custom.premiumReportsBucket}
+    
+    # Stage
+    stage: ${self:custom.stage}
+    
+    # AWS optimizations
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+
+custom:
+  stage: ${opt:stage, 'dev'}
+  premiumReportsBucket: defillama-premium-reports-${self:custom.stage}
+
+functions:
+  # EPIC-1: Smart Alerts & Notifications
+  # Story 1.1.1: Configure Whale Alert Thresholds
+
+  # Whale Alert CRUD Operations
+  createWhaleAlert:
+    handler: src/alerts/controllers/whale-alert.controller.createWhaleAlert
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: /v2/premium/alerts/whale
+          method: post
+          cors: true
+          authorizer:
+            name: jwtAuthorizer
+            type: request
+            identitySource: method.request.header.Authorization
+
+  getWhaleAlerts:
+    handler: src/alerts/controllers/whale-alert.controller.getWhaleAlerts
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: /v2/premium/alerts/whale
+          method: get
+          cors: true
+          authorizer:
+            name: jwtAuthorizer
+            type: request
+            identitySource: method.request.header.Authorization
+
+  getWhaleAlertById:
+    handler: src/alerts/controllers/whale-alert.controller.getWhaleAlertById
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: /v2/premium/alerts/whale/{id}
+          method: get
+          cors: true
+          authorizer:
+            name: jwtAuthorizer
+            type: request
+            identitySource: method.request.header.Authorization
+
+  updateWhaleAlert:
+    handler: src/alerts/controllers/whale-alert.controller.updateWhaleAlert
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: /v2/premium/alerts/whale/{id}
+          method: put
+          cors: true
+          authorizer:
+            name: jwtAuthorizer
+            type: request
+            identitySource: method.request.header.Authorization
+
+  deleteWhaleAlert:
+    handler: src/alerts/controllers/whale-alert.controller.deleteWhaleAlert
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: /v2/premium/alerts/whale/{id}
+          method: delete
+          cors: true
+          authorizer:
+            name: jwtAuthorizer
+            type: request
+            identitySource: method.request.header.Authorization
+
+  toggleWhaleAlert:
+    handler: src/alerts/controllers/whale-alert.controller.toggleWhaleAlert
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: /v2/premium/alerts/whale/{id}/toggle
+          method: patch
+          cors: true
+          authorizer:
+            name: jwtAuthorizer
+            type: request
+            identitySource: method.request.header.Authorization
+
+  # Story 1.1.2: Configure Price Alert Thresholds
+
+  # Price Alert CRUD Operations
+  createPriceAlert:
+    handler: src/alerts/controllers/price-alert.controller.createPriceAlert
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: /v2/premium/alerts/price
+          method: post
+          cors: true
+          authorizer:
+            name: jwtAuthorizer
+            type: request
+            identitySource: method.request.header.Authorization
+
+  getPriceAlerts:
+    handler: src/alerts/controllers/price-alert.controller.getPriceAlerts
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: /v2/premium/alerts/price
+          method: get
+          cors: true
+          authorizer:
+            name: jwtAuthorizer
+            type: request
+            identitySource: method.request.header.Authorization
+
+  getPriceAlertById:
+    handler: src/alerts/controllers/price-alert.controller.getPriceAlertById
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: /v2/premium/alerts/price/{id}
+          method: get
+          cors: true
+          authorizer:
+            name: jwtAuthorizer
+            type: request
+            identitySource: method.request.header.Authorization
+
+  updatePriceAlert:
+    handler: src/alerts/controllers/price-alert.controller.updatePriceAlert
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: /v2/premium/alerts/price/{id}
+          method: put
+          cors: true
+          authorizer:
+            name: jwtAuthorizer
+            type: request
+            identitySource: method.request.header.Authorization
+
+  deletePriceAlert:
+    handler: src/alerts/controllers/price-alert.controller.deletePriceAlert
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: /v2/premium/alerts/price/{id}
+          method: delete
+          cors: true
+          authorizer:
+            name: jwtAuthorizer
+            type: request
+            identitySource: method.request.header.Authorization
+
+  togglePriceAlert:
+    handler: src/alerts/controllers/price-alert.controller.togglePriceAlert
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: /v2/premium/alerts/price/{id}/toggle
+          method: patch
+          cors: true
+          authorizer:
+            name: jwtAuthorizer
+            type: request
+            identitySource: method.request.header.Authorization
+
+  # JWT Authorizer (Shared across all premium endpoints)
+  jwtAuthorizer:
+    handler: src/auth/jwt-authorizer.handler
+    timeout: 10
+    memorySize: 256
+
+  # Generic Alert Functions (Legacy - to be migrated)
+  createAlert:
+    handler: src/alerts/create.handler
+    timeout: 30
+    events:
+      - http:
+          path: /v2/premium/alerts
+          method: post
+          cors: true
+
+  getAlerts:
+    handler: src/alerts/list.handler
+    timeout: 30
+    events:
+      - http:
+          path: /v2/premium/alerts
+          method: get
+          cors: true
+
+  updateAlert:
+    handler: src/alerts/update.handler
+    timeout: 30
+    events:
+      - http:
+          path: /v2/premium/alerts/{id}
+          method: put
+          cors: true
+
+  deleteAlert:
+    handler: src/alerts/delete.handler
+    timeout: 30
+    events:
+      - http:
+          path: /v2/premium/alerts/{id}
+          method: delete
+          cors: true
+
+  # Alert processing (SQS consumer)
+  processAlerts:
+    handler: src/alerts/processor.handler
+    timeout: 300
+    memorySize: 1024
+    events:
+      - sqs:
+          arn:
+            Fn::ImportValue: defillama-${self:custom.stage}-alert-queue-arn
+          batchSize: 10
+  
+  # EPIC-2: Tax Reporting & Compliance
+  generateTaxReport:
+    handler: src/tax/generate.handler
+    timeout: 900 # 15 minutes for large reports
+    memorySize: 2048
+    events:
+      - http:
+          path: /v2/premium/tax/reports
+          method: post
+          cors: true
+  
+  getTaxReports:
+    handler: src/tax/list.handler
+    timeout: 30
+    events:
+      - http:
+          path: /v2/premium/tax/reports
+          method: get
+          cors: true
+
+# CloudFormation Resources
+resources:
+  - ${file(resources/premium-db.yml)}
+  - ${file(resources/premium-s3.yml)}
+  - ${file(resources/premium-dynamodb.yml)}
+
+plugins:
+  - serverless-offline
+  - serverless-plugin-typescript
+  - serverless-plugin-warmup
+

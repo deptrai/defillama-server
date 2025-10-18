@@ -1,0 +1,28 @@
+# Webhook Mock Server Dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Create a simple package.json
+RUN echo '{"name":"webhook-mock","version":"1.0.0"}' > package.json
+
+# Install dependencies
+RUN npm install express body-parser
+
+# Copy mock server code and TypeScript config
+COPY webhook-mock-server.ts tsconfig.json ./
+
+# Install TypeScript and type definitions locally, then compile
+RUN npm install --save-dev typescript @types/node @types/express && \
+    npx tsc
+
+# Expose port
+EXPOSE 3102
+
+# Health check endpoint
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 \
+  CMD wget --quiet --tries=1 --spider http://localhost:3102/health || exit 1
+
+# Start server with compiled JavaScript
+CMD ["node", "webhook-mock-server.js"]
+

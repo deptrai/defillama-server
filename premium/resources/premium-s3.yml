@@ -1,0 +1,109 @@
+# Premium S3 Bucket for Reports
+# Purpose: Store tax reports, portfolio exports, analytics reports
+# Based on: Existing DeFiLlama S3 patterns
+
+Resources:
+  # S3 Bucket for Premium Reports
+  PremiumReportsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain # Keep bucket even if stack is deleted
+    Properties:
+      BucketName: ${self:custom.premiumReportsBucket}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID:
+                Fn::ImportValue: defillama-${self:custom.stage}-encryption-key-arn
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          # Move to Glacier after 90 days
+          - Id: MoveToGlacier
+            Status: Enabled
+            Transitions:
+              - TransitionInDays: 90
+                StorageClass: GLACIER
+          # Delete after 7 years (tax requirement)
+          - Id: DeleteAfter7Years
+            Status: Enabled
+            ExpirationInDays: 2555 # 7 years
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - https://defillama.com
+              - https://*.defillama.com
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+            AllowedHeaders:
+              - "*"
+            MaxAge: 3600
+      Tags:
+        - Key: Name
+          Value: ${self:custom.premiumReportsBucket}
+        - Key: Environment
+          Value: ${self:custom.stage}
+        - Key: Service
+          Value: premium-features
+
+  # S3 Bucket Policy
+  PremiumReportsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: PremiumReportsBucket
+      PolicyDocument:
+        Statement:
+          # Allow Lambda functions to read/write
+          - Sid: AllowLambdaAccess
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::GetAtt: [IamRoleLambdaExecution, Arn]
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+            Resource:
+              Fn::Join:
+                - ""
+                - - Fn::GetAtt: [PremiumReportsBucket, Arn]
+                  - "/*"
+          # Deny unencrypted uploads
+          - Sid: DenyUnencryptedUploads
+            Effect: Deny
+            Principal: "*"
+            Action: s3:PutObject
+            Resource:
+              Fn::Join:
+                - ""
+                - - Fn::GetAtt: [PremiumReportsBucket, Arn]
+                  - "/*"
+            Condition:
+              StringNotEquals:
+                s3:x-amz-server-side-encryption: aws:kms
+
+# Outputs
+Outputs:
+  PremiumReportsBucketName:
+    Description: Premium reports S3 bucket name
+    Value:
+      Ref: PremiumReportsBucket
+    Export:
+      Name: defillama-premium-${self:custom.stage}-reports-bucket
+  
+  PremiumReportsBucketArn:
+    Description: Premium reports S3 bucket ARN
+    Value:
+      Fn::GetAtt: [PremiumReportsBucket, Arn]
+    Export:
+      Name: defillama-premium-${self:custom.stage}-reports-bucket-arn
+

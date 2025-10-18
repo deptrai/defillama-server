@@ -1,0 +1,157 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: "Warm up - 10 users/sec"
+    - duration: 120
+      arrivalRate: 50
+      name: "Sustained load - 50 users/sec"
+    - duration: 60
+      arrivalRate: 100
+      name: "Peak load - 100 users/sec"
+    - duration: 30
+      arrivalRate: 5
+      name: "Cool down - 5 users/sec"
+  
+  plugins:
+    expect: {}
+
+  variables:
+    testUserId: "load-test-user-{{ $randomNumber(1, 1000) }}"
+    tokens:
+      - "BTC"
+      - "ETH"
+      - "BNB"
+      - "SOL"
+      - "ADA"
+      - "DOT"
+      - "MATIC"
+      - "AVAX"
+      - "LINK"
+      - "UNI"
+    alertTypes:
+      - "above"
+      - "below"
+      - "percentage_change"
+
+  defaults:
+    headers:
+      Content-Type: "application/json"
+      Authorization: "Bearer test-token-pro"
+
+scenarios:
+  - name: "Create Price Alert"
+    weight: 40
+    flow:
+      - post:
+          url: "/v2/premium/alerts/price"
+          json:
+            name: "Load Test Price Alert {{ $randomNumber(1, 10000) }}"
+            type: "price"
+            conditions:
+              token: "{{ $randomItem(tokens) }}"
+              alert_type: "{{ $randomItem(alertTypes) }}"
+              threshold: "{{ $randomNumber(1000, 5000) }}"
+            actions:
+              channels: ["telegram"]
+              telegram_chat_id: "{{ $randomNumber(100000000, 999999999) }}"
+          expect:
+            - statusCode: 201
+            - contentType: json
+            - hasProperty: data.id
+          capture:
+            - json: "$.data.id"
+              as: "alertId"
+  
+  - name: "Get Price Alerts List"
+    weight: 50
+    flow:
+      - get:
+          url: "/v2/premium/alerts/price?limit=20&offset=0"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: data
+  
+  - name: "Get Price Alert by ID"
+    weight: 5
+    flow:
+      # Create alert first
+      - post:
+          url: "/v2/premium/alerts/price"
+          json:
+            name: "Alert to Get"
+            type: "price"
+            conditions:
+              token: "ETH"
+              alert_type: "above"
+              threshold: 3000
+            actions:
+              channels: ["email"]
+          capture:
+            - json: "$.data.id"
+              as: "alertId"
+      
+      # Get by ID
+      - get:
+          url: "/v2/premium/alerts/price/{{ alertId }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: data.id
+  
+  - name: "Update Price Alert"
+    weight: 3
+    flow:
+      # Create alert
+      - post:
+          url: "/v2/premium/alerts/price"
+          json:
+            name: "Alert to Update"
+            type: "price"
+            conditions:
+              token: "BTC"
+              alert_type: "above"
+              threshold: 50000
+            actions:
+              channels: ["email"]
+          capture:
+            - json: "$.data.id"
+              as: "alertId"
+      
+      # Update it
+      - put:
+          url: "/v2/premium/alerts/price/{{ alertId }}"
+          json:
+            name: "Updated Price Alert {{ $randomNumber(1, 10000) }}"
+            conditions:
+              threshold: "{{ $randomNumber(40000, 60000) }}"
+          expect:
+            - statusCode: 200
+  
+  - name: "Delete Price Alert"
+    weight: 2
+    flow:
+      # Create alert
+      - post:
+          url: "/v2/premium/alerts/price"
+          json:
+            name: "Alert to Delete"
+            type: "price"
+            conditions:
+              token: "ETH"
+              alert_type: "below"
+              threshold: 2000
+            actions:
+              channels: ["email"]
+          capture:
+            - json: "$.data.id"
+              as: "alertId"
+      
+      # Delete it
+      - delete:
+          url: "/v2/premium/alerts/price/{{ alertId }}"
+          expect:
+            - statusCode: 200
+

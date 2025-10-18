@@ -1,0 +1,245 @@
+# CloudWatch Alarms Configuration
+# Story 1.1.1: Configure Whale Alert Thresholds
+# EPIC-1: Smart Alerts & Notifications
+
+alarms:
+  # ============================================================================
+  # Lambda Function Alarms
+  # ============================================================================
+  
+  - name: WhaleAlerts-Lambda-Errors-High
+    description: Alert when Lambda functions have high error rate
+    metric:
+      namespace: AWS/Lambda
+      name: Errors
+      statistic: Sum
+      period: 300  # 5 minutes
+      evaluationPeriods: 2
+      threshold: 10
+      comparisonOperator: GreaterThanThreshold
+    actions:
+      - arn:aws:sns:eu-central-1:856461987125:defillama-premium-alerts
+    dimensions:
+      - name: FunctionName
+        value: defillama-premium-prod-*
+
+  - name: WhaleAlerts-Lambda-Duration-High
+    description: Alert when Lambda functions have high duration
+    metric:
+      namespace: AWS/Lambda
+      name: Duration
+      statistic: Average
+      period: 300  # 5 minutes
+      evaluationPeriods: 2
+      threshold: 5000  # 5 seconds
+      comparisonOperator: GreaterThanThreshold
+    actions:
+      - arn:aws:sns:eu-central-1:856461987125:defillama-premium-alerts
+
+  - name: WhaleAlerts-Lambda-Throttles-High
+    description: Alert when Lambda functions are being throttled
+    metric:
+      namespace: AWS/Lambda
+      name: Throttles
+      statistic: Sum
+      period: 300  # 5 minutes
+      evaluationPeriods: 1
+      threshold: 5
+      comparisonOperator: GreaterThanThreshold
+    actions:
+      - arn:aws:sns:eu-central-1:856461987125:defillama-premium-alerts
+
+  - name: WhaleAlerts-Lambda-ConcurrentExecutions-High
+    description: Alert when Lambda concurrent executions are high
+    metric:
+      namespace: AWS/Lambda
+      name: ConcurrentExecutions
+      statistic: Maximum
+      period: 60  # 1 minute
+      evaluationPeriods: 2
+      threshold: 100
+      comparisonOperator: GreaterThanThreshold
+    actions:
+      - arn:aws:sns:eu-central-1:856461987125:defillama-premium-alerts
+
+  # ============================================================================
+  # API Gateway Alarms
+  # ============================================================================
+
+  - name: WhaleAlerts-APIGateway-4XXError-High
+    description: Alert when API Gateway has high 4XX error rate
+    metric:
+      namespace: AWS/ApiGateway
+      name: 4XXError
+      statistic: Sum
+      period: 300  # 5 minutes
+      evaluationPeriods: 2
+      threshold: 50
+      comparisonOperator: GreaterThanThreshold
+    actions:
+      - arn:aws:sns:eu-central-1:856461987125:defillama-premium-alerts
+
+  - name: WhaleAlerts-APIGateway-5XXError-High
+    description: Alert when API Gateway has high 5XX error rate
+    metric:
+      namespace: AWS/ApiGateway
+      name: 5XXError
+      statistic: Sum
+      period: 300  # 5 minutes
+      evaluationPeriods: 1
+      threshold: 10
+      comparisonOperator: GreaterThanThreshold
+    actions:
+      - arn:aws:sns:eu-central-1:856461987125:defillama-premium-alerts
+
+  - name: WhaleAlerts-APIGateway-Latency-High
+    description: Alert when API Gateway latency is high
+    metric:
+      namespace: AWS/ApiGateway
+      name: Latency
+      statistic: Average
+      period: 300  # 5 minutes
+      evaluationPeriods: 2
+      threshold: 3000  # 3 seconds
+      comparisonOperator: GreaterThanThreshold
+    actions:
+      - arn:aws:sns:eu-central-1:856461987125:defillama-premium-alerts
+
+  # ============================================================================
+  # RDS Database Alarms
+  # ============================================================================
+
+  - name: WhaleAlerts-RDS-CPUUtilization-High
+    description: Alert when RDS CPU utilization is high
+    metric:
+      namespace: AWS/RDS
+      name: CPUUtilization
+      statistic: Average
+      period: 300  # 5 minutes
+      evaluationPeriods: 2
+      threshold: 80  # 80%
+      comparisonOperator: GreaterThanThreshold
+    actions:
+      - arn:aws:sns:eu-central-1:856461987125:defillama-premium-alerts
+    dimensions:
+      - name: DBInstanceIdentifier
+        value: defillama-premium-prod
+
+  - name: WhaleAlerts-RDS-DatabaseConnections-High
+    description: Alert when RDS database connections are high
+    metric:
+      namespace: AWS/RDS
+      name: DatabaseConnections
+      statistic: Average
+      period: 300  # 5 minutes
+      evaluationPeriods: 2
+      threshold: 80  # 80% of max connections
+      comparisonOperator: GreaterThanThreshold
+    actions:
+      - arn:aws:sns:eu-central-1:856461987125:defillama-premium-alerts
+    dimensions:
+      - name: DBInstanceIdentifier
+        value: defillama-premium-prod
+
+  - name: WhaleAlerts-RDS-FreeableMemory-Low
+    description: Alert when RDS freeable memory is low
+    metric:
+      namespace: AWS/RDS
+      name: FreeableMemory
+      statistic: Average
+      period: 300  # 5 minutes
+      evaluationPeriods: 2
+      threshold: 1073741824  # 1 GB in bytes
+      comparisonOperator: LessThanThreshold
+    actions:
+      - arn:aws:sns:eu-central-1:856461987125:defillama-premium-alerts
+    dimensions:
+      - name: DBInstanceIdentifier
+        value: defillama-premium-prod
+
+  - name: WhaleAlerts-RDS-ReadLatency-High
+    description: Alert when RDS read latency is high
+    metric:
+      namespace: AWS/RDS
+      name: ReadLatency
+      statistic: Average
+      period: 300  # 5 minutes
+      evaluationPeriods: 2
+      threshold: 0.1  # 100ms
+      comparisonOperator: GreaterThanThreshold
+    actions:
+      - arn:aws:sns:eu-central-1:856461987125:defillama-premium-alerts
+    dimensions:
+      - name: DBInstanceIdentifier
+        value: defillama-premium-prod
+
+  - name: WhaleAlerts-RDS-WriteLatency-High
+    description: Alert when RDS write latency is high
+    metric:
+      namespace: AWS/RDS
+      name: WriteLatency
+      statistic: Average
+      period: 300  # 5 minutes
+      evaluationPeriods: 2
+      threshold: 0.1  # 100ms
+      comparisonOperator: GreaterThanThreshold
+    actions:
+      - arn:aws:sns:eu-central-1:856461987125:defillama-premium-alerts
+    dimensions:
+      - name: DBInstanceIdentifier
+        value: defillama-premium-prod
+
+  # ============================================================================
+  # Business Metrics Alarms
+  # ============================================================================
+
+  - name: WhaleAlerts-ValidationErrors-High
+    description: Alert when validation errors are high
+    metric:
+      namespace: DeFiLlama/Premium
+      name: ValidationError
+      statistic: Sum
+      period: 300  # 5 minutes
+      evaluationPeriods: 2
+      threshold: 20
+      comparisonOperator: GreaterThanThreshold
+    actions:
+      - arn:aws:sns:eu-central-1:856461987125:defillama-premium-alerts
+
+  - name: WhaleAlerts-AuthenticationErrors-High
+    description: Alert when authentication errors are high
+    metric:
+      namespace: DeFiLlama/Premium
+      name: AuthenticationError
+      statistic: Sum
+      period: 300  # 5 minutes
+      evaluationPeriods: 2
+      threshold: 10
+      comparisonOperator: GreaterThanThreshold
+    actions:
+      - arn:aws:sns:eu-central-1:856461987125:defillama-premium-alerts
+
+  - name: WhaleAlerts-DatabaseErrors-High
+    description: Alert when database errors are high
+    metric:
+      namespace: DeFiLlama/Premium
+      name: DatabaseError
+      statistic: Sum
+      period: 300  # 5 minutes
+      evaluationPeriods: 1
+      threshold: 5
+      comparisonOperator: GreaterThanThreshold
+    actions:
+      - arn:aws:sns:eu-central-1:856461987125:defillama-premium-alerts
+
+# SNS Topic Configuration
+sns:
+  topic:
+    name: defillama-premium-alerts
+    displayName: DeFiLlama Premium Alerts
+    subscriptions:
+      - protocol: email
+        endpoint: alerts@defillama.com
+      - protocol: https
+        endpoint: https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+

@@ -1,0 +1,156 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: "Warm up - 10 users/sec"
+    - duration: 120
+      arrivalRate: 50
+      name: "Sustained load - 50 users/sec"
+    - duration: 60
+      arrivalRate: 100
+      name: "Peak load - 100 users/sec"
+    - duration: 30
+      arrivalRate: 5
+      name: "Cool down - 5 users/sec"
+  
+  plugins:
+    expect: {}
+
+  variables:
+    testUserId: "load-test-user-{{ $randomNumber(1, 1000) }}"
+    chains:
+      - "ethereum"
+      - "bsc"
+      - "polygon"
+      - "arbitrum"
+      - "optimism"
+      - "avalanche"
+    tokens:
+      - "USDT"
+      - "USDC"
+      - "DAI"
+      - "WETH"
+      - "WBTC"
+      - "LINK"
+      - "UNI"
+      - "AAVE"
+
+  defaults:
+    headers:
+      Content-Type: "application/json"
+      Authorization: "Bearer test-token-premium"
+
+scenarios:
+  - name: "Create Whale Alert"
+    weight: 40
+    flow:
+      - post:
+          url: "/v2/premium/alerts/whale"
+          json:
+            name: "Load Test Whale Alert {{ $randomNumber(1, 10000) }}"
+            type: "whale"
+            conditions:
+              chain: "{{ $randomItem(chains) }}"
+              token: "{{ $randomItem(tokens) }}"
+              threshold_usd: "{{ $randomNumber(100000, 10000000) }}"
+            actions:
+              channels: ["email"]
+          expect:
+            - statusCode: 201
+            - contentType: json
+            - hasProperty: data.id
+          capture:
+            - json: "$.data.id"
+              as: "alertId"
+  
+  - name: "Get Whale Alerts List"
+    weight: 50
+    flow:
+      - get:
+          url: "/v2/premium/alerts/whale?limit=20&offset=0"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: data
+  
+  - name: "Update Whale Alert"
+    weight: 5
+    flow:
+      # First create an alert
+      - post:
+          url: "/v2/premium/alerts/whale"
+          json:
+            name: "Alert to Update"
+            type: "whale"
+            conditions:
+              chain: "ethereum"
+              token: "USDT"
+              threshold_usd: 1000000
+            actions:
+              channels: ["email"]
+          capture:
+            - json: "$.data.id"
+              as: "alertId"
+      
+      # Then update it
+      - put:
+          url: "/v2/premium/alerts/whale/{{ alertId }}"
+          json:
+            name: "Updated Alert {{ $randomNumber(1, 10000) }}"
+            conditions:
+              threshold_usd: "{{ $randomNumber(500000, 5000000) }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+  
+  - name: "Toggle Whale Alert"
+    weight: 3
+    flow:
+      # Create alert
+      - post:
+          url: "/v2/premium/alerts/whale"
+          json:
+            name: "Alert to Toggle"
+            type: "whale"
+            conditions:
+              chain: "ethereum"
+              token: "USDT"
+              threshold_usd: 1000000
+            actions:
+              channels: ["email"]
+          capture:
+            - json: "$.data.id"
+              as: "alertId"
+      
+      # Toggle it
+      - patch:
+          url: "/v2/premium/alerts/whale/{{ alertId }}/toggle"
+          expect:
+            - statusCode: 200
+  
+  - name: "Delete Whale Alert"
+    weight: 2
+    flow:
+      # Create alert
+      - post:
+          url: "/v2/premium/alerts/whale"
+          json:
+            name: "Alert to Delete"
+            type: "whale"
+            conditions:
+              chain: "ethereum"
+              token: "USDT"
+              threshold_usd: 1000000
+            actions:
+              channels: ["email"]
+          capture:
+            - json: "$.data.id"
+              as: "alertId"
+      
+      # Delete it
+      - delete:
+          url: "/v2/premium/alerts/whale/{{ alertId }}"
+          expect:
+            - statusCode: 200
+

@@ -1,0 +1,187 @@
+{
+  "dashboardName": "DeFiLlama-Premium-Whale-Alerts",
+  "dashboardBody": {
+    "widgets": [
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            ["AWS/Lambda", "Invocations", { "stat": "Sum", "label": "Total Invocations" }],
+            [".", "Errors", { "stat": "Sum", "label": "Total Errors" }],
+            [".", "Throttles", { "stat": "Sum", "label": "Total Throttles" }],
+            [".", "Duration", { "stat": "Average", "label": "Avg Duration (ms)" }]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "eu-central-1",
+          "title": "Lambda Overview - All Functions",
+          "period": 300,
+          "yAxis": {
+            "left": {
+              "label": "Count",
+              "showUnits": false
+            },
+            "right": {
+              "label": "Duration (ms)",
+              "showUnits": false
+            }
+          }
+        }
+      },
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            ["AWS/Lambda", "Invocations", { "stat": "Sum", "label": "createWhaleAlert" }, { "dimensions": { "FunctionName": "defillama-premium-prod-createWhaleAlert" } }],
+            ["...", { "dimensions": { "FunctionName": "defillama-premium-prod-getWhaleAlerts" } }],
+            ["...", { "dimensions": { "FunctionName": "defillama-premium-prod-getWhaleAlertById" } }],
+            ["...", { "dimensions": { "FunctionName": "defillama-premium-prod-updateWhaleAlert" } }],
+            ["...", { "dimensions": { "FunctionName": "defillama-premium-prod-deleteWhaleAlert" } }],
+            ["...", { "dimensions": { "FunctionName": "defillama-premium-prod-toggleWhaleAlert" } }]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "eu-central-1",
+          "title": "Lambda Invocations by Function",
+          "period": 300
+        }
+      },
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            ["AWS/Lambda", "Errors", { "stat": "Sum", "label": "createWhaleAlert" }, { "dimensions": { "FunctionName": "defillama-premium-prod-createWhaleAlert" } }],
+            ["...", { "dimensions": { "FunctionName": "defillama-premium-prod-getWhaleAlerts" } }],
+            ["...", { "dimensions": { "FunctionName": "defillama-premium-prod-getWhaleAlertById" } }],
+            ["...", { "dimensions": { "FunctionName": "defillama-premium-prod-updateWhaleAlert" } }],
+            ["...", { "dimensions": { "FunctionName": "defillama-premium-prod-deleteWhaleAlert" } }],
+            ["...", { "dimensions": { "FunctionName": "defillama-premium-prod-toggleWhaleAlert" } }]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "eu-central-1",
+          "title": "Lambda Errors by Function",
+          "period": 300,
+          "yAxis": {
+            "left": {
+              "min": 0
+            }
+          }
+        }
+      },
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            ["AWS/Lambda", "Duration", { "stat": "Average", "label": "createWhaleAlert" }, { "dimensions": { "FunctionName": "defillama-premium-prod-createWhaleAlert" } }],
+            ["...", { "dimensions": { "FunctionName": "defillama-premium-prod-getWhaleAlerts" } }],
+            ["...", { "dimensions": { "FunctionName": "defillama-premium-prod-getWhaleAlertById" } }],
+            ["...", { "dimensions": { "FunctionName": "defillama-premium-prod-updateWhaleAlert" } }],
+            ["...", { "dimensions": { "FunctionName": "defillama-premium-prod-deleteWhaleAlert" } }],
+            ["...", { "dimensions": { "FunctionName": "defillama-premium-prod-toggleWhaleAlert" } }]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "eu-central-1",
+          "title": "Lambda Duration by Function (ms)",
+          "period": 300,
+          "yAxis": {
+            "left": {
+              "min": 0
+            }
+          }
+        }
+      },
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            ["AWS/ApiGateway", "Count", { "stat": "Sum", "label": "Total Requests" }],
+            [".", "4XXError", { "stat": "Sum", "label": "4XX Errors" }],
+            [".", "5XXError", { "stat": "Sum", "label": "5XX Errors" }],
+            [".", "Latency", { "stat": "Average", "label": "Avg Latency (ms)" }]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "eu-central-1",
+          "title": "API Gateway Overview",
+          "period": 300
+        }
+      },
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            ["AWS/RDS", "DatabaseConnections", { "stat": "Average", "label": "DB Connections" }],
+            [".", "CPUUtilization", { "stat": "Average", "label": "CPU %" }],
+            [".", "FreeableMemory", { "stat": "Average", "label": "Free Memory (MB)" }],
+            [".", "ReadLatency", { "stat": "Average", "label": "Read Latency (ms)" }],
+            [".", "WriteLatency", { "stat": "Average", "label": "Write Latency (ms)" }]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "eu-central-1",
+          "title": "RDS Database Metrics",
+          "period": 300
+        }
+      },
+      {
+        "type": "log",
+        "properties": {
+          "query": "SOURCE '/aws/lambda/defillama-premium-prod-createWhaleAlert'\n| SOURCE '/aws/lambda/defillama-premium-prod-getWhaleAlerts'\n| SOURCE '/aws/lambda/defillama-premium-prod-getWhaleAlertById'\n| SOURCE '/aws/lambda/defillama-premium-prod-updateWhaleAlert'\n| SOURCE '/aws/lambda/defillama-premium-prod-deleteWhaleAlert'\n| SOURCE '/aws/lambda/defillama-premium-prod-toggleWhaleAlert'\n| fields @timestamp, @message\n| filter @message like /ERROR/\n| sort @timestamp desc\n| limit 20",
+          "region": "eu-central-1",
+          "title": "Recent Errors (Last 20)",
+          "stacked": false
+        }
+      },
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            ["DeFiLlama/Premium", "WhaleAlertCreated", { "stat": "Sum", "label": "Alerts Created" }],
+            [".", "WhaleAlertUpdated", { "stat": "Sum", "label": "Alerts Updated" }],
+            [".", "WhaleAlertDeleted", { "stat": "Sum", "label": "Alerts Deleted" }],
+            [".", "WhaleAlertToggled", { "stat": "Sum", "label": "Alerts Toggled" }]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "eu-central-1",
+          "title": "Business Metrics - Alert Operations",
+          "period": 300
+        }
+      },
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            ["DeFiLlama/Premium", "ValidationError", { "stat": "Sum", "label": "Validation Errors" }],
+            [".", "AuthenticationError", { "stat": "Sum", "label": "Auth Errors" }],
+            [".", "DatabaseError", { "stat": "Sum", "label": "DB Errors" }],
+            [".", "UnknownError", { "stat": "Sum", "label": "Unknown Errors" }]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "eu-central-1",
+          "title": "Error Types",
+          "period": 300
+        }
+      },
+      {
+        "type": "metric",
+        "properties": {
+          "metrics": [
+            ["DeFiLlama/Premium", "ActiveUsers", { "stat": "Sum", "label": "Active Users" }],
+            [".", "TotalAlerts", { "stat": "Sum", "label": "Total Alerts" }],
+            [".", "EnabledAlerts", { "stat": "Sum", "label": "Enabled Alerts" }],
+            [".", "DisabledAlerts", { "stat": "Sum", "label": "Disabled Alerts" }]
+          ],
+          "view": "singleValue",
+          "region": "eu-central-1",
+          "title": "Current Stats",
+          "period": 300
+        }
+      }
+    ]
+  }
+}
+

@@ -1,0 +1,73 @@
+# Premium DynamoDB Table (Audit Logs Only)
+# Purpose: High-throughput audit logging for premium features
+# Based on: defi/resources/dynamodb-table.yml
+
+Resources:
+  # DynamoDB Table for Premium Audit Logs
+  PremiumAuditTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain # Keep table even if stack is deleted
+    Properties:
+      TableName: ${self:custom.stage}-premium-audit-table
+      BillingMode: PAY_PER_REQUEST # On-demand pricing
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: N
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+        KMSMasterKeyId:
+          Fn::ImportValue: defillama-${self:custom.stage}-encryption-key-arn
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled:
+          Fn::If:
+            - IsProd
+            - true
+            - false
+      Tags:
+        - Key: Name
+          Value: ${self:custom.stage}-premium-audit-table
+        - Key: Environment
+          Value: ${self:custom.stage}
+        - Key: Service
+          Value: premium-features
+
+# Conditions
+Conditions:
+  IsProd:
+    Fn::Equals:
+      - ${self:custom.stage}
+      - prod
+
+# Outputs
+Outputs:
+  PremiumAuditTableName:
+    Description: Premium audit DynamoDB table name
+    Value:
+      Ref: PremiumAuditTable
+    Export:
+      Name: defillama-premium-${self:custom.stage}-audit-table
+  
+  PremiumAuditTableArn:
+    Description: Premium audit DynamoDB table ARN
+    Value:
+      Fn::GetAtt: [PremiumAuditTable, Arn]
+    Export:
+      Name: defillama-premium-${self:custom.stage}-audit-table-arn
+  
+  PremiumAuditTableStreamArn:
+    Description: Premium audit DynamoDB table stream ARN
+    Value:
+      Fn::GetAtt: [PremiumAuditTable, StreamArn]
+    Export:
+      Name: defillama-premium-${self:custom.stage}-audit-table-stream-arn
+
