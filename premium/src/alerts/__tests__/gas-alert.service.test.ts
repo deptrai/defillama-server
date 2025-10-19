@@ -16,10 +16,8 @@ describe('GasAlertService', () => {
   const mockUserId = 'user-123';
 
   beforeEach(() => {
-    // Mock database
-    mockDb = {
-      begin: jest.fn(),
-    };
+    // Mock database (postgres tagged template function)
+    mockDb = jest.fn();
 
     service = new GasAlertService(mockDb as any);
   });
@@ -60,15 +58,16 @@ describe('GasAlertService', () => {
         updated_at: new Date().toISOString(),
       };
 
-      mockDb.begin = jest.fn().mockImplementation(async (callback: any) => {
-        const mockTx = jest.fn().mockResolvedValue([mockAlert]);
-        return callback(mockTx);
-      });
+      // Mock database calls
+      mockDb
+        .mockResolvedValueOnce([{ count: '0' }]) // Count query
+        .mockResolvedValueOnce([{ tier: 'premium' }]) // User tier query
+        .mockResolvedValueOnce([mockAlert]); // Insert query
 
       const result = await service.create(mockUserId, createDto);
 
       expect(result).toEqual(mockAlert);
-      expect(mockDb.begin).toHaveBeenCalled();
+      expect(mockDb).toHaveBeenCalledTimes(3);
     });
 
     it('should throw error when alert limit exceeded (Pro tier)', async () => {
@@ -81,12 +80,10 @@ describe('GasAlertService', () => {
         throttleMinutes: 60,
       };
 
-      mockDb.begin = jest.fn().mockImplementation(async (callback: any) => {
-        const mockTx = jest.fn()
-          .mockResolvedValueOnce([{ count: '200' }]) // Count query
-          .mockResolvedValueOnce([{ tier: 'pro' }]); // User tier query
-        return callback(mockTx);
-      });
+      // Mock database calls
+      mockDb
+        .mockResolvedValueOnce([{ count: '200' }]) // Count query
+        .mockResolvedValueOnce([{ tier: 'pro' }]); // User tier query
 
       await expect(service.create(mockUserId, createDto)).rejects.toThrow(
         'Alert limit exceeded. Pro tier allows up to 200 gas alerts.'
@@ -126,10 +123,11 @@ describe('GasAlertService', () => {
         updated_at: new Date().toISOString(),
       };
 
-      mockDb.begin = jest.fn().mockImplementation(async (callback: any) => {
-        const mockTx = jest.fn().mockResolvedValue([mockAlert]);
-        return callback(mockTx);
-      });
+      // Mock database calls
+      mockDb
+        .mockResolvedValueOnce([{ count: '0' }]) // Count query
+        .mockResolvedValueOnce([{ tier: 'premium' }]) // User tier query
+        .mockResolvedValueOnce([mockAlert]); // Insert query
 
       const result = await service.create(mockUserId, createDto);
 
@@ -170,12 +168,10 @@ describe('GasAlertService', () => {
         },
       ];
 
-      mockDb.begin = jest.fn().mockImplementation(async (callback: any) => {
-        const mockTx = jest.fn()
-          .mockResolvedValueOnce(mockAlerts) // Data query
-          .mockResolvedValueOnce([{ count: '2' }]); // Count query
-        return callback(mockTx);
-      });
+      // Mock database calls
+      mockDb
+        .mockResolvedValueOnce(mockAlerts) // Data query
+        .mockResolvedValueOnce([{ count: '2' }]); // Count query
 
       const result = await service.findAll(mockUserId, 1, 20);
 
@@ -189,12 +185,10 @@ describe('GasAlertService', () => {
     });
 
     it('should return empty array when no alerts found', async () => {
-      mockDb.begin = jest.fn().mockImplementation(async (callback: any) => {
-        const mockTx = jest.fn()
-          .mockResolvedValueOnce([]) // Data query
-          .mockResolvedValueOnce([{ count: '0' }]); // Count query
-        return callback(mockTx);
-      });
+      // Mock database calls
+      mockDb
+        .mockResolvedValueOnce([]) // Data query
+        .mockResolvedValueOnce([{ count: '0' }]); // Count query
 
       const result = await service.findAll(mockUserId, 1, 20);
 
@@ -220,10 +214,7 @@ describe('GasAlertService', () => {
         updated_at: new Date().toISOString(),
       };
 
-      mockDb.begin = jest.fn().mockImplementation(async (callback: any) => {
-        const mockTx = jest.fn().mockResolvedValue([mockAlert]);
-        return callback(mockTx);
-      });
+      mockDb.mockResolvedValue([mockAlert]);
 
       const result = await service.findById(mockUserId, 'alert-123');
 
@@ -231,10 +222,7 @@ describe('GasAlertService', () => {
     });
 
     it('should return null when alert not found', async () => {
-      mockDb.begin = jest.fn().mockImplementation(async (callback: any) => {
-        const mockTx = jest.fn().mockResolvedValue([]);
-        return callback(mockTx);
-      });
+      mockDb.mockResolvedValue([]);
 
       const result = await service.findById(mockUserId, 'non-existent');
 
@@ -249,29 +237,35 @@ describe('GasAlertService', () => {
         enabled: false,
       };
 
-      const mockAlert = {
+      const existingAlert = {
         id: 'alert-123',
         user_id: mockUserId,
         name: 'Gas Alert',
         description: null,
         type: 'gas',
-        conditions: { chain: 'ethereum', threshold_gwei: 100, alert_type: 'below' },
+        conditions: { chain: 'ethereum', threshold_gwei: 50, alert_type: 'below' },
         actions: { channels: ['email'] },
-        enabled: false,
+        enabled: true,
         throttle_minutes: 60,
         last_triggered_at: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
 
-      mockDb.begin = jest.fn().mockImplementation(async (callback: any) => {
-        const mockTx = jest.fn().mockResolvedValue([mockAlert]);
-        return callback(mockTx);
-      });
+      const updatedAlert = {
+        ...existingAlert,
+        conditions: { ...existingAlert.conditions, threshold_gwei: 100 },
+        enabled: false,
+      };
+
+      // Mock database calls
+      mockDb
+        .mockResolvedValueOnce([existingAlert]) // findById query
+        .mockResolvedValueOnce([updatedAlert]); // Update query
 
       const result = await service.update(mockUserId, 'alert-123', updateDto);
 
-      expect(result).toEqual(mockAlert);
+      expect(result).toEqual(updatedAlert);
       expect(result?.conditions.threshold_gwei).toBe(100);
       expect(result?.enabled).toBe(false);
     });
@@ -279,10 +273,7 @@ describe('GasAlertService', () => {
 
   describe('delete', () => {
     it('should delete gas alert successfully', async () => {
-      mockDb.begin = jest.fn().mockImplementation(async (callback: any) => {
-        const mockTx = jest.fn().mockResolvedValue([{ id: 'alert-123' }]);
-        return callback(mockTx);
-      });
+      mockDb.mockResolvedValue([{ id: 'alert-123' }]);
 
       const result = await service.delete(mockUserId, 'alert-123');
 
@@ -290,10 +281,7 @@ describe('GasAlertService', () => {
     });
 
     it('should return false when alert not found', async () => {
-      mockDb.begin = jest.fn().mockImplementation(async (callback: any) => {
-        const mockTx = jest.fn().mockResolvedValue([]);
-        return callback(mockTx);
-      });
+      mockDb.mockResolvedValue([]);
 
       const result = await service.delete(mockUserId, 'non-existent');
 
@@ -318,10 +306,7 @@ describe('GasAlertService', () => {
         updated_at: new Date().toISOString(),
       };
 
-      mockDb.begin = jest.fn().mockImplementation(async (callback: any) => {
-        const mockTx = jest.fn().mockResolvedValue([mockAlert]);
-        return callback(mockTx);
-      });
+      mockDb.mockResolvedValue([mockAlert]);
 
       const result = await service.toggle(mockUserId, 'alert-123', false);
 
