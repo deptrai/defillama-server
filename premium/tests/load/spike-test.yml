@@ -1,0 +1,71 @@
+# Artillery Spike Test Configuration
+# Story 1.1.3: Spike Test (10 → 200 users)
+
+config:
+  target: 'http://localhost:3000'
+  phases:
+    # Phase 1: Baseline (10 users/sec)
+    - duration: 60
+      arrivalRate: 10
+      name: "Baseline - 10 users/sec"
+    
+    # Phase 2: SPIKE! (200 users/sec)
+    - duration: 30
+      arrivalRate: 200
+      name: "SPIKE - 200 users/sec"
+    
+    # Phase 3: Recovery (10 users/sec)
+    - duration: 60
+      arrivalRate: 10
+      name: "Recovery - 10 users/sec"
+  
+  ensure:
+    maxErrorRate: 5  # Allow 5% error rate during spike
+    p95: 1000        # 95th percentile < 1s during spike
+  
+  http:
+    timeout: 15
+  
+  variables:
+    testUserId:
+      - "spike-user-1"
+      - "spike-user-2"
+      - "spike-user-3"
+
+scenarios:
+  # Read-heavy scenario (most common during spike)
+  - name: "Read Operations"
+    weight: 80
+    flow:
+      - get:
+          url: "/v2/premium/alerts/whale?page=1&limit=10"
+          headers:
+            Authorization: "Bearer test-token-{{ testUserId }}"
+      - think: 0.1
+      
+      - get:
+          url: "/v2/premium/gas/current?chain=ethereum"
+          headers:
+            Authorization: "Bearer test-token-{{ testUserId }}"
+      - think: 0.1
+  
+  # Write operations (less common)
+  - name: "Write Operations"
+    weight: 20
+    flow:
+      - post:
+          url: "/v2/premium/alerts/whale"
+          headers:
+            Content-Type: "application/json"
+            Authorization: "Bearer test-token-{{ testUserId }}"
+          json:
+            name: "Spike Test Alert {{ $randomString() }}"
+            type: "whale"
+            conditions:
+              chain: "ethereum"
+              token: "USDT"
+              threshold_usd: 1000000
+            actions:
+              channels: ["email"]
+      - think: 0.5
+

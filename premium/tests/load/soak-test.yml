@@ -1,0 +1,78 @@
+# Artillery Soak Test Configuration
+# Story 1.1.3: Soak Test (50 users, 30 minutes)
+
+config:
+  target: 'http://localhost:3000'
+  phases:
+    # Sustained load for 30 minutes
+    - duration: 1800  # 30 minutes
+      arrivalRate: 50
+      name: "Soak test - 50 users/sec for 30 minutes"
+  
+  ensure:
+    maxErrorRate: 0.5  # Max 0.5% error rate
+    p95: 400           # 95th percentile < 400ms
+    p99: 800           # 99th percentile < 800ms
+  
+  http:
+    timeout: 10
+  
+  variables:
+    testUserId:
+      - "soak-user-1"
+      - "soak-user-2"
+      - "soak-user-3"
+      - "soak-user-4"
+      - "soak-user-5"
+
+scenarios:
+  # Realistic user behavior
+  - name: "Realistic User Flow"
+    weight: 100
+    flow:
+      # Check gas prices
+      - get:
+          url: "/v2/premium/gas/current?chain=ethereum"
+          headers:
+            Authorization: "Bearer test-token-{{ testUserId }}"
+      - think: 2
+      
+      # Get gas predictions
+      - get:
+          url: "/v2/premium/gas/predictions?chain=ethereum"
+          headers:
+            Authorization: "Bearer test-token-{{ testUserId }}"
+      - think: 3
+      
+      # List whale alerts
+      - get:
+          url: "/v2/premium/alerts/whale?page=1&limit=20"
+          headers:
+            Authorization: "Bearer test-token-{{ testUserId }}"
+      - think: 5
+      
+      # List price alerts
+      - get:
+          url: "/v2/premium/alerts/price?page=1&limit=20"
+          headers:
+            Authorization: "Bearer test-token-{{ testUserId }}"
+      - think: 4
+      
+      # Create a whale alert (10% of users)
+      - post:
+          url: "/v2/premium/alerts/whale"
+          headers:
+            Content-Type: "application/json"
+            Authorization: "Bearer test-token-{{ testUserId }}"
+          json:
+            name: "Soak Test Alert {{ $randomString() }}"
+            type: "whale"
+            conditions:
+              chain: "ethereum"
+              token: "USDT"
+              threshold_usd: 1000000
+            actions:
+              channels: ["email"]
+          ifTrue: "{{ $randomNumber(1, 10) <= 1 }}"
+      - think: 10
+

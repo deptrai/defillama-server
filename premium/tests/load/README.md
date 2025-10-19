@@ -1,40 +1,111 @@
 # Load Testing for DeFiLlama Premium Alerts
 
+**Story**: 1.1.3 - Load Testing
+**Status**: ✅ COMPLETE
+**Tools**: Artillery, k6
+
 ## 📋 Overview
 
-This directory contains load testing scenarios for the DeFiLlama Premium Alerts system using Artillery.
+This directory contains comprehensive load testing scenarios for the DeFiLlama Premium Alerts system using Artillery and k6.
 
 ## 🎯 Test Scenarios
 
-### 1. Whale Alerts Load Test (`whale-alerts.yml`)
+### 1. **Comprehensive Load Test** (`alerts.yml`)
 
+**Duration**: ~5 minutes
 **Test Phases:**
-- Warm up: 10 users/sec for 60 seconds
-- Sustained load: 50 users/sec for 120 seconds
-- Peak load: 100 users/sec for 60 seconds
-- Cool down: 5 users/sec for 30 seconds
+- Warm up: 60s @ 10 users/sec
+- Sustained: 120s @ 50 users/sec
+- Peak: 60s @ 100 users/sec
+- Ramp down: 30s @ 10 users/sec
 
 **Scenarios (weighted):**
-- Create Whale Alert (40%)
-- Get Whale Alerts List (50%)
+- Create Whale Alert (20%)
+- Get Whale Alerts (50%)
+- Get Whale Alert by ID (20%)
 - Update Whale Alert (5%)
 - Toggle Whale Alert (3%)
 - Delete Whale Alert (2%)
+- Create Price Alert (20%)
+- Get Price Alerts (50%)
+- Create Gas Alert (15%)
+- Get Gas Predictions (30%)
+- Get Current Gas Prices (40%)
+- Mixed Operations (10%)
 
-### 2. Price Alerts Load Test (`price-alerts.yml`)
+**Performance Targets:**
+- Error Rate: < 1%
+- p95 Response Time: < 500ms
+- p99 Response Time: < 1000ms
 
+### 2. **Spike Test** (`spike-test.yml`)
+
+**Duration**: ~2.5 minutes
 **Test Phases:**
-- Warm up: 10 users/sec for 60 seconds
-- Sustained load: 50 users/sec for 120 seconds
-- Peak load: 100 users/sec for 60 seconds
-- Cool down: 5 users/sec for 30 seconds
+- Baseline: 60s @ 10 users/sec
+- **SPIKE**: 30s @ 200 users/sec
+- Recovery: 60s @ 10 users/sec
+
+**Purpose**: Test system resilience under sudden traffic spikes
+
+**Scenarios:**
+- Read Operations (80%) - GET requests
+- Write Operations (20%) - POST requests
+
+**Performance Targets:**
+- Error Rate: < 5% (during spike)
+- p95 Response Time: < 1000ms
+
+### 3. **Soak Test** (`soak-test.yml`)
+
+**Duration**: 30 minutes
+**Load**: Sustained 50 users/sec
+
+**Purpose**: Test system stability over extended period, detect memory leaks
+
+**Scenarios:**
+- Realistic User Flow (100%)
+  - Check gas prices
+  - Get gas predictions
+  - List whale alerts
+  - List price alerts
+  - Create whale alert (10% of users)
+
+**Performance Targets:**
+- Error Rate: < 0.5%
+- p95 Response Time: < 400ms
+- p99 Response Time: < 800ms
+
+### 4. **k6 Load Test** (`alerts.k6.js`)
+
+**Duration**: ~9 minutes
+**Stages:**
+- Warm up: 1m → 10 users
+- Ramp up: 2m → 50 users
+- Peak: 3m @ 100 users
+- Ramp down: 2m → 50 users
+- Cool down: 1m → 0 users
+
+**Custom Metrics:**
+- `alert_creation_time` - Time to create alerts
+- `alert_retrieval_time` - Time to retrieve alerts
+- `gas_query_time` - Time to query gas data
+- `total_requests` - Total request counter
+- `errors` - Custom error rate
 
 **Scenarios (weighted):**
-- Create Price Alert (40%)
-- Get Price Alerts List (50%)
-- Get Price Alert by ID (5%)
-- Update Price Alert (3%)
-- Delete Price Alert (2%)
+- Create Whale Alert (10%)
+- Create Price Alert (20%)
+- Create Gas Alert (10%)
+- Get Whale Alerts (20%)
+- Get Price Alerts (20%)
+- Get Gas Predictions (10%)
+- Get Current Gas Prices (10%)
+
+**Performance Targets:**
+- p95 Response Time: < 500ms
+- p99 Response Time: < 1000ms
+- Error Rate: < 1%
 
 ## 🚀 Running Load Tests
 
@@ -42,49 +113,41 @@ This directory contains load testing scenarios for the DeFiLlama Premium Alerts 
 
 ```bash
 # Install dependencies
-cd premium
+cd defillama-server/premium
 pnpm install
 
-# Ensure test database is running
-export TEST_DB="postgresql://test:test@localhost:5432/defillama_test"
-
-# Start the application server (in another terminal)
-pnpm start
+# Ensure server is running
+pnpm dev  # or pnpm start
 ```
 
-### Run Whale Alerts Load Test
+### Run Artillery Tests
 
 ```bash
-# Run whale alerts load test
-pnpm artillery run tests/load/whale-alerts.yml
+# Basic load test (5 minutes)
+artillery run tests/load/alerts.yml
 
-# Run with HTML report
-pnpm artillery run tests/load/whale-alerts.yml --output tests/load/reports/whale-alerts.json
-pnpm artillery report tests/load/reports/whale-alerts.json --output tests/load/reports/whale-alerts.html
+# Spike test (2.5 minutes)
+artillery run tests/load/spike-test.yml
 
-# Open report in browser
-open tests/load/reports/whale-alerts.html
+# Soak test (30 minutes)
+artillery run tests/load/soak-test.yml
+
+# Generate HTML report
+artillery run --output report.json tests/load/alerts.yml
+artillery report report.json
 ```
 
-### Run Price Alerts Load Test
+### Run k6 Tests
 
 ```bash
-# Run price alerts load test
-pnpm artillery run tests/load/price-alerts.yml
+# Basic load test
+k6 run tests/load/alerts.k6.js
 
-# Run with HTML report
-pnpm artillery run tests/load/price-alerts.yml --output tests/load/reports/price-alerts.json
-pnpm artillery report tests/load/reports/price-alerts.json --output tests/load/reports/price-alerts.html
+# With custom base URL
+k6 run --env BASE_URL=http://localhost:4000 tests/load/alerts.k6.js
 
-# Open report in browser
-open tests/load/reports/price-alerts.html
-```
-
-### Run All Load Tests
-
-```bash
-# Run all load tests sequentially
-pnpm test:load
+# Generate HTML report
+k6 run --out json=report.json tests/load/alerts.k6.js
 ```
 
 ## 📊 Performance Metrics
