@@ -32,7 +32,8 @@ class ConsistencyChecker:
             'Q4 2025': [],
             'Q1 2026': [],
             'Q2 2026': [],
-            'Q3 2026': []
+            'Q3 2026': [],
+            'Infrastructure': []  # Added for infrastructure features
         }
 
         # Find the "Core Features" section
@@ -74,6 +75,14 @@ class ConsistencyChecker:
                 match = re.match(r'^\d+\.\s+(.+?)$', line.strip())
                 if match:
                     features['Q3 2026'].append(match.group(1).strip())
+
+        # Extract infrastructure features from Section 4.5
+        infra_match = re.search(r'### 4\.5 Infrastructure & Cross-Cutting Features.*?\n(.*?)(?=^## |\Z)', content, re.DOTALL | re.MULTILINE)
+        if infra_match:
+            infra_section = infra_match.group(1)
+            # Count features by looking for "Feature ID: F-0XX"
+            feature_ids = re.findall(r'\*\*Feature ID\*\*:\s+(F-\d+)', infra_section)
+            features['Infrastructure'] = [f"Infrastructure Feature {fid}" for fid in feature_ids]
 
         return features
     
@@ -254,6 +263,9 @@ class ConsistencyChecker:
             'EPIC-4': '3-solutioning/tech-specs/tech-spec-epic-4-gas-trading.md',
             'EPIC-5': '3-solutioning/tech-specs/tech-spec-epic-5-security.md',
             'EPIC-6': '3-solutioning/tech-specs/tech-spec-epic-6-analytics.md',
+            'EPIC-7': '3-solutioning/tech-specs/tech-spec-epic-7-integration.md',
+            'EPIC-8': '3-solutioning/tech-specs/tech-spec-epic-8-devops.md',
+            'EPIC-9': '3-solutioning/tech-specs/tech-spec-epic-9-documentation.md',
         }
 
         for epic_id, data in sorted(epics.items()):
@@ -267,9 +279,9 @@ class ConsistencyChecker:
                     print(f"  ❌ {epic_id}: {data['name']} - Tech spec MISSING")
                     self.issues.append(f"❌ Missing tech spec for {epic_id}")
             else:
-                # EPIC 7-9 are infrastructure/cross-cutting, may not need separate tech specs
-                print(f"  ⚠️  {epic_id}: {data['name']} - No tech spec expected (infrastructure)")
-                self.warnings.append(f"⚠️  No tech spec for {epic_id} (infrastructure EPIC)")
+                # Unknown EPIC, should not happen
+                print(f"  ⚠️  {epic_id}: {data['name']} - Unknown EPIC")
+                self.warnings.append(f"⚠️  Unknown EPIC {epic_id}")
 
     def check_file_existence(self):
         """Check if all expected files exist"""
@@ -292,6 +304,9 @@ class ConsistencyChecker:
             '3-solutioning/tech-specs/tech-spec-epic-4-gas-trading.md',
             '3-solutioning/tech-specs/tech-spec-epic-5-security.md',
             '3-solutioning/tech-specs/tech-spec-epic-6-analytics.md',
+            '3-solutioning/tech-specs/tech-spec-epic-7-integration.md',
+            '3-solutioning/tech-specs/tech-spec-epic-8-devops.md',
+            '3-solutioning/tech-specs/tech-spec-epic-9-documentation.md',
             '4-implementation/budget/budget-approval-v2.0.md',
             '4-implementation/sprints/sprint-planning-v2.0.md',
         ]
