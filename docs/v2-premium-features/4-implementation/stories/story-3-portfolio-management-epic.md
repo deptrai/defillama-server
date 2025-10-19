@@ -1,9 +1,9 @@
 # Story 3: Portfolio Management EPIC
 
-**EPIC ID**: EPIC-3  
-**Total Story Points**: 110 points  
-**Priority**: P1 (High)  
-**Timeline**: Q1 2026 (Months 4-6)  
+**EPIC ID**: EPIC-3
+**Total Story Points**: 110 points
+**Priority**: P1 (High)
+**Timeline**: Q1 2026 (Months 4-6)
 **Revenue Target**: $3.75M ARR (15%)
 
 ---
@@ -16,11 +16,30 @@ Comprehensive portfolio management suite including multi-chain aggregation, real
 
 ---
 
+## Feature Mapping
+
+This story file aligns with **User Stories v2.0** while maintaining compatibility with **PRD v2.0**:
+
+| Story Feature | User Stories v2.0 | PRD v2.0 | Points |
+|---------------|-------------------|----------|--------|
+| Feature 3.1 | Multi-Chain Portfolio Aggregation | F-007: Multi-Wallet Portfolio Tracker | 21 |
+| Feature 3.2 | Real-Time Portfolio Tracking | F-007: Multi-Wallet Portfolio Tracker (real-time) | 21 |
+| Feature 3.3 | Impermanent Loss Calculator | F-009: Impermanent Loss Tracker | 21 |
+| Feature 3.4 | Portfolio Rebalancing Suggestions | F-011: Portfolio Analytics (optimization) | 21 |
+| Feature 3.5 | Portfolio Comparison | F-011: Portfolio Analytics (comparison) | 21 |
+| Feature 3.6 | Portfolio Export | F-012: Portfolio Alerts (export) | 5 |
+
+**Note**: PRD v2.0 also includes F-008 (P&L Calculator) and F-010 (Liquidity Pool Alerts) which are covered in Features 3.5 and 3.4 respectively.
+
+---
+
 ## Features Summary (6 features, 110 points)
 
-### Feature 3.1: Multi-Chain Portfolio Aggregation (21 points)
+### Feature 3.1: Multi-Wallet Portfolio Tracker (21 points)
 
-**Note**: Also known as "Multi-Wallet Portfolio Tracker" in PRD v2.0
+**Also known as**: "Multi-Chain Portfolio Aggregation" in User Stories v2.0
+
+**PRD Reference**: Feature 7 (F-007) - Multi-Wallet Portfolio Tracker
 
 **User Stories** (3 stories):
 1. **Connect Wallet Addresses** (5 points)
@@ -48,6 +67,8 @@ Comprehensive portfolio management suite including multi-chain aggregation, real
 ---
 
 ### Feature 3.2: Real-Time Portfolio Tracking (21 points)
+
+**PRD Reference**: Included in Feature 7 (F-007) - Multi-Wallet Portfolio Tracker (real-time valuation)
 
 **User Stories** (4 stories):
 1. **Subscribe to Portfolio Updates** (5 points)
@@ -81,7 +102,11 @@ Comprehensive portfolio management suite including multi-chain aggregation, real
 
 ---
 
-### Feature 3.3: Impermanent Loss Calculator (21 points)
+### Feature 3.3: Impermanent Loss Tracker (21 points)
+
+**Also known as**: "Impermanent Loss Calculator" in User Stories v2.0
+
+**PRD Reference**: Feature 9 (F-009) - Impermanent Loss Tracker
 
 **User Stories** (4 stories):
 1. **Add Liquidity Positions** (5 points)
@@ -115,6 +140,8 @@ Comprehensive portfolio management suite including multi-chain aggregation, real
 ---
 
 ### Feature 3.4: Portfolio Rebalancing Suggestions (21 points)
+
+**PRD Reference**: Included in Feature 11 (F-011) - Portfolio Analytics (portfolio optimization recommendations)
 
 **User Stories** (4 stories):
 1. **Analyze Portfolio Allocation** (8 points)
@@ -152,7 +179,11 @@ Comprehensive portfolio management suite including multi-chain aggregation, real
 
 ---
 
-### Feature 3.5: Portfolio Comparison (21 points)
+### Feature 3.5: Portfolio Analytics (21 points)
+
+**Also known as**: "Portfolio Comparison" in User Stories v2.0
+
+**PRD Reference**: Feature 11 (F-011) - Portfolio Analytics (risk metrics, diversification analysis, correlation analysis)
 
 **User Stories** (4 stories):
 1. **Compare with Market Indices** (8 points)
@@ -187,7 +218,11 @@ Comprehensive portfolio management suite including multi-chain aggregation, real
 
 ---
 
-### Feature 3.6: Portfolio Export (5 points)
+### Feature 3.6: Portfolio Alerts (5 points)
+
+**Also known as**: "Portfolio Export" in User Stories v2.0
+
+**PRD Reference**: Feature 12 (F-012) - Portfolio Alerts (total value alerts, allocation alerts, performance alerts)
 
 **User Stories** (2 stories):
 1. **Export Portfolio Data** (3 points)
