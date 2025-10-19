@@ -228,6 +228,54 @@ Xây dựng nền tảng DeFi analytics và management toàn diện với **25 t
 - $5M ARR
 - 5-10% free-to-premium conversion
 
+### 3.8 Post-Review Improvements (2025-10-19)
+
+**Source**: Engineering Lead, DevOps Lead, Security Lead Reviews
+
+#### 3.8.1 Critical Security Requirements
+
+**1. Rate Limiting** (🔴 CRITICAL)
+- **Requirement**: Implement rate limiting for alert processing
+- **Limit**: 100 alerts/minute per user, 200 alerts/minute burst (1 minute)
+- **Implementation**: AWS WAF rate limiting, Redis rate limit tracking
+- **Response**: HTTP 429 Too Many Requests
+- **Timeline**: Phase 1 (Q4 2025, Month 2)
+- **Owner**: Backend Engineer
+
+**2. Audit Logging** (🔴 CRITICAL)
+- **Requirement**: Log all alert creation, modification, deletion events
+- **Format**: JSON structured logs with correlation IDs
+- **Retention**: 1 year
+- **Storage**: CloudWatch Logs with S3 archival
+- **Timeline**: Phase 1 (Q4 2025, Month 2)
+- **Owner**: DevOps Engineer
+
+#### 3.8.2 High Priority Improvements
+
+**3. Circuit Breaker Pattern** (🟡 HIGH)
+- **Rationale**: Prevent alert storms, improve reliability
+- **Implementation**: Circuit breaker for alert processing, alert batching for high-volume users
+- **Threshold**: Open circuit if error rate >10% for 1 minute
+- **Fallback**: Queue alerts for later processing
+- **Benefit**: Better reliability, reduced costs
+- **Timeline**: Phase 1 (Q4 2025, Month 3)
+- **Owner**: Backend Engineer
+
+**4. Early Beta Launch** (🟡 HIGH)
+- **Rationale**: Validate product-market fit, gather user feedback
+- **Target**: Whale traders (portfolio >$500K)
+- **Features**: Whale movement alerts, price alerts, smart contract alerts
+- **Benefit**: Better product-market fit, reduced risk
+- **Timeline**: Phase 1 (Q4 2025, Month 3)
+- **Owner**: Product Owner
+
+**5. Social Proof Features** (🟡 HIGH)
+- **Rationale**: Increase user engagement, improve conversion
+- **Features**: Alert success stories (show successful alerts from other users)
+- **Benefit**: 10-20% increase in conversion rate
+- **Timeline**: Phase 2 (Q1 2026, Month 6)
+- **Owner**: Product Owner
+
 ---
 
 ## 4. EPIC 2: Tax & Compliance
@@ -527,6 +575,77 @@ Xây dựng nền tảng DeFi analytics và management toàn diện với **25 t
 - $15M ARR by end of Q2 2026
 - 60K premium users
 
+### 6.7 Post-Review Improvements (2025-10-19)
+
+**Source**: Engineering Lead, DevOps Lead, Security Lead Reviews
+
+#### 6.7.1 Critical Recommendation: Phase into 2 Releases
+
+**Rationale**: High complexity (191 points), reduce risk, improve quality
+
+**Phase 1** (2 months, 95 points): Gas Optimization Features
+- F-013: Gas Fee Optimizer (Gas Prediction) - 21 points
+- F-013b: Gas Optimization (Batching & Timing) - 21 points
+- F-014: Transaction Simulator - 22 points
+- F-016: Yield Farming Calculator - 13 points
+- Infrastructure & Testing - 18 points
+- **Timeline**: Q2 2026 (Months 7-8)
+- **Team**: 2 backend engineers, 1 frontend engineer
+
+**Phase 2** (3 months, 96 points): MEV Protection + Trading Optimization
+- F-015: Smart Order Routing - 34 points
+- F-015b: MEV Protection - 21 points (requires ML engineer with MEV expertise)
+- F-015c: Limit Orders - 21 points
+- F-017: Cross-Chain Bridge Aggregator - 21 points
+- F-018: Copy Trading Beta - 17 points (optional, can be moved to post-launch)
+- Infrastructure & Testing - 20 points (includes Spot Instances setup)
+- **Timeline**: Q2 2026 (Months 9-11)
+- **Team**: 2 backend engineers, 1 ML engineer (MEV expertise), 1 frontend engineer
+
+**Benefits**:
+- Better quality (focus on fewer features at a time)
+- Reduced risk (validate Phase 1 before Phase 2)
+- Hire ML engineer with MEV expertise before Phase 2
+- Implement Spot Instances for ML training (50-70% cost savings)
+
+#### 6.7.2 Critical Security Requirements
+
+**1. MEV Protection** (🔴 CRITICAL)
+- **Requirement**: Implement MEV protection for all trading operations
+- **Method**: Flashbots integration for Ethereum, private RPC for other chains
+- **Validation**: Trading strategy validation before execution
+- **Monitoring**: MEV attack detection and alerting
+- **Timeline**: Phase 2 (Q2 2026, Month 9)
+- **Owner**: ML Engineer (MEV expertise required)
+
+**2. Audit Logging** (🔴 CRITICAL)
+- **Requirement**: Log all trading operations, gas optimizations, bridge transactions
+- **Retention**: 7 years (tax compliance)
+- **Timeline**: Phase 1 (Q2 2026, Month 7)
+- **Owner**: DevOps Engineer
+
+#### 6.7.3 High Priority Improvements
+
+**3. Hire ML Engineer with MEV Expertise** (🟡 HIGH)
+- **Rationale**: MEV protection is critical for trading features
+- **Requirements**: 3+ years ML experience, MEV/DeFi expertise, Flashbots knowledge
+- **Timeline**: Hire in Month 6 (before Phase 2)
+- **Owner**: Engineering Lead
+
+**4. Use Spot Instances for ML Training** (🟡 HIGH)
+- **Rationale**: Cost optimization for ML training
+- **Savings**: 50-70% on ML training costs ($50K-$80K/year)
+- **Implementation**: AWS Spot Instances with fallback to On-Demand
+- **Timeline**: Phase 2 (Q2 2026, Month 9)
+- **Owner**: DevOps Engineer
+
+**5. Add Model Monitoring** (🟡 HIGH)
+- **Rationale**: Track model accuracy, detect model drift
+- **Implementation**: AWS SageMaker Model Monitor
+- **Metrics**: Accuracy, precision, recall, F1 score, model drift
+- **Timeline**: Phase 2 (Q2 2026, Month 10)
+- **Owner**: ML Engineer
+
 ---
 
 ## 7. EPIC 5: Security & Risk Management
@@ -704,6 +823,92 @@ Xây dựng nền tảng DeFi analytics và management toàn diện với **25 t
 **Business Metrics**:
 - $25M ARR by end of Q3 2026
 - 125K premium users
+
+### 8.7 Post-Review Improvements (2025-10-19)
+
+**Source**: Engineering Lead, DevOps Lead, Security Lead Reviews
+
+#### 8.7.1 Critical Recommendation: Phase into 2 Releases
+
+**Rationale**: High complexity (100 points), ML model validation required, reduce risk
+
+**Phase 1** (2 months, 50 points): Simple Predictions
+- F-022: Price Prediction Models - 34 points (basic trend analysis)
+  - Simple time-series models (ARIMA, Prophet)
+  - Basic technical indicators (RSI, MACD, Bollinger Bands)
+  - No complex ML models yet
+- Infrastructure & Testing - 16 points
+- **Timeline**: Q3 2026 (Months 10-11)
+- **Team**: 1 ML engineer, 1 backend engineer, 1 frontend engineer
+
+**Phase 2** (2 months, 50 points): Advanced Predictions
+- F-023: Market Sentiment Analysis - 34 points
+  - NLP models for social sentiment (Twitter, Reddit)
+  - Advanced ML models (LSTM, Transformer)
+  - Model explainability (SHAP values)
+- F-024: Whale Activity Correlation - 16 points
+  - Correlation analysis between whale movements and price
+  - Pattern recognition
+- Infrastructure & Testing - 16 points (includes Spot Instances setup, model monitoring)
+- **Timeline**: Q3 2026 (Months 12-13)
+- **Team**: 1 ML engineer, 1 backend engineer, 1 frontend engineer
+
+**Note**: F-025 (Custom Dashboard Builder) moved to post-launch (not ML-related, can be developed separately)
+
+**Benefits**:
+- Better quality (validate simple models before complex models)
+- Reduced risk (ML model validation in Phase 1)
+- Implement model monitoring before Phase 2
+- Implement Spot Instances for ML training (50-70% cost savings)
+
+#### 8.7.2 Critical Security Requirements
+
+**1. Model Validation** (🔴 CRITICAL)
+- **Requirement**: Validate all ML models before deployment
+- **Method**: Pre-deployment validation on validation dataset
+- **Explainability**: SHAP values for all predictions
+- **Bias Detection**: Fairness metrics for all models
+- **Implementation**: Model validation pipeline, AWS SageMaker Model Monitor
+- **Timeline**: Phase 1 (Q3 2026, Month 10)
+- **Owner**: ML Engineer
+
+**2. Model Security** (🔴 CRITICAL)
+- **Model Poisoning Prevention**: Validate training data
+- **Adversarial Attack Detection**: Monitor for adversarial inputs
+- **Model Versioning**: Track all model versions
+- **Rollback Capability**: Rollback to previous model version
+- **Timeline**: Phase 1 (Q3 2026, Month 10)
+- **Owner**: ML Engineer
+
+**3. Audit Logging** (🔴 CRITICAL)
+- **Requirement**: Log all ML model deployments, predictions, model drift events
+- **Retention**: 1 year
+- **Timeline**: Phase 1 (Q3 2026, Month 10)
+- **Owner**: DevOps Engineer
+
+#### 8.7.3 High Priority Improvements
+
+**4. Add Model Monitoring** (🟡 HIGH)
+- **Rationale**: Track model accuracy, detect model drift
+- **Implementation**: AWS SageMaker Model Monitor
+- **Metrics**: Accuracy, precision, recall, F1 score, model drift
+- **Alerts**: Alert on model drift >5%, accuracy drop >10%
+- **Timeline**: Phase 1 (Q3 2026, Month 11)
+- **Owner**: ML Engineer
+
+**5. Use Spot Instances for ML Training** (🟡 HIGH)
+- **Rationale**: Cost optimization for ML training
+- **Savings**: 50-70% on ML training costs ($50K-$80K/year)
+- **Implementation**: AWS Spot Instances with fallback to On-Demand
+- **Timeline**: Phase 2 (Q3 2026, Month 12)
+- **Owner**: DevOps Engineer
+
+**6. Model Explainability** (🟡 HIGH)
+- **Rationale**: Build user trust, regulatory compliance
+- **Implementation**: SHAP values for all predictions
+- **Display**: Show feature importance in UI
+- **Timeline**: Phase 2 (Q3 2026, Month 12)
+- **Owner**: ML Engineer
 
 ---
 
@@ -1049,6 +1254,106 @@ EPIC-2 (Tax) ─────┘                         ├──> EPIC-4 (Gas &
 
 **Depends on**: None (foundational)
 **Blocks**: All EPICs (required for deployment)
+
+### 14.4 Post-Review Improvements (2025-10-19)
+
+**Source**: Engineering Lead, DevOps Lead, Security Lead Reviews
+
+#### 14.4.1 Critical Recommendation: Start EPIC-8 Early
+
+**Rationale**: Foundation for all other EPICs, reduce integration issues
+
+**Timeline**: Start in Month 1 (Q4 2025), complete before other EPICs
+
+**Benefits**:
+- Solid foundation for all EPICs
+- Reduced integration issues
+- Early CI/CD pipeline setup
+- Early monitoring and alerting setup
+
+#### 14.4.2 Critical Security Requirements
+
+**1. Infrastructure Security Scanning** (🔴 CRITICAL)
+- **Requirement**: Scan all infrastructure code for security issues
+- **Tools**: Checkov for AWS CDK, tfsec for Terraform, Snyk for dependencies
+- **Scope**: All IaC code, CI/CD pipelines, container images
+- **Implementation**: GitHub Actions CI/CD integration, block on critical vulnerabilities
+- **Timeline**: Phase 1 (Q4 2025, Month 1)
+- **Owner**: DevOps Engineer
+
+**2. Secrets Management** (🔴 CRITICAL)
+- **Requirement**: Store all secrets in AWS Secrets Manager
+- **Rotation**: Automatic rotation every 30 days
+- **Access**: IAM role-based access, no hardcoded secrets
+- **Git Protection**: Pre-commit hooks to prevent secret commits (git-secrets)
+- **Implementation**: AWS Secrets Manager, git-secrets
+- **Timeline**: Phase 1 (Q4 2025, Month 1)
+- **Owner**: DevOps Engineer
+
+**3. Audit Logging** (🔴 CRITICAL)
+- **Requirement**: Log all infrastructure changes, deployments, configuration changes
+- **Format**: JSON structured logs with correlation IDs
+- **Retention**: 1 year
+- **Storage**: CloudWatch Logs with S3 archival, AWS CloudTrail
+- **Timeline**: Phase 1 (Q4 2025, Month 1)
+- **Owner**: DevOps Engineer
+
+#### 14.4.3 High Priority Improvements
+
+**4. Implement Multi-Region Deployment** (🟡 HIGH)
+- **Rationale**: Improve reliability, reduce latency, disaster recovery
+- **Regions**: us-east-1 (primary), eu-west-1 (secondary), ap-southeast-1 (tertiary)
+- **Implementation**: Global load balancing (Route 53), region failover
+- **Benefit**: 99.99% uptime, <100ms latency globally
+- **Timeline**: Phase 1 (Q4 2025, Month 3)
+- **Owner**: DevOps Engineer
+
+**5. Implement Blue-Green Deployment** (🟡 HIGH)
+- **Rationale**: Zero-downtime deployments, easy rollback
+- **Implementation**: AWS ECS blue-green deployment, ALB target groups
+- **Rollback**: Automatic rollback on error rate >5%, manual rollback via console
+- **Benefit**: Zero downtime, reduced deployment risk
+- **Timeline**: Phase 1 (Q4 2025, Month 2)
+- **Owner**: DevOps Engineer
+
+**6. Add Comprehensive Monitoring** (🟡 HIGH)
+- **Rationale**: Better observability, faster incident response
+- **Tools**: Datadog APM (all services), CloudWatch Logs (all services), PagerDuty (alerting)
+- **Metrics**: Request rate, error rate, response time, database metrics, cache metrics
+- **Dashboards**: System health, business metrics, alert delivery
+- **Timeline**: Phase 1 (Q4 2025, Month 1)
+- **Owner**: DevOps Engineer
+
+**7. Use Spot Instances for ML Training** (🟡 HIGH)
+- **Rationale**: Cost optimization for ML training (EPIC-4, EPIC-6)
+- **Savings**: 50-70% on ML training costs ($50K-$80K/year)
+- **Implementation**: AWS Spot Instances with fallback to On-Demand
+- **Risk Mitigation**: Checkpointing, automatic retry on interruption
+- **Timeline**: Phase 3 & 4 (Q2-Q3 2026)
+- **Owner**: DevOps Engineer
+
+#### 14.4.4 Medium Priority Improvements
+
+**8. Implement Auto-scaling** (🟢 MEDIUM)
+- **Rationale**: Cost optimization (20-30% savings)
+- **Implementation**: AWS ECS auto-scaling, RDS auto-scaling
+- **Metrics**: CPU utilization, memory utilization, request rate
+- **Timeline**: Phase 1 (Q4 2025, Month 2)
+- **Owner**: DevOps Engineer
+
+**9. Use Reserved Instances** (🟢 MEDIUM)
+- **Rationale**: Cost optimization (30-40% savings)
+- **Implementation**: AWS Reserved Instances for predictable workloads
+- **Savings**: $60K-$150K/year
+- **Timeline**: Phase 1 (Q4 2025, Month 3)
+- **Owner**: DevOps Engineer
+
+**10. Optimize Database Queries** (🟢 MEDIUM)
+- **Rationale**: Performance improvement (10-20%)
+- **Implementation**: Query optimization, indexing, materialized views
+- **Benefit**: Reduced latency, reduced costs
+- **Timeline**: Phase 1-2 (Q4 2025 - Q1 2026)
+- **Owner**: Backend Engineer
 
 ---
 

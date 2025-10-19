@@ -2131,6 +2131,159 @@ _[Detailed API specs for each feature - see Section 4]_
 - Confidentiality controls
 - Annual audit by third-party
 
+### 10.3 Critical Security Requirements (Post-Stakeholder Review)
+
+**Status**: 🔴 CRITICAL - Must implement before production launch
+**Source**: Security Lead Review (2025-10-19)
+**Impact**: Compliance, data breach prevention, regulatory requirements
+
+#### 10.3.1 Encryption Requirements (ALL EPICs)
+
+**Encryption at Rest**:
+- Algorithm: AES-256-GCM
+- Key Management: AWS KMS with automatic key rotation (90 days)
+- Scope: All user data, wallet data, tax data, trading data, ML model data
+- Implementation: PostgreSQL encryption, Redis encryption, S3 encryption
+- Timeline: Phase 1 (Q4 2025, Month 1)
+- Owner: Security Engineer
+
+**Encryption in Transit**:
+- Protocol: TLS 1.3 (minimum)
+- Certificate: AWS Certificate Manager with auto-renewal
+- Scope: All API endpoints, WebSocket connections, database connections
+- Implementation: API Gateway TLS, ALB TLS, RDS TLS
+- Timeline: Phase 1 (Q4 2025, Month 1)
+- Owner: Security Engineer
+
+#### 10.3.2 Authentication & Authorization (ALL EPICs)
+
+**API Authentication**:
+- Methods: API keys (Enterprise), OAuth 2.0 (Standard/Pro)
+- Token Type: JWT with RS256 signing
+- Token Expiry: 1 hour (access token), 30 days (refresh token)
+- Implementation: AWS Cognito for user auth, API Gateway for API keys
+- Timeline: Phase 1 (Q4 2025, Month 1)
+- Owner: Backend Engineer
+
+**Role-Based Access Control (RBAC)**:
+- Roles: Admin, User, Read-Only
+- Permissions: Resource-level permissions (alerts, portfolios, tax reports)
+- Implementation: AWS IAM for infrastructure, custom RBAC for application
+- Database: Row-level security (PostgreSQL RLS)
+- Timeline: Phase 1 (Q4 2025, Month 2)
+- Owner: Backend Engineer
+
+#### 10.3.3 Audit Logging (ALL EPICs)
+
+**Logging Requirements**:
+- Scope: All user actions, API calls, database changes, authentication events
+- Format: JSON structured logs with correlation IDs
+- Retention: 7 years (tax data), 1 year (other data)
+- Storage: CloudWatch Logs with S3 archival
+- Implementation: Application logs, AWS CloudTrail, database audit logs
+- Timeline: Phase 1 (Q4 2025, Month 2)
+- Owner: DevOps Engineer
+
+**Audit Events**:
+- User login/logout
+- API key creation/deletion
+- Alert creation/modification/deletion
+- Portfolio access/modification
+- Tax report generation/download
+- Trading strategy execution
+- ML model deployment
+- Configuration changes
+
+#### 10.3.4 Rate Limiting (EPIC-1, EPIC-7)
+
+**Alert Rate Limits** (EPIC-1):
+- Limit: 100 alerts/minute per user
+- Burst: 200 alerts/minute (1 minute burst)
+- Implementation: AWS WAF rate limiting, Redis rate limit tracking
+- Response: HTTP 429 Too Many Requests
+- Timeline: Phase 1 (Q4 2025, Month 2)
+- Owner: Backend Engineer
+
+**API Rate Limits** (EPIC-7):
+- Standard Tier: 100 requests/minute
+- Pro Tier: 500 requests/minute
+- Enterprise Tier: 1000 requests/minute
+- Implementation: API Gateway throttling, Redis rate limit tracking
+- Response: HTTP 429 with Retry-After header
+- Timeline: Phase 1 (Q4 2025, Month 2)
+- Owner: Backend Engineer
+
+#### 10.3.5 MEV Protection (EPIC-4)
+
+**MEV Protection Requirements**:
+- Method: Flashbots integration for Ethereum, private RPC for other chains
+- Scope: All trading operations, gas optimization strategies
+- Validation: Trading strategy validation before execution
+- Monitoring: MEV attack detection and alerting
+- Implementation: Flashbots Protect API, private RPC endpoints
+- Timeline: Phase 3 (Q2 2026, Month 8)
+- Owner: ML Engineer (MEV expertise required)
+
+**Trading Strategy Validation**:
+- Pre-execution validation: Check for MEV vulnerability
+- Slippage protection: Maximum 1% slippage
+- Front-running detection: Monitor mempool for front-running attempts
+- Fallback: Revert to public RPC if private RPC fails
+
+#### 10.3.6 ML Model Security (EPIC-6)
+
+**Model Validation Requirements**:
+- Pre-deployment validation: Test model on validation dataset
+- Model explainability: SHAP values for all predictions
+- Bias detection: Fairness metrics for all models
+- Model monitoring: AWS SageMaker Model Monitor
+- Implementation: Model validation pipeline, bias detection tools
+- Timeline: Phase 4 (Q3 2026, Month 11)
+- Owner: ML Engineer
+
+**Model Security**:
+- Model poisoning prevention: Validate training data
+- Adversarial attack detection: Monitor for adversarial inputs
+- Model versioning: Track all model versions
+- Rollback capability: Rollback to previous model version
+
+#### 10.3.7 Infrastructure Security (EPIC-8)
+
+**Infrastructure Security Scanning**:
+- IaC Scanning: Checkov for AWS CDK, tfsec for Terraform
+- Dependency Scanning: Snyk for npm/pip dependencies
+- Container Scanning: AWS ECR image scanning
+- Continuous Scanning: Daily scans, block on critical vulnerabilities
+- Implementation: GitHub Actions CI/CD integration
+- Timeline: Phase 1 (Q4 2025, Month 1)
+- Owner: DevOps Engineer
+
+**Secrets Management**:
+- Storage: AWS Secrets Manager for all secrets
+- Rotation: Automatic rotation every 30 days
+- Access: IAM role-based access, no hardcoded secrets
+- Git Protection: Pre-commit hooks to prevent secret commits
+- Implementation: AWS Secrets Manager, git-secrets
+- Timeline: Phase 1 (Q4 2025, Month 1)
+- Owner: DevOps Engineer
+
+#### 10.3.8 Security Audits (ALL EPICs)
+
+**Audit Schedule**:
+- Quarterly Security Audit: External security firm (Q1, Q2, Q3, Q4)
+- Annual Penetration Testing: Full penetration test (Q4)
+- Continuous Vulnerability Scanning: AWS GuardDuty, Snyk
+- Bug Bounty Program: HackerOne (launch in Q2 2026)
+- Timeline: Ongoing (starting Q4 2025)
+- Owner: Security Engineer
+
+**Audit Scope**:
+- Application security (OWASP Top 10)
+- Infrastructure security (AWS security best practices)
+- API security (OWASP API Security Top 10)
+- Data security (encryption, access control)
+- Compliance (GDPR, CCPA, SOC 2)
+
 ---
 
 ## 11. Testing Strategy
@@ -2221,6 +2374,152 @@ _[Detailed API specs for each feature - see Section 4]_
 - Business metrics dashboard (Mixpanel)
 - Alert delivery dashboard (custom)
 
+### 12.3 Implementation Recommendations (Post-Stakeholder Review)
+
+**Status**: 🟡 HIGH PRIORITY - Should implement for optimal performance
+**Source**: Engineering Lead, DevOps Lead, Product Owner Reviews (2025-10-19)
+**Impact**: Quality, performance, cost optimization, user engagement
+
+#### 12.3.1 Engineering Recommendations
+
+**1. Phase EPIC-4 into 2 Releases** (EPIC-4: Gas & Trading Optimization)
+- **Rationale**: High complexity (191 points), reduce risk, improve quality
+- **Phase 1** (2 months, 95 points): Gas optimization features
+  - F-011: Gas Price Prediction
+  - F-012: Transaction Timing Optimizer
+  - F-013: Batch Transaction Optimizer
+  - F-014: Gas Token Recommendations
+- **Phase 2** (3 months, 96 points): MEV protection + Trading optimization
+  - F-015: MEV Protection Suite (requires ML engineer with MEV expertise)
+  - F-016: Yield Farming Calculator
+  - F-017: Cross-Chain Bridge Aggregator
+  - F-018: Copy Trading Beta
+- **Timeline**: Q2 2026 (Months 7-11)
+- **Owner**: Engineering Lead
+
+**2. Phase EPIC-6 into 2 Releases** (EPIC-6: Advanced Analytics & AI)
+- **Rationale**: High complexity (100 points), ML model validation required
+- **Phase 1** (2 months, 50 points): Simple predictions
+  - F-022: Price Prediction Models (basic trend analysis)
+- **Phase 2** (2 months, 50 points): Advanced predictions
+  - F-023: Market Sentiment Analysis
+  - F-024: Whale Activity Correlation
+- **Timeline**: Q3 2026 (Months 10-13)
+- **Owner**: Engineering Lead
+
+**3. Start EPIC-7 and EPIC-8 Early** (Foundation EPICs)
+- **Rationale**: Foundation for all other EPICs, reduce integration issues
+- **EPIC-7**: Cross-EPIC Integration (25 points)
+  - Start in Month 1, complete before other EPICs
+  - Unified event bus, shared data models, API gateway
+- **EPIC-8**: DevOps & Infrastructure (50 points)
+  - Start in Month 1, complete before other EPICs
+  - CI/CD pipeline, monitoring, security scanning, secrets management
+- **Timeline**: Q4 2025 (Month 1)
+- **Owner**: Engineering Lead, DevOps Engineer
+
+**4. Hire ML Engineer with MEV Expertise** (EPIC-4)
+- **Rationale**: MEV protection is critical for trading features
+- **Requirements**: 3+ years ML experience, MEV/DeFi expertise, Flashbots knowledge
+- **Timeline**: Hire in Month 6 (before EPIC-4 Phase 2)
+- **Owner**: Engineering Lead
+
+**5. Add Integration Testing** (ALL EPICs)
+- **Rationale**: Ensure cross-EPIC integration works correctly
+- **Scope**: Test all API endpoints, WebSocket connections, event bus
+- **Coverage**: >60% integration test coverage
+- **Implementation**: Jest for unit tests, Supertest for integration tests
+- **Timeline**: Phase 1 (Q4 2025, Month 2)
+- **Owner**: Backend Engineer
+
+**6. Implement Circuit Breaker Pattern** (EPIC-1: Alerts)
+- **Rationale**: Prevent alert storms, improve reliability
+- **Implementation**: Circuit breaker for alert processing, alert batching for high-volume users
+- **Threshold**: Open circuit if error rate >10% for 1 minute
+- **Fallback**: Queue alerts for later processing
+- **Timeline**: Phase 1 (Q4 2025, Month 3)
+- **Owner**: Backend Engineer
+
+**7. Use Materialized Views for Performance** (EPIC-3: Portfolio)
+- **Rationale**: Improve query performance for portfolio analytics
+- **Implementation**: PostgreSQL materialized views, Redis caching layer
+- **Refresh**: Incremental updates every 5 minutes
+- **Benefit**: 10-30% performance improvement
+- **Timeline**: Phase 2 (Q1 2026, Month 5)
+- **Owner**: Backend Engineer
+
+**8. Add Model Monitoring** (EPIC-4, EPIC-6: ML Features)
+- **Rationale**: Track model accuracy, detect model drift
+- **Implementation**: AWS SageMaker Model Monitor
+- **Metrics**: Accuracy, precision, recall, F1 score, model drift
+- **Alerts**: Alert on model drift >5%, accuracy drop >10%
+- **Timeline**: Phase 3 & 4 (Q2-Q3 2026)
+- **Owner**: ML Engineer
+
+#### 12.3.2 DevOps Recommendations
+
+**9. Implement Multi-Region Deployment** (ALL EPICs)
+- **Rationale**: Improve reliability, reduce latency, disaster recovery
+- **Regions**: us-east-1 (primary), eu-west-1 (secondary), ap-southeast-1 (tertiary)
+- **Implementation**: Global load balancing (Route 53), region failover
+- **Benefit**: 99.99% uptime, <100ms latency globally
+- **Timeline**: Phase 1 (Q4 2025, Month 3)
+- **Owner**: DevOps Engineer
+
+**10. Use Spot Instances for ML Training** (EPIC-4, EPIC-6)
+- **Rationale**: Cost optimization for ML training
+- **Savings**: 50-70% on ML training costs ($50K-$80K/year)
+- **Implementation**: AWS Spot Instances with fallback to On-Demand
+- **Risk Mitigation**: Checkpointing, automatic retry on interruption
+- **Timeline**: Phase 3 & 4 (Q2-Q3 2026)
+- **Owner**: DevOps Engineer
+
+**11. Implement Blue-Green Deployment** (ALL EPICs)
+- **Rationale**: Zero-downtime deployments, easy rollback
+- **Implementation**: AWS ECS blue-green deployment, ALB target groups
+- **Rollback**: Automatic rollback on error rate >5%, manual rollback via console
+- **Benefit**: Zero downtime, reduced deployment risk
+- **Timeline**: Phase 1 (Q4 2025, Month 2)
+- **Owner**: DevOps Engineer
+
+**12. Add Comprehensive Monitoring** (ALL EPICs)
+- **Rationale**: Better observability, faster incident response
+- **Tools**: Datadog APM (all services), CloudWatch Logs (all services), PagerDuty (alerting)
+- **Metrics**: Request rate, error rate, response time, database metrics, cache metrics
+- **Dashboards**: System health, business metrics, alert delivery
+- **Timeline**: Phase 1 (Q4 2025, Month 1)
+- **Owner**: DevOps Engineer
+
+#### 12.3.3 Product Recommendations
+
+**13. Add Social Proof Features** (EPIC-1, EPIC-3)
+- **Rationale**: Increase user engagement, improve conversion
+- **Features**:
+  - Portfolio sharing (EPIC-3): Share portfolio performance with friends
+  - Alert success stories (EPIC-1): Show successful alerts from other users
+  - User testimonials: Display user testimonials on landing page
+- **Benefit**: 10-20% increase in conversion rate
+- **Timeline**: Phase 2 (Q1 2026, Month 6)
+- **Owner**: Product Owner
+
+**14. Consider Partnerships** (EPIC-2, EPIC-5, EPIC-6)
+- **Rationale**: Improve quality, increase trust, expand features
+- **Partnerships**:
+  - Tax professionals (EPIC-2): Partner with CPAs for tax validation
+  - Security firms (EPIC-5): Partner with security firms for audits
+  - AI providers (EPIC-6): Partner with AI providers for ML models
+- **Benefit**: Better quality, higher trust, faster development
+- **Timeline**: Phase 1-4 (Q4 2025 - Q3 2026)
+- **Owner**: Product Owner
+
+**15. Early Beta Launch** (EPIC-1: Alerts)
+- **Rationale**: Validate product-market fit, gather user feedback
+- **Target**: Whale traders (portfolio >$500K)
+- **Features**: Whale movement alerts, price alerts, smart contract alerts
+- **Timeline**: Phase 1 (Q4 2025, Month 3)
+- **Benefit**: Better product-market fit, reduced risk
+- **Owner**: Product Owner
+
 ---
 
 ## 13. Success Metrics
@@ -2241,10 +2540,118 @@ _[See Section 1.5 and Section 2.5 for detailed metrics]_
 
 _[See Product Brief Section: Risks & Open Questions for detailed risks]_
 
+### 14.1 Original Risks (Product Brief)
+
 **Top 3 Risks**:
 1. **Competitive Response**: Nansen/DeBank lower prices → Mitigation: Move fast, build moat
 2. **Technical Scalability**: Can't scale to 125K users → Mitigation: Load testing, auto-scaling
 3. **Tax Calculation Accuracy**: Errors lead to IRS penalties → Mitigation: CPA validation, insurance
+
+### 14.2 Additional Risks (Post-Stakeholder Review)
+
+**Source**: Finance Lead Review (2025-10-19)
+
+#### 14.2.1 Revenue Risk (MEDIUM)
+
+**Risk**: User adoption slower than expected, revenue falls short of $38M ARR target
+
+**Impact**: -20% revenue ($7.6M ARR instead of $38M ARR)
+
+**Probability**: MEDIUM (30%)
+
+**Mitigation**:
+- Phased launch approach (4 phases over 13 months)
+- Early beta testing with whale traders (Q4 2025, Month 3)
+- Continuous user feedback and iteration
+- Aggressive marketing campaign ($500K/year budget)
+- Partnerships with tax professionals, security firms, AI providers
+
+**Monitoring**:
+- Track conversion rate (free-to-premium) weekly
+- Track user retention monthly
+- Track NPS score monthly
+- Adjust pricing/features based on feedback
+
+#### 14.2.2 Cost Overrun Risk (MEDIUM)
+
+**Risk**: Development takes longer than expected, costs exceed $2.27M budget
+
+**Impact**: +20% cost ($2.72M instead of $2.27M)
+
+**Probability**: MEDIUM (30%)
+
+**Mitigation**:
+- Agile methodology with 2-week sprints
+- Sprint planning and velocity tracking
+- Phased approach for EPIC-4 and EPIC-6 (reduce complexity)
+- Start EPIC-7 and EPIC-8 early (foundation)
+- Hire ML engineer with MEV expertise (reduce rework)
+
+**Monitoring**:
+- Track sprint velocity weekly
+- Track budget burn rate monthly
+- Adjust scope/timeline based on velocity
+
+#### 14.2.3 Competition Risk (LOW)
+
+**Risk**: Competitors launch similar features, reduce market share
+
+**Impact**: -10% revenue ($34.2M ARR instead of $38M ARR)
+
+**Probability**: LOW (20%)
+
+**Mitigation**:
+- First-mover advantage (launch Q4 2025)
+- Unique features (100+ chains, tax reporting, gas optimization)
+- 5x cheaper than Nansen ($25-75/mo vs $150/mo)
+- Strong brand (3M+ free users)
+- Continuous innovation (quarterly releases)
+
+**Monitoring**:
+- Track competitor pricing/features monthly
+- Track market share quarterly
+- Adjust pricing/features based on competition
+
+#### 14.2.4 Technical Risk (LOW)
+
+**Risk**: ML models don't perform as expected, features underdeliver
+
+**Impact**: -15% revenue for EPIC-4 and EPIC-6 (ML-heavy features)
+
+**Probability**: LOW (20%)
+
+**Mitigation**:
+- Phased approach for EPIC-4 and EPIC-6
+- Model validation before deployment (AWS SageMaker Model Monitor)
+- Model monitoring and drift detection
+- Hire ML engineer with MEV expertise
+- Fallback to simpler models if needed
+
+**Monitoring**:
+- Track model accuracy weekly
+- Track model drift daily
+- Alert on accuracy drop >10%
+
+#### 14.2.5 Security Risk (MEDIUM)
+
+**Risk**: Security breach, data leak, regulatory penalties
+
+**Impact**: Reputational damage, user churn, regulatory fines ($1M-$10M)
+
+**Probability**: MEDIUM (25%)
+
+**Mitigation**:
+- Implement all 10 critical security requirements (Section 10.3)
+- Quarterly security audits (external security firm)
+- Annual penetration testing
+- Continuous vulnerability scanning (AWS GuardDuty, Snyk)
+- Bug bounty program (HackerOne, launch Q2 2026)
+- Compliance (GDPR, CCPA, SOC 2)
+
+**Monitoring**:
+- Track security vulnerabilities daily
+- Track audit findings quarterly
+- Track compliance status monthly
 
 ---
 
