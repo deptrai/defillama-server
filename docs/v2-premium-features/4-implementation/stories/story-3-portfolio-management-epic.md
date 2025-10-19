@@ -20,6 +20,8 @@ Comprehensive portfolio management suite including multi-chain aggregation, real
 
 ### Feature 3.1: Multi-Chain Portfolio Aggregation (21 points)
 
+**Note**: Also known as "Multi-Wallet Portfolio Tracker" in PRD v2.0
+
 **User Stories** (3 stories):
 1. **Connect Wallet Addresses** (5 points)
    - Add up to 20 wallets with labels
@@ -40,8 +42,8 @@ Comprehensive portfolio management suite including multi-chain aggregation, real
 
 **Technical**:
 - Service: PortfolioAggregator (ECS Fargate)
-- Database: portfolio_snapshots (TimescaleDB)
-- API: `POST /v1/portfolio/wallets`, `GET /v1/portfolio/dashboard`
+- Database: portfolio_snapshots (PostgreSQL - consistent with existing infrastructure)
+- API: `POST /v2/portfolio/wallets`, `GET /v2/portfolio/dashboard`
 
 ---
 
@@ -49,7 +51,7 @@ Comprehensive portfolio management suite including multi-chain aggregation, real
 
 **User Stories** (4 stories):
 1. **Subscribe to Portfolio Updates** (5 points)
-   - WebSocket connection: `wss://api.defillama.com/v1/portfolio/ws`
+   - WebSocket connection: `wss://api.defillama.com/v2/portfolio/ws`
    - JWT authentication
    - 10K concurrent connections
    - 24+ hours stability
@@ -210,9 +212,8 @@ Comprehensive portfolio management suite including multi-chain aggregation, real
 **Infrastructure**:
 - ECS Fargate: Background jobs (portfolio aggregation)
 - WebSocket: Real-time updates (10K concurrent connections)
-- TimescaleDB: Portfolio snapshots (time-series data)
+- PostgreSQL: Portfolio snapshots, portfolio assets, liquidity positions (consistent with existing infrastructure)
 - Redis: Caching (balance data, pool data)
-- PostgreSQL: Portfolio assets, liquidity positions
 
 **External Integrations**:
 - Blockchain RPCs: Fetch balances (Alchemy, Infura, QuickNode)
@@ -221,27 +222,29 @@ Comprehensive portfolio management suite including multi-chain aggregation, real
 
 ### Database Schema
 
-**portfolio_snapshots** table (TimescaleDB):
+**portfolio_snapshots** table (PostgreSQL):
 ```sql
 CREATE TABLE portfolio_snapshots (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id VARCHAR(255) NOT NULL, -- String user ID (consistent with existing pattern)
   total_value_usd DECIMAL(20,8) NOT NULL,
   change_24h_pct DECIMAL(10,4),
   assets JSONB NOT NULL, -- [{token, chain, balance, value_usd}]
-  timestamp TIMESTAMP NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW()
+  snapshot_timestamp TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
 );
 
-SELECT create_hypertable('portfolio_snapshots', 'timestamp');
+CREATE INDEX idx_portfolio_snapshots_user_id ON portfolio_snapshots(user_id);
+CREATE INDEX idx_portfolio_snapshots_timestamp ON portfolio_snapshots(snapshot_timestamp);
 ```
 
 **portfolio_assets** table:
 ```sql
 CREATE TABLE portfolio_assets (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL,
-  asset_type VARCHAR(50) NOT NULL, -- 'token', 'nft', 'lp_position'
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id VARCHAR(255) NOT NULL, -- String user ID (consistent with existing pattern)
+  asset_type VARCHAR(50) NOT NULL CHECK (asset_type IN ('token', 'nft', 'lp_position')),
   token VARCHAR(50),
   chain VARCHAR(50) NOT NULL,
   balance DECIMAL(30,18),
@@ -252,6 +255,9 @@ CREATE TABLE portfolio_assets (
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE INDEX idx_portfolio_assets_user_id ON portfolio_assets(user_id);
+CREATE INDEX idx_portfolio_assets_asset_type ON portfolio_assets(asset_type);
 ```
 
 ---
@@ -266,7 +272,8 @@ CREATE TABLE portfolio_assets (
 - IL calculation: <2 seconds per position
 
 **Business Metrics**:
-- 50K+ users track portfolios (Q1 2026)
+- 30K+ users track portfolios (Q1 2026) - aligned with PRD v2.0
+- 150K+ wallets tracked - aligned with PRD v2.0
 - 20K+ users use real-time tracking
 - 10K+ users calculate IL
 - $3.75M ARR from portfolio features
