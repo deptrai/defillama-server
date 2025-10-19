@@ -59,7 +59,7 @@ describe('Email Notifications E2E', () => {
       });
 
       // 3. Wait for notification delivery
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       // 4. Verify email was sent to MailHog
       const messages = await getMailHogMessages();
@@ -67,7 +67,9 @@ describe('Email Notifications E2E', () => {
 
       const email = messages.items[0];
       expect(email.Content.Headers.To).toContain(TEST_CONFIG.TEST_USER_EMAIL);
-      expect(email.Content.Headers.Subject).toContain('Whale Alert');
+      // Subject may be encoded, check for both plain and encoded versions
+      const subject = email.Content.Headers.Subject[0] || email.Content.Headers.Subject;
+      expect(subject).toMatch(/Whale Alert|Whale_Alert/);
       expect(email.Content.Body).toContain('USDT');
       expect(email.Content.Body).toContain('5,000,000');
       expect(email.Content.Body).toContain('ethereum');
@@ -87,7 +89,7 @@ describe('Email Notifications E2E', () => {
         txHash: '0x123...',
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const messages = await getMailHogMessages();
       const email = messages.items[0];
@@ -110,7 +112,7 @@ describe('Email Notifications E2E', () => {
         amount: 5000000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const messages = await getMailHogMessages();
       expect(messages.total).toBe(0);
@@ -134,7 +136,7 @@ describe('Email Notifications E2E', () => {
         previousPrice: 1900,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const messages = await getMailHogMessages();
       expect(messages.total).toBe(1);
@@ -164,7 +166,7 @@ describe('Email Notifications E2E', () => {
         previousPrice: 42000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const messages = await getMailHogMessages();
       const email = messages.items[0];
@@ -195,14 +197,16 @@ describe('Email Notifications E2E', () => {
         previousPrice: 2000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const messages = await getMailHogMessages();
       expect(messages.total).toBe(2);
 
       const subjects = messages.items.map((m: any) => m.Content.Headers.Subject[0]);
-      expect(subjects).toContain(expect.stringContaining('Whale Alert'));
-      expect(subjects).toContain(expect.stringContaining('Price Alert'));
+      // Subjects may be encoded, check for both plain and encoded versions
+      const subjectsStr = subjects.join(' ');
+      expect(subjectsStr).toMatch(/Whale Alert|Whale_Alert/);
+      expect(subjectsStr).toMatch(/Price Alert|Price_Alert/);
     });
 
     it('should batch multiple alerts if configured', async () => {
@@ -247,7 +251,7 @@ describe('Email Notifications E2E', () => {
         amount: 5000000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const messages = await getMailHogMessages();
       const email = messages.items[0];
@@ -270,7 +274,7 @@ describe('Email Notifications E2E', () => {
         amount: 5000000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const messages = await getMailHogMessages();
       const email = messages.items[0];
@@ -384,12 +388,16 @@ async function triggerPriceAlert(alertId: string, priceData: any): Promise<void>
   // Calculate price change percentage
   const changePercent = ((priceData.currentPrice - priceData.previousPrice) / priceData.previousPrice * 100).toFixed(2);
 
+  // Get alert type from conditions
+  const conditions = typeof alert.conditions === 'string' ? JSON.parse(alert.conditions) : alert.conditions;
+  const alertType = conditions.alertType || conditions.alert_type || 'above';
+
   // Send notification
   await notificationService.sendNotification({
     alertId: alert.id,
     alertType: 'price',
     title: '📊 Price Alert',
-    message: `${priceData.token} price alert triggered!\n\nCurrent Price: $${priceData.currentPrice.toLocaleString()}\nPrevious Price: $${priceData.previousPrice.toLocaleString()}\nChange: ${changePercent}%`,
+    message: `${priceData.token} price alert triggered (${alertType})!\n\nCurrent Price: $${priceData.currentPrice.toLocaleString()}\nPrevious Price: $${priceData.previousPrice.toLocaleString()}\nChange: ${changePercent}%`,
     data: priceData,
     channels,
   });

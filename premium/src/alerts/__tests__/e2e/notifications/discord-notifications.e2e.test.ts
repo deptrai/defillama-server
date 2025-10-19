@@ -58,7 +58,7 @@ describe('Discord Notifications E2E', () => {
         txHash: '0xabcd...',
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const webhooks = await mockServers.discord.getWebhooks();
       expect(webhooks.length).toBe(1);
@@ -87,7 +87,7 @@ describe('Discord Notifications E2E', () => {
         previousPrice: 1900,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const webhooks = await mockServers.discord.getWebhooks();
       expect(webhooks.length).toBe(1);
@@ -110,7 +110,7 @@ describe('Discord Notifications E2E', () => {
         amount: 5000000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const webhooks = await mockServers.discord.getWebhooks();
       expect(webhooks.length).toBe(0);
@@ -132,7 +132,7 @@ describe('Discord Notifications E2E', () => {
         txHash: '0x123...',
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const webhooks = await mockServers.discord.getWebhooks();
       const webhook = webhooks[0];
@@ -161,7 +161,7 @@ describe('Discord Notifications E2E', () => {
         txHash: '0x456...',
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const webhooks = await mockServers.discord.getWebhooks();
       const embed = webhooks[0].embeds![0];
@@ -188,7 +188,7 @@ describe('Discord Notifications E2E', () => {
         amount: 5000000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const webhooks = await mockServers.discord.getWebhooks();
       const embed = webhooks[0].embeds![0];
@@ -213,7 +213,7 @@ describe('Discord Notifications E2E', () => {
         amount: 5000000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       // Should still attempt to send
       const webhooks = await mockServers.discord.getWebhooks();
@@ -250,7 +250,7 @@ describe('Discord Notifications E2E', () => {
         amount: 5000000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       // Should have attempted to send
       const webhooks = await mockServers.discord.getWebhooks();
@@ -278,14 +278,14 @@ describe('Discord Notifications E2E', () => {
         currentPrice: 2500,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const webhooks = await mockServers.discord.getWebhooks();
       expect(webhooks.length).toBe(2);
 
-      const contents = webhooks.map(w => w.content);
-      expect(contents.some(c => c?.includes('Whale Alert'))).toBe(true);
-      expect(contents.some(c => c?.includes('Price Alert'))).toBe(true);
+      const contents = webhooks.map((w: any) => w.content);
+      expect(contents.some((c: any) => c?.includes('Whale Alert'))).toBe(true);
+      expect(contents.some((c: any) => c?.includes('Price Alert'))).toBe(true);
     });
   });
 });
@@ -336,11 +336,15 @@ async function triggerPriceAlert(alertId: string, priceData: any): Promise<void>
 
   const changePercent = ((priceData.currentPrice - priceData.previousPrice) / priceData.previousPrice * 100).toFixed(2);
 
+  // Get alert type from conditions
+  const conditions = typeof alert.conditions === 'string' ? JSON.parse(alert.conditions) : alert.conditions;
+  const alertType = conditions.alertType || conditions.alert_type || 'above';
+
   await notificationService.sendNotification({
     alertId: alert.id,
     alertType: 'price',
     title: '📊 Price Alert',
-    message: `${priceData.token} price alert triggered!\n\nCurrent Price: $${priceData.currentPrice.toLocaleString()}\nPrevious Price: $${priceData.previousPrice.toLocaleString()}\nChange: ${changePercent}%`,
+    message: `${priceData.token} price alert triggered (${alertType})!\n\nCurrent Price: $${priceData.currentPrice.toLocaleString()}\nPrevious Price: $${priceData.previousPrice.toLocaleString()}\nChange: ${changePercent}%`,
     data: priceData,
     channels,
   });

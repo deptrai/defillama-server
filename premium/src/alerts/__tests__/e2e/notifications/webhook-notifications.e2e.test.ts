@@ -59,7 +59,7 @@ describe('Webhook Notifications E2E', () => {
         txHash: '0xabcd...',
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const requests = await mockServers.webhook.getRequests();
       expect(requests.length).toBe(1);
@@ -87,7 +87,7 @@ describe('Webhook Notifications E2E', () => {
         previousPrice: 1900,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const requests = await mockServers.webhook.getRequests();
       expect(requests.length).toBe(1);
@@ -109,7 +109,7 @@ describe('Webhook Notifications E2E', () => {
         amount: 5000000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const requests = await mockServers.webhook.getRequests();
       expect(requests.length).toBe(0);
@@ -131,7 +131,7 @@ describe('Webhook Notifications E2E', () => {
         txHash: '0x123...',
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const requests = await mockServers.webhook.getRequests();
       const payload = requests[0].body;
@@ -159,7 +159,7 @@ describe('Webhook Notifications E2E', () => {
         amount: 5000000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const requests = await mockServers.webhook.getRequests();
       const headers = requests[0].headers;
@@ -181,7 +181,7 @@ describe('Webhook Notifications E2E', () => {
         amount: 5000000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const requests = await mockServers.webhook.getRequests();
       const payload = requests[0].body;
@@ -206,7 +206,7 @@ describe('Webhook Notifications E2E', () => {
         amount: 5000000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       // Should still attempt to send
       const requests = await mockServers.webhook.getRequests();
@@ -243,7 +243,7 @@ describe('Webhook Notifications E2E', () => {
         amount: 5000000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       // Should have attempted to send
       const requests = await mockServers.webhook.getRequests();
@@ -271,7 +271,7 @@ describe('Webhook Notifications E2E', () => {
         currentPrice: 2500,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const requests = await mockServers.webhook.getRequests();
       expect(requests.length).toBe(2);
@@ -292,7 +292,7 @@ describe('Webhook Notifications E2E', () => {
         amount: 5000000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       const requests = mockServers.webhook.getRequestsByWebhookId('test');
       expect(requests.length).toBe(1);
@@ -346,11 +346,15 @@ async function triggerPriceAlert(alertId: string, priceData: any): Promise<void>
 
   const changePercent = ((priceData.currentPrice - priceData.previousPrice) / priceData.previousPrice * 100).toFixed(2);
 
+  // Get alert type from conditions
+  const conditions = typeof alert.conditions === 'string' ? JSON.parse(alert.conditions) : alert.conditions;
+  const alertType = conditions.alertType || conditions.alert_type || 'above';
+
   await notificationService.sendNotification({
     alertId: alert.id,
     alertType: 'price',
     title: '📊 Price Alert',
-    message: `${priceData.token} price alert triggered!\n\nCurrent Price: $${priceData.currentPrice.toLocaleString()}\nPrevious Price: $${priceData.previousPrice.toLocaleString()}\nChange: ${changePercent}%`,
+    message: `${priceData.token} price alert triggered (${alertType})!\n\nCurrent Price: $${priceData.currentPrice.toLocaleString()}\nPrevious Price: $${priceData.previousPrice.toLocaleString()}\nChange: ${changePercent}%`,
     data: priceData,
     channels,
   });

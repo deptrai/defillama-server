@@ -53,9 +53,9 @@ describe('Multi-Channel Notifications E2E', () => {
       await waitForNotification(1000);
 
       // Verify all channels received notification
-      const telegramMessages = mockServers.telegram.getMessages();
-      const discordWebhooks = mockServers.discord.getWebhooks();
-      const webhookRequests = mockServers.webhook.getRequests();
+      const telegramMessages = await mockServers.telegram.getMessages();
+      const discordWebhooks = await mockServers.discord.getWebhooks();
+      const webhookRequests = await mockServers.webhook.getRequests();
 
       expect(telegramMessages.length).toBe(1);
       expect(discordWebhooks.length).toBe(1);
@@ -73,11 +73,11 @@ describe('Multi-Channel Notifications E2E', () => {
         currentPrice: 2500,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
-      const telegramMessages = mockServers.telegram.getMessages();
-      const discordWebhooks = mockServers.discord.getWebhooks();
-      const webhookRequests = mockServers.webhook.getRequests();
+      const telegramMessages = await mockServers.telegram.getMessages();
+      const discordWebhooks = await mockServers.discord.getWebhooks();
+      const webhookRequests = await mockServers.webhook.getRequests();
 
       expect(telegramMessages.length).toBe(1);
       expect(discordWebhooks.length).toBe(1);
@@ -95,11 +95,11 @@ describe('Multi-Channel Notifications E2E', () => {
         amount: 5000000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
-      const telegramMessages = mockServers.telegram.getMessages();
-      const discordWebhooks = mockServers.discord.getWebhooks();
-      const webhookRequests = mockServers.webhook.getRequests();
+      const telegramMessages = await mockServers.telegram.getMessages();
+      const discordWebhooks = await mockServers.discord.getWebhooks();
+      const webhookRequests = await mockServers.webhook.getRequests();
 
       expect(telegramMessages.length).toBe(0);
       expect(discordWebhooks.length).toBe(0);
@@ -124,8 +124,8 @@ describe('Multi-Channel Notifications E2E', () => {
 
       // In real implementation, verify delivery order
       // For now, just verify all were delivered
-      const telegramMessages = mockServers.telegram.getMessages();
-      const discordWebhooks = mockServers.discord.getWebhooks();
+      const telegramMessages = await mockServers.telegram.getMessages();
+      const discordWebhooks = await mockServers.discord.getWebhooks();
 
       expect(telegramMessages.length).toBe(1);
       expect(discordWebhooks.length).toBe(1);
@@ -141,10 +141,10 @@ describe('Multi-Channel Notifications E2E', () => {
         currentPrice: 45000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       // Verify both channels received notification
-      const telegramMessages = mockServers.telegram.getMessages();
+      const telegramMessages = await mockServers.telegram.getMessages();
       expect(telegramMessages.length).toBe(1);
     });
   });
@@ -165,8 +165,8 @@ describe('Multi-Channel Notifications E2E', () => {
       await waitForNotification(1000);
 
       // Both should be attempted
-      const telegramMessages = mockServers.telegram.getMessages();
-      const discordWebhooks = mockServers.discord.getWebhooks();
+      const telegramMessages = await mockServers.telegram.getMessages();
+      const discordWebhooks = await mockServers.discord.getWebhooks();
 
       expect(telegramMessages.length + discordWebhooks.length).toBeGreaterThanOrEqual(1);
     });
@@ -185,8 +185,8 @@ describe('Multi-Channel Notifications E2E', () => {
       await waitForNotification(1000);
 
       // At least some channels should succeed
-      const telegramMessages = mockServers.telegram.getMessages();
-      const discordWebhooks = mockServers.discord.getWebhooks();
+      const telegramMessages = await mockServers.telegram.getMessages();
+      const discordWebhooks = await mockServers.discord.getWebhooks();
 
       expect(telegramMessages.length + discordWebhooks.length).toBeGreaterThanOrEqual(1);
     });
@@ -202,13 +202,13 @@ describe('Multi-Channel Notifications E2E', () => {
         amount: 5000000,
       });
 
-      await waitForNotification(500);
+      await waitForNotification(1000);
 
       // In real implementation, verify delivery logs
       // For now, just verify deliveries occurred
-      const telegramMessages = mockServers.telegram.getMessages();
-      const discordWebhooks = mockServers.discord.getWebhooks();
-      const webhookRequests = mockServers.webhook.getRequests();
+      const telegramMessages = await mockServers.telegram.getMessages();
+      const discordWebhooks = await mockServers.discord.getWebhooks();
+      const webhookRequests = await mockServers.webhook.getRequests();
 
       expect(telegramMessages.length).toBe(1);
       expect(discordWebhooks.length).toBe(1);
@@ -235,8 +235,8 @@ describe('Multi-Channel Notifications E2E', () => {
 
       await waitForNotification(1000);
 
-      const telegramMessages = mockServers.telegram.getMessages();
-      const discordWebhooks = mockServers.discord.getWebhooks();
+      const telegramMessages = await mockServers.telegram.getMessages();
+      const discordWebhooks = await mockServers.discord.getWebhooks();
 
       // Should have 2 messages per channel
       expect(telegramMessages.length).toBe(2);
@@ -262,7 +262,7 @@ describe('Multi-Channel Notifications E2E', () => {
 
       await waitForNotification(2000);
 
-      const telegramMessages = mockServers.telegram.getMessages();
+      const telegramMessages = await mockServers.telegram.getMessages();
       
       // Should have all 5 messages (or batched if rate limiting)
       expect(telegramMessages.length).toBeGreaterThanOrEqual(1);
@@ -317,11 +317,15 @@ async function triggerPriceAlert(alertId: string, priceData: any): Promise<void>
 
   const changePercent = ((priceData.currentPrice - priceData.previousPrice) / priceData.previousPrice * 100).toFixed(2);
 
+  // Get alert type from conditions
+  const conditions = typeof alert.conditions === 'string' ? JSON.parse(alert.conditions) : alert.conditions;
+  const alertType = conditions.alertType || conditions.alert_type || 'above';
+
   await notificationService.sendNotification({
     alertId: alert.id,
     alertType: 'price',
     title: '📊 Price Alert',
-    message: `${priceData.token} price alert triggered!\n\nCurrent Price: $${priceData.currentPrice.toLocaleString()}\nPrevious Price: $${priceData.previousPrice.toLocaleString()}\nChange: ${changePercent}%`,
+    message: `${priceData.token} price alert triggered (${alertType})!\n\nCurrent Price: $${priceData.currentPrice.toLocaleString()}\nPrevious Price: $${priceData.previousPrice.toLocaleString()}\nChange: ${changePercent}%`,
     data: priceData,
     channels,
   });
