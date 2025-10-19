@@ -58,16 +58,16 @@ describe('GasAlertService', () => {
         updated_at: new Date().toISOString(),
       };
 
-      // Mock database calls
+      // Mock database calls (count() + INSERT query)
+      // Note: getUserTier() doesn't call database, returns hardcoded 'premium'
       mockDb
-        .mockResolvedValueOnce([{ count: '0' }]) // Count query
-        .mockResolvedValueOnce([{ tier: 'premium' }]) // User tier query
-        .mockResolvedValueOnce([mockAlert]); // Insert query
+        .mockResolvedValueOnce([{ count: '0' }]) // count() query
+        .mockResolvedValueOnce([mockAlert]); // INSERT query
 
       const result = await service.create(mockUserId, createDto);
 
       expect(result).toEqual(mockAlert);
-      expect(mockDb).toHaveBeenCalledTimes(3);
+      expect(mockDb).toHaveBeenCalledTimes(2);
     });
 
     it('should throw error when alert limit exceeded (Pro tier)', async () => {
@@ -80,13 +80,14 @@ describe('GasAlertService', () => {
         throttleMinutes: 60,
       };
 
-      // Mock database calls
-      mockDb
-        .mockResolvedValueOnce([{ count: '200' }]) // Count query
-        .mockResolvedValueOnce([{ tier: 'pro' }]); // User tier query
+      // Mock count() to return 200
+      mockDb.mockResolvedValueOnce([{ count: '200' }]);
+
+      // Mock getUserTier() to return 'pro' (need to spy on private method)
+      jest.spyOn(service as any, 'getUserTier').mockResolvedValue('pro');
 
       await expect(service.create(mockUserId, createDto)).rejects.toThrow(
-        'Alert limit exceeded. Pro tier allows up to 200 gas alerts.'
+        'Alert limit exceeded. Pro tier allows maximum 200 gas alerts. Upgrade to Premium for unlimited alerts.'
       );
     });
 
@@ -123,11 +124,10 @@ describe('GasAlertService', () => {
         updated_at: new Date().toISOString(),
       };
 
-      // Mock database calls
+      // Mock database calls (count() + INSERT query)
       mockDb
-        .mockResolvedValueOnce([{ count: '0' }]) // Count query
-        .mockResolvedValueOnce([{ tier: 'premium' }]) // User tier query
-        .mockResolvedValueOnce([mockAlert]); // Insert query
+        .mockResolvedValueOnce([{ count: '0' }]) // count() query
+        .mockResolvedValueOnce([mockAlert]); // INSERT query
 
       const result = await service.create(mockUserId, createDto);
 
@@ -168,10 +168,10 @@ describe('GasAlertService', () => {
         },
       ];
 
-      // Mock database calls
+      // Mock database calls (COUNT query first, then DATA query)
       mockDb
-        .mockResolvedValueOnce(mockAlerts) // Data query
-        .mockResolvedValueOnce([{ count: '2' }]); // Count query
+        .mockResolvedValueOnce([{ count: '2' }]) // Count query FIRST
+        .mockResolvedValueOnce(mockAlerts); // Data query SECOND
 
       const result = await service.findAll(mockUserId, 1, 20);
 
@@ -185,10 +185,10 @@ describe('GasAlertService', () => {
     });
 
     it('should return empty array when no alerts found', async () => {
-      // Mock database calls
+      // Mock database calls (COUNT query first, then DATA query)
       mockDb
-        .mockResolvedValueOnce([]) // Data query
-        .mockResolvedValueOnce([{ count: '0' }]); // Count query
+        .mockResolvedValueOnce([{ count: '0' }]) // Count query FIRST
+        .mockResolvedValueOnce([]); // Data query SECOND
 
       const result = await service.findAll(mockUserId, 1, 20);
 
