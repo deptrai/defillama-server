@@ -272,6 +272,7 @@ describe('Webhook Notifications E2E', () => {
       await triggerPriceAlert(alert2.id, {
         token: 'ETH',
         currentPrice: 2500,
+        previousPrice: 2400,
       });
 
       await waitForNotification(1000);
@@ -279,9 +280,9 @@ describe('Webhook Notifications E2E', () => {
       const requests = await mockServers.webhook.getRequests();
       expect(requests.length).toBe(2);
 
-      const events = requests.map((r: any) => r.body.event);
-      expect(events).toContain('whale_alert');
-      expect(events).toContain('price_alert');
+      const alertTypes = requests.map((r: any) => r.body.alert_type);
+      expect(alertTypes).toContain('whale');
+      expect(alertTypes).toContain('price');
     });
 
     it('should filter requests by webhook ID', async () => {
