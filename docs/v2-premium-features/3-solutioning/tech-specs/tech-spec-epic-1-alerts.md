@@ -745,5 +745,370 @@ export class WebhookService {
 
 ---
 
+## 9. POST-REVIEW IMPROVEMENTS (2025-10-19)
+
+**Source**: Engineering Lead, DevOps Lead, Security Lead Reviews
+
+### 9.1 Critical Security Requirements
+
+#### 9.1.1 Rate Limiting (🔴 CRITICAL)
+
+**Requirement**: Implement rate limiting for alert processing to prevent alert storms
+
+**Implementation**:
+
+```typescript
+// src/alerts/middleware/rate-limit.middleware.ts
+import { Injectable, NestMiddleware } from '@nestjs/common';
+import { Request, Response, NextFunction } from 'express';
+import { RedisService } from '@/common/services/redis.service';
+
+@Injectable()
+export class AlertRateLimitMiddleware implements NestMiddleware {
+  constructor(private readonly redis: RedisService) {}
+
+  async use(req: Request, res: Response, next: NextFunction) {
+    const userId = req.user.id;
+    const key = `alert:rate_limit:${userId}`;
+
+    // Get current count
+    const count = await this.redis.incr(key);
+
+    // Set expiry on first request
+    if (count === 1) {
+      await this.redis.expire(key, 60); // 1 minute window
+    }
+
+    // Check limits
+    const limit = 100; // 100 alerts/minute
+    const burst = 200; // 200 alerts/minute burst
+
+    if (count > burst) {
+      return res.status(429).json({
+        error: 'Too Many Requests',
+        message: 'Alert rate limit exceeded. Maximum 100 alerts/minute, 200 burst.',
+        retryAfter: await this.redis.ttl(key)
+      });
+    }
+
+    // Add rate limit headers
+    res.setHeader('X-RateLimit-Limit', limit.toString());
+    res.setHeader('X-RateLimit-Remaining', Math.max(0, limit - count).toString());
+    res.setHeader('X-RateLimit-Reset', (Date.now() + await this.redis.ttl(key) * 1000).toString());
+
+    next();
+  }
+}
+```
+
+**AWS WAF Configuration**:
+
+```yaml
+# infrastructure/waf-rules.yml
+AlertRateLimitRule:
+  Name: AlertRateLimitRule
+  Priority: 1
+  Statement:
+    RateBasedStatement:
+      Limit: 100
+      AggregateKeyType: IP
+      ScopeDownStatement:
+        ByteMatchStatement:
+          SearchString: /api/v2/alerts
+          FieldToMatch:
+            UriPath: {}
+          TextTransformations:
+            - Priority: 0
+              Type: LOWERCASE
+  Action:
+    Block:
+      CustomResponse:
+        ResponseCode: 429
+        CustomResponseBodyKey: RateLimitExceeded
+  VisibilityConfig:
+    SampledRequestsEnabled: true
+    CloudWatchMetricsEnabled: true
+    MetricName: AlertRateLimitRule
+```
+
+**Timeline**: Phase 1 (Q4 2025, Month 2)
+**Owner**: Backend Engineer
+
+---
+
+#### 9.1.2 Audit Logging (🔴 CRITICAL)
+
+**Requirement**: Log all alert creation, modification, deletion events
+
+**Implementation**:
+
+```typescript
+// src/alerts/services/alert-audit.service.ts
+import { Injectable } from '@nestjs/common';
+import { CloudWatchLogsService } from '@/common/services/cloudwatch-logs.service';
+
+@Injectable()
+export class AlertAuditService {
+  constructor(private readonly cloudwatch: CloudWatchLogsService) {}
+
+  async logAlertCreated(userId: string, alertId: string, alertData: any) {
+    await this.cloudwatch.putLogEvents({
+      logGroupName: '/aws/lambda/alerts-api',
+      logStreamName: 'alert-audit',
+      logEvents: [{
+        timestamp: Date.now(),
+        message: JSON.stringify({
+          event: 'ALERT_CREATED',
+          userId,
+          alertId,
+          alertData,
+          timestamp: new Date().toISOString(),
+          correlationId: this.getCorrelationId()
+        })
+      }]
+    });
+  }
+
+  async logAlertModified(userId: string, alertId: string, changes: any) {
+    await this.cloudwatch.putLogEvents({
+      logGroupName: '/aws/lambda/alerts-api',
+      logStreamName: 'alert-audit',
+      logEvents: [{
+        timestamp: Date.now(),
+        message: JSON.stringify({
+          event: 'ALERT_MODIFIED',
+          userId,
+          alertId,
+          changes,
+          timestamp: new Date().toISOString(),
+          correlationId: this.getCorrelationId()
+        })
+      }]
+    });
+  }
+
+  async logAlertDeleted(userId: string, alertId: string) {
+    await this.cloudwatch.putLogEvents({
+      logGroupName: '/aws/lambda/alerts-api',
+      logStreamName: 'alert-audit',
+      logEvents: [{
+        timestamp: Date.now(),
+        message: JSON.stringify({
+          event: 'ALERT_DELETED',
+          userId,
+          alertId,
+          timestamp: new Date().toISOString(),
+          correlationId: this.getCorrelationId()
+        })
+      }]
+    });
+  }
+
+  private getCorrelationId(): string {
+    // Get correlation ID from request context
+    return 'correlation-id-from-context';
+  }
+}
+```
+
+**Retention Policy**:
+- CloudWatch Logs: 1 year
+- S3 Archival: After 1 year (for compliance)
+
+**Timeline**: Phase 1 (Q4 2025, Month 2)
+**Owner**: DevOps Engineer
+
+---
+
+### 9.2 High Priority Improvements
+
+#### 9.2.1 Circuit Breaker Pattern (🟡 HIGH)
+
+**Rationale**: Prevent alert storms, improve reliability
+
+**Implementation**:
+
+```typescript
+// src/alerts/services/alert-circuit-breaker.service.ts
+import { Injectable } from '@nestjs/common';
+import { CircuitBreaker } from 'opossum';
+
+@Injectable()
+export class AlertCircuitBreakerService {
+  private circuitBreaker: CircuitBreaker;
+
+  constructor() {
+    this.circuitBreaker = new CircuitBreaker(this.processAlert.bind(this), {
+      timeout: 5000, // 5 seconds
+      errorThresholdPercentage: 10, // Open circuit if error rate >10%
+      resetTimeout: 60000, // Try to close circuit after 1 minute
+      rollingCountTimeout: 60000, // 1 minute rolling window
+      rollingCountBuckets: 10,
+      name: 'alert-processing'
+    });
+
+    // Circuit breaker events
+    this.circuitBreaker.on('open', () => {
+      console.error('Circuit breaker opened - alert processing paused');
+      // Send alert to PagerDuty
+    });
+
+    this.circuitBreaker.on('halfOpen', () => {
+      console.log('Circuit breaker half-open - testing alert processing');
+    });
+
+    this.circuitBreaker.on('close', () => {
+      console.log('Circuit breaker closed - alert processing resumed');
+    });
+  }
+
+  async processAlertWithCircuitBreaker(alert: any) {
+    try {
+      return await this.circuitBreaker.fire(alert);
+    } catch (error) {
+      if (this.circuitBreaker.opened) {
+        // Queue alert for later processing
+        await this.queueAlertForLater(alert);
+        throw new Error('Alert processing circuit breaker is open. Alert queued for later.');
+      }
+      throw error;
+    }
+  }
+
+  private async processAlert(alert: any) {
+    // Actual alert processing logic
+    // This will be called by circuit breaker
+  }
+
+  private async queueAlertForLater(alert: any) {
+    // Queue alert in SQS for later processing
+  }
+}
+```
+
+**Benefit**: Better reliability, reduced costs, prevent alert storms
+
+**Timeline**: Phase 1 (Q4 2025, Month 3)
+**Owner**: Backend Engineer
+
+---
+
+#### 9.2.2 Alert Batching for High-Volume Users (🟡 HIGH)
+
+**Rationale**: Improve performance, reduce notification fatigue
+
+**Implementation**:
+
+```typescript
+// src/alerts/services/alert-batching.service.ts
+import { Injectable } from '@nestjs/common';
+import { RedisService } from '@/common/services/redis.service';
+
+@Injectable()
+export class AlertBatchingService {
+  constructor(private readonly redis: RedisService) {}
+
+  async batchAlert(userId: string, alert: any) {
+    const key = `alert:batch:${userId}`;
+
+    // Add alert to batch
+    await this.redis.rpush(key, JSON.stringify(alert));
+
+    // Set expiry if first alert in batch
+    const count = await this.redis.llen(key);
+    if (count === 1) {
+      await this.redis.expire(key, 300); // 5 minutes
+    }
+
+    // Check if batch is full
+    const batchSize = 10; // Batch 10 alerts together
+    if (count >= batchSize) {
+      await this.flushBatch(userId);
+    }
+  }
+
+  private async flushBatch(userId: string) {
+    const key = `alert:batch:${userId}`;
+
+    // Get all alerts in batch
+    const alerts = await this.redis.lrange(key, 0, -1);
+
+    // Delete batch
+    await this.redis.del(key);
+
+    // Send batched notification
+    await this.sendBatchedNotification(userId, alerts.map(a => JSON.parse(a)));
+  }
+
+  private async sendBatchedNotification(userId: string, alerts: any[]) {
+    // Send single notification with all alerts
+    // E.g., "You have 10 new alerts: Whale movement (5), Price alerts (3), Gas alerts (2)"
+  }
+}
+```
+
+**Benefit**: Better performance, reduced notification fatigue
+
+**Timeline**: Phase 1 (Q4 2025, Month 3)
+**Owner**: Backend Engineer
+
+---
+
+### 9.3 Updated Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         API Gateway                              │
+│                    (Rate Limiting via WAF)                       │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Alert Rules API                             │
+│              (Lambda with Circuit Breaker)                       │
+│                    (Audit Logging)                               │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Event Processor                             │
+│                  (ECS Fargate with                               │
+│                   Circuit Breaker)                               │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   Alert Batching Service                         │
+│                    (Redis-based)                                 │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                  Notification Service                            │
+│              (Multi-channel delivery)                            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 9.4 Updated Deployment Strategy
+
+**Phase 1 (Q4 2025, Month 2)**:
+1. Implement rate limiting (AWS WAF + Redis)
+2. Implement audit logging (CloudWatch Logs)
+3. Deploy with blue-green deployment
+
+**Phase 1 (Q4 2025, Month 3)**:
+1. Implement circuit breaker pattern
+2. Implement alert batching
+3. Early beta launch (whale traders)
+
+**Monitoring**:
+- Rate limit metrics (CloudWatch)
+- Circuit breaker metrics (Datadog)
+- Audit log metrics (CloudWatch Insights)
+
+---
+
 **END OF DOCUMENT**
 
