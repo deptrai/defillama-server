@@ -30473,10 +30473,7 @@ const data4: Protocol[] = [
     twitter: "gizatechxyz",
     audit_links: ["https://docs.usepulse.xyz/audit"],
     forkedFromIds: [],
-    listedAt: 1759876671,
-    dimensions: {
-      fees: "giza"
-    }
+    listedAt: 1759876671
   },
   {
     id: "6822",
