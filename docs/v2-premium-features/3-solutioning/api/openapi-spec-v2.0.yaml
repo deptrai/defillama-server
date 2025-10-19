@@ -1,0 +1,421 @@
+openapi: 3.0.3
+info:
+  title: DeFiLlama Premium Features API
+  description: |
+    API for DeFiLlama Premium Features v2.0
+    
+    **Features**:
+    - Alerts & Notifications (Whale, Price, Gas, Protocol Risk)
+    - Tax Reporting Suite
+    - Portfolio Management
+    - Gas & Trading Optimization
+    - Security & Risk Management
+    - Advanced Analytics
+    
+    **Authentication**: Bearer token (JWT)
+    
+    **Rate Limits**:
+    - Free: 10 requests/minute
+    - Pro: 100 requests/minute
+    - Premium: 1000 requests/minute
+    - Enterprise: Unlimited
+    
+  version: 2.0.0
+  contact:
+    name: DeFiLlama API Support
+    email: api@defillama.com
+    url: https://defillama.com/docs
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.defillama.com/v2
+    description: Production server
+  - url: https://api-staging.defillama.com/v2
+    description: Staging server
+  - url: http://localhost:3000/v2
+    description: Local development server
+
+tags:
+  - name: Alerts
+    description: Alert management and history
+  - name: Notifications
+    description: Notification preferences and channels
+  - name: Tax
+    description: Tax reporting and calculations
+  - name: Portfolio
+    description: Portfolio tracking and analytics
+  - name: Gas
+    description: Gas optimization and monitoring
+  - name: Security
+    description: Security scanning and risk assessment
+  - name: Analytics
+    description: Advanced analytics and insights
+
+paths:
+  # ==================== ALERTS ====================
+  /alerts/rules:
+    get:
+      tags: [Alerts]
+      summary: List alert rules
+      description: Get all alert rules for the authenticated user
+      operationId: listAlertRules
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: rule_type
+          in: query
+          description: Filter by rule type
+          schema:
+            type: string
+            enum: [whale_movement, price_alert, gas_alert, protocol_risk]
+        - name: is_active
+          in: query
+          description: Filter by active status
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+      responses:
+        '200':
+          description: List of alert rules
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rules:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AlertRule'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+    
+    post:
+      tags: [Alerts]
+      summary: Create alert rule
+      description: Create a new alert rule
+      operationId: createAlertRule
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAlertRuleRequest'
+      responses:
+        '201':
+          description: Alert rule created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRule'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /alerts/rules/{ruleId}:
+    get:
+      tags: [Alerts]
+      summary: Get alert rule
+      operationId: getAlertRule
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ruleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Alert rule details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRule'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    put:
+      tags: [Alerts]
+      summary: Update alert rule
+      operationId: updateAlertRule
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ruleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAlertRuleRequest'
+      responses:
+        '200':
+          description: Alert rule updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRule'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    delete:
+      tags: [Alerts]
+      summary: Delete alert rule
+      operationId: deleteAlertRule
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ruleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Alert rule deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /alerts/history:
+    get:
+      tags: [Alerts]
+      summary: Get alert history
+      description: Get triggered alerts history
+      operationId: getAlertHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: rule_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: alert_type
+          in: query
+          schema:
+            type: string
+        - name: chain
+          in: query
+          schema:
+            type: string
+        - name: token
+          in: query
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Alert history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alerts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AlertHistory'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AlertRule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        rule_type:
+          type: string
+          enum: [whale_movement, price_alert, gas_alert, protocol_risk]
+        conditions:
+          type: object
+          description: Rule-specific conditions (JSONB)
+        notification_channels:
+          type: object
+          properties:
+            email:
+              type: boolean
+            push:
+              type: boolean
+            webhook:
+              type: string
+              format: uri
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateAlertRuleRequest:
+      type: object
+      required:
+        - rule_type
+        - conditions
+        - notification_channels
+      properties:
+        rule_type:
+          type: string
+          enum: [whale_movement, price_alert, gas_alert, protocol_risk]
+        conditions:
+          type: object
+        notification_channels:
+          type: object
+
+    UpdateAlertRuleRequest:
+      type: object
+      properties:
+        conditions:
+          type: object
+        notification_channels:
+          type: object
+        is_active:
+          type: boolean
+
+    AlertHistory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+        alert_type:
+          type: string
+        event_data:
+          type: object
+        triggered_at:
+          type: string
+          format: date-time
+        notified_at:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Unauthorized
+              message:
+                type: string
+                example: Invalid or missing authentication token
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Not Found
+              message:
+                type: string
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Rate Limit Exceeded
+              message:
+                type: string
+              retry_after:
+                type: integer
+                description: Seconds until rate limit resets
+
