@@ -105,11 +105,12 @@ const CHAIN_CONFIGS: Record<string, ChainConfig> = {
 export class GasPriceMonitorService {
   private redis: Redis;
   private providers: Map<string, ethers.JsonRpcProvider>;
+  private monitoringInterval: NodeJS.Timeout | null = null;
 
   constructor(redisClient?: Redis) {
     this.redis = redisClient || redis;
     this.providers = new Map();
-    
+
     // Initialize providers for all chains
     for (const [chain, config] of Object.entries(CHAIN_CONFIGS)) {
       this.providers.set(chain, new ethers.JsonRpcProvider(config.rpcUrl));
@@ -294,11 +295,17 @@ export class GasPriceMonitorService {
 
   /**
    * Start monitoring gas prices
-   * 
+   *
    * Fetches gas prices every 10 seconds and saves to cache/history
    */
   startMonitoring(): void {
-    setInterval(async () => {
+    // Prevent multiple monitoring intervals
+    if (this.monitoringInterval) {
+      console.warn('Gas price monitoring is already running');
+      return;
+    }
+
+    this.monitoringInterval = setInterval(async () => {
       for (const chain of Object.keys(CHAIN_CONFIGS)) {
         try {
           const gasPrices = await this.fetchGasPrices(chain);
@@ -309,6 +316,25 @@ export class GasPriceMonitorService {
         }
       }
     }, 10000); // 10 seconds
+  }
+
+  /**
+   * Stop monitoring gas prices
+   */
+  stopMonitoring(): void {
+    if (this.monitoringInterval) {
+      clearInterval(this.monitoringInterval);
+      this.monitoringInterval = null;
+      console.log('Gas price monitoring stopped');
+    }
+  }
+
+  /**
+   * Cleanup resources
+   */
+  async cleanup(): Promise<void> {
+    this.stopMonitoring();
+    await this.redis.quit();
   }
 }
 

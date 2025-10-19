@@ -2,8 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { gasAlertService } from '../services/gas-alert.service';
 import { gasPriceMonitorService } from '../services/gas-price-monitor.service';
 import { safeValidateCreateGasAlert, safeValidateUpdateGasAlert } from '../dto';
-import { getUserId } from '../../auth/jwt';
-import { successResponse, errorResponse } from '../../common/utils/response';
+import { getUserId, successResponse, errorResponse } from '../../common/utils/response';
 import { logger } from '../../common/utils/logger';
 
 /**
