@@ -27,12 +27,11 @@
 | 1.3 | Gas Fee Alerts | 13 | 📝 READY | [story-1.3-gas-fee-alerts.md](./story-1.3-gas-fee-alerts.md) |
 | 1.4 | Protocol Risk Alerts | 21 | 📝 READY | [story-1.4-protocol-risk-alerts.md](./story-1.4-protocol-risk-alerts.md) |
 | 1.5 | Alert Automation | 21 | 📝 READY | [story-1.5-alert-automation.md](./story-1.5-alert-automation.md) |
-| 1.6 | Notification Channels | 13 | 📋 PLANNED | - |
-| 1.7 | Alert Dashboard | 13 | 📋 PLANNED | - |
-| 1.8 | Alert Analytics | 8 | 📋 PLANNED | - |
-| 1.9 | Infrastructure & Testing | 10 | 📋 PLANNED | - |
+| 1.6 | Infrastructure & Integration | 20 | 📝 READY | [story-1.6-infrastructure-integration.md](./story-1.6-infrastructure-integration.md) |
+| 1.7 | Integration & Testing | 10 | 📝 READY | [story-1.7-integration-testing.md](./story-1.7-integration-testing.md) |
+| 1.8 | Unified Alert Dashboard | 10 | 📝 READY | [story-1.8-unified-alert-dashboard.md](./story-1.8-unified-alert-dashboard.md) |
 
-**Subtotal**: 154 points (5 detailed, 4 planned)
+**Subtotal**: 150 points (8 detailed, 0 planned)
 
 ---
 
@@ -43,15 +42,18 @@
 
 | Story ID | Feature | Story Points | Status | File |
 |----------|---------|--------------|--------|------|
-| 2.1 | Tax Reporting Suite | 80 | 📋 PLANNED | - |
-| 2.1.1 | Transaction Import | 13 | 📋 PLANNED | - |
-| 2.1.2 | Cost Basis Calculation | 21 | 📋 PLANNED | - |
-| 2.1.3 | Capital Gains/Loss Report | 21 | 📋 PLANNED | - |
-| 2.1.4 | Tax Form Generation (8949, Schedule D) | 13 | 📋 PLANNED | - |
-| 2.1.5 | Multi-Jurisdiction Support | 8 | 📋 PLANNED | - |
-| 2.1.6 | CPA Export & Audit Trail | 4 | 📋 PLANNED | - |
+| 2.1 | Tax Reporting Suite | 80 | 📝 READY | [story-2.1-tax-reporting-suite.md](./story-2.1-tax-reporting-suite.md) |
+| 2.1.1 | Transaction Import | 13 | 📝 READY | (included in 2.1) |
+| 2.1.2 | Cost Basis Calculation | 13 | 📝 READY | (included in 2.1) |
+| 2.1.3 | Capital Gains/Loss Report | 13 | 📝 READY | (included in 2.1) |
+| 2.1.4 | Tax Form Generation (8949, Schedule D) | 13 | 📝 READY | (included in 2.1) |
+| 2.1.5 | Multi-Chain Aggregation | 8 | 📝 READY | (included in 2.1) |
+| 2.1.6 | Tax Settings Management | 5 | 📝 READY | (included in 2.1) |
+| 2.1.7 | Tax Report History | 5 | 📝 READY | (included in 2.1) |
+| 2.1.8 | Tax Audit Trail | 5 | 📝 READY | (included in 2.1) |
+| 2.1.9 | Tax Optimization Suggestions | 5 | 📝 READY | (included in 2.1) |
 
-**Subtotal**: 80 points (0 detailed, 6 planned)
+**Subtotal**: 80 points (1 detailed file with 9 stories)
 
 ---
 
@@ -174,8 +176,8 @@
 ### By Status
 - ✅ **COMPLETE**: 0 stories (0 points)
 - 🚧 **IN PROGRESS**: 0 stories (0 points)
-- 📝 **READY**: 5 stories (110 points) - EPIC-1 features
-- 📋 **PLANNED**: 34 stories (701 points) - Remaining features
+- 📝 **READY**: 9 stories (230 points) - EPIC-1 (8 stories, 150 points) + EPIC-2 (1 story, 80 points)
+- 📋 **PLANNED**: 30 stories (581 points) - Remaining features
 
 **Total**: 39 stories, 811 points
 
@@ -196,9 +198,9 @@
 ## Next Steps
 
 ### Immediate (Week 1)
-1. ✅ Create detailed stories for EPIC-1 features (5/8 done)
-2. ⏳ Create detailed stories for remaining EPIC-1 features (3 stories)
-3. ⏳ Create detailed stories for EPIC-2 (Tax Reporting Suite)
+1. ✅ Create detailed stories for EPIC-1 features (8/8 done)
+2. ✅ Create detailed stories for EPIC-2 (Tax Reporting Suite) (1/1 done)
+3. ⏳ Expand OpenAPI spec to include Tax, Portfolio, Gas APIs
 
 ### Short-term (Month 1)
 1. Create detailed stories for EPIC-3 (Portfolio Management)
