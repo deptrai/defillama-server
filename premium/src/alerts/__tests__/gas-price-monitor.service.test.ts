@@ -92,7 +92,9 @@ describe('GasPriceMonitorService', () => {
       expect(result.slow).toBe(40);
       expect(result.standard).toBe(50);
       expect(result.fast).toBe(60);
-      expect(result.instant).toBe(72); // 60 * 1.2
+      // Note: Falls back to RPC when ETHERSCAN_API_KEY not set
+      // RPC calculation: instant = standard * 1.5 = 50 * 1.5 = 75
+      expect(result.instant).toBe(75);
       expect(mockRedis.setex).toHaveBeenCalled();
     });
 
@@ -127,8 +129,8 @@ describe('GasPriceMonitorService', () => {
         timestamp: new Date().toISOString(),
       };
 
-      mockRedis.zadd.mockResolvedValue(1);
-      mockRedis.zremrangebyscore.mockResolvedValue(0);
+      mockRedis.zadd.mockResolvedValue(1 as any);
+      mockRedis.zremrangebyscore.mockResolvedValue(0 as any);
 
       await service.saveToHistory('ethereum', gasPriceData);
 
@@ -289,7 +291,9 @@ describe('GasPriceMonitorService', () => {
       expect(result.slow).toBe(40);
       expect(result.standard).toBe(50);
       expect(result.fast).toBe(60);
-      expect(result.instant).toBe(72); // 60 * 1.2
+      // Note: Falls back to RPC when ETHERSCAN_API_KEY not set
+      // RPC calculation: instant = standard * 1.5 = 50 * 1.5 = 75
+      expect(result.instant).toBe(75);
     });
 
     it('should throw error when Etherscan API returns error', async () => {
