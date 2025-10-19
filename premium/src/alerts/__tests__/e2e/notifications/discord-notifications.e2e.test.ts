@@ -276,6 +276,7 @@ describe('Discord Notifications E2E', () => {
       await triggerPriceAlert(alert2.id, {
         token: 'ETH',
         currentPrice: 2500,
+        previousPrice: 2400,
       });
 
       await waitForNotification(1000);

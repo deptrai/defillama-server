@@ -71,6 +71,7 @@ describe('Multi-Channel Notifications E2E', () => {
       await triggerPriceAlert(alert.id, {
         token: 'ETH',
         currentPrice: 2500,
+        previousPrice: 2400,
       });
 
       await waitForNotification(1000);
@@ -139,6 +140,7 @@ describe('Multi-Channel Notifications E2E', () => {
       await triggerPriceAlert(alert.id, {
         token: 'BTC',
         currentPrice: 45000,
+        previousPrice: 44000,
       });
 
       await waitForNotification(1000);
@@ -180,6 +182,7 @@ describe('Multi-Channel Notifications E2E', () => {
       await triggerPriceAlert(alert.id, {
         token: 'ETH',
         currentPrice: 2500,
+        previousPrice: 2400,
       });
 
       await waitForNotification(1000);
