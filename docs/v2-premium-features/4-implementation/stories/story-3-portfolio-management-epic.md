@@ -114,86 +114,102 @@ Comprehensive portfolio management suite including multi-chain aggregation, real
 
 ---
 
-### Feature 3.4: Liquidity Pool Alerts (13 points)
-
-**User Stories** (3 stories):
-1. **Configure Pool Alert Rules** (5 points)
-   - Monitor specific pools
-   - Set alert conditions (APY change, TVL change, volume change)
-   - Multi-chain support
-
-2. **Monitor Pool Metrics** (5 points)
-   - Fetch pool data from DEX APIs
-   - Evaluate alert rules every 1 hour
-   - Detect metric changes
-
-3. **Send Pool Alert Notifications** (3 points)
-   - Multi-channel notifications
-   - Alert includes: pool name, metric, change %, chain
-
-**Technical**:
-- Service: PoolMonitor
-- Data Source: DEX APIs, DeFiLlama API
-- API: `POST /v1/alerts/rules` (pool alert)
-
----
-
-### Feature 3.5: Portfolio Analytics (21 points)
+### Feature 3.4: Portfolio Rebalancing Suggestions (21 points)
 
 **User Stories** (4 stories):
-1. **P&L Calculator** (8 points)
-   - Calculate realized P&L (closed positions)
-   - Calculate unrealized P&L (open positions)
-   - Calculate total P&L (realized + unrealized)
-   - Breakdown by asset, chain, time period
-   - Performance: <5 seconds for 10K transactions
+1. **Analyze Portfolio Allocation** (8 points)
+   - Analyze portfolio breakdown by asset
+   - Calculate current allocation %
+   - Compare with target allocation (if set)
+   - Identify over/under-allocated assets
+   - Generate allocation report
 
-2. **Portfolio Performance Metrics** (5 points)
-   - ROI (Return on Investment)
-   - Sharpe Ratio (risk-adjusted return)
-   - Max Drawdown
-   - Win Rate
-   - Time-weighted return
+2. **Generate Rebalancing Suggestions** (8 points)
+   - Suggest buy/sell actions to reach target allocation
+   - Calculate trade amounts (USD, tokens)
+   - Consider gas fees and slippage
+   - Generate rebalancing plan
+   - Optimization: Minimize trades, minimize gas fees
 
-3. **Asset Allocation Analysis** (5 points)
-   - Breakdown by asset type (tokens, NFTs, LP positions)
-   - Breakdown by chain
-   - Breakdown by category (DeFi, Gaming, etc.)
-   - Pie charts, bar charts
+3. **Display Rebalancing Dashboard** (3 points)
+   - View current vs target allocation
+   - View suggested buy/sell actions
+   - View estimated gas fees
+   - Accept/reject suggestions
+   - React + ECharts visualization
 
-4. **Historical Portfolio Snapshots** (3 points)
-   - View portfolio value at any point in time
-   - Compare portfolio across time periods
-   - Export historical data (CSV, JSON)
+4. **Set Target Allocation** (2 points)
+   - Set target allocation % for each asset
+   - Save multiple allocation strategies
+   - Validate allocation (total = 100%)
+   - Edit/delete allocation strategies
 
 **Technical**:
-- Service: PortfolioAnalyticsService
-- Database: portfolio_snapshots (TimescaleDB)
-- Frontend: React + ECharts, Recharts
+- Service: PortfolioAnalyzerService, RebalancingService
+- Algorithm: Variance analysis, Linear programming
+- Database: portfolio_snapshots, portfolio_assets tables
+- API: `GET /v2/portfolio/rebalancing`, `POST /v2/portfolio/target-allocation`
 
 ---
 
-### Feature 3.6: Portfolio Alerts (13 points)
+### Feature 3.5: Portfolio Comparison (21 points)
 
-**User Stories** (3 stories):
-1. **Configure Portfolio Alert Rules** (5 points)
-   - Set value change alerts (% or USD)
-   - Set asset-specific alerts
-   - Set allocation alerts (rebalancing needed)
+**User Stories** (4 stories):
+1. **Compare with Market Indices** (8 points)
+   - Compare portfolio with BTC, ETH, S&P 500
+   - Calculate portfolio ROI vs index ROI
+   - Display comparison chart (30d, 90d, 1y)
+   - Data source: CoinGecko (BTC, ETH), Yahoo Finance (S&P 500)
 
-2. **Monitor Portfolio Changes** (5 points)
-   - Evaluate alert rules every 1 hour
-   - Detect value changes, allocation changes
-   - Trigger alerts when conditions met
+2. **Compare with Other Users** (8 points)
+   - View leaderboard (top 100 portfolios by ROI)
+   - View user rank
+   - Filter by time period (30d, 90d, 1y)
+   - Anonymized data (no wallet addresses)
+   - Leaderboard updates daily
 
-3. **Send Portfolio Alert Notifications** (3 points)
-   - Multi-channel notifications
-   - Alert includes: portfolio value, change %, affected assets
+3. **Display Performance Metrics** (3 points)
+   - View ROI (absolute, percentage)
+   - View Sharpe ratio, max drawdown, volatility
+   - Metrics calculated for 30d, 90d, 1y
+
+4. **Export Performance Report** (2 points)
+   - Export performance report (PDF, CSV)
+   - Report includes: portfolio value, ROI, metrics, charts
+   - Report covers selected time period
+   - Professionally formatted
 
 **Technical**:
-- Service: EventProcessor
-- API: `POST /v1/alerts/rules` (portfolio alert)
-- Channels: SendGrid, Firebase, Webhooks
+- Service: PortfolioComparisonService
+- Database: portfolio_snapshots (PostgreSQL)
+- Frontend: React + ECharts
+- API: `GET /v2/portfolio/comparison`, `GET /v2/portfolio/leaderboard`, `GET /v2/portfolio/metrics`, `GET /v2/portfolio/export`
+
+---
+
+### Feature 3.6: Portfolio Export (5 points)
+
+**User Stories** (2 stories):
+1. **Export Portfolio Data** (3 points)
+   - Export portfolio data (CSV, JSON)
+   - Export includes: assets, balances, values, chains
+   - Export includes historical snapshots
+   - User can select time range
+   - Export completes within 1 minute
+
+2. **Schedule Automated Exports** (2 points)
+   - Schedule exports (daily, weekly, monthly)
+   - Select export format (CSV, JSON, PDF)
+   - Select delivery method (email, webhook)
+   - System sends exports automatically
+   - Manage scheduled exports
+
+**Technical**:
+- Service: ScheduledExportService (background job)
+- Database: scheduled_exports table
+- API: `GET /v2/portfolio/export`, `POST /v2/portfolio/scheduled-exports`
+- Delivery: SendGrid (email), Webhooks
+- Performance: <1 minute export time
 
 ---
 
