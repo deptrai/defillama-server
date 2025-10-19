@@ -22,11 +22,13 @@ So that [benefit]
 
 ### Scope
 
-- **Total EPICs**: 6 EPICs
-- **Total Story Points**: 640 points
-- **Total User Stories**: ~180-200 stories
-- **Timeline**: 12 months (Q4 2025 - Q3 2026)
+- **Total EPICs**: 9 EPICs (6 feature EPICs + 3 infrastructure EPICs)
+- **Total Story Points**: 811 points (640 feature + 171 infrastructure)
+- **Total User Stories**: 160 stories
+- **Timeline**: 14 months (Q4 2025 - Q1 2027)
 - **Target**: $25M ARR, 125K premium users
+
+**Note**: Infrastructure EPICs (EPIC-7, EPIC-8, EPIC-9) provide foundation for all feature EPICs but are not directly user-facing.
 
 ### Story Point Scale
 

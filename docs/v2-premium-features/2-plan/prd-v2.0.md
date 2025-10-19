@@ -1649,6 +1649,325 @@ interface AlertAction {
 
 ---
 
+### 4.5 Infrastructure & Cross-Cutting Features (All Phases)
+
+**Phase Overview**:
+- **Timeline**: Throughout all phases (Q4 2025 - Q3 2026)
+- **Features**: 14 features (5 integration + 4 DevOps + 3 documentation + 2 infrastructure)
+- **Story Points**: 100 points (EPIC-7: 25, EPIC-8: 50, EPIC-9: 25)
+- **Priority**: ⭐⭐⭐⭐⭐ CRITICAL (Foundation for all EPICs)
+
+**Note**: These features are not user-facing but are critical for the success of all other features. They provide the foundation for integration, deployment, monitoring, and documentation.
+
+---
+
+#### 4.5.1 Feature: Alerts + Portfolio Integration
+
+**Feature ID**: F-026
+**EPIC**: EPIC-7 (Cross-EPIC Integration)
+**Priority**: P0 (Critical)
+**Effort**: 2 weeks
+**Story Points**: 8
+
+**Description**: Seamless integration between Alerts and Portfolio features. Users can set alerts based on portfolio metrics (e.g., alert when portfolio value drops >10%, alert when specific position changes).
+
+**User Story**: As a DeFi user, I want to receive alerts based on my portfolio metrics, so I can react quickly to portfolio changes.
+
+**Key Capabilities**:
+- Portfolio-based alert triggers (value change, position change, P&L threshold)
+- Alert actions (add to watchlist, rebalance portfolio)
+- Unified alert + portfolio dashboard
+- Cross-feature data sharing (portfolio data → alert engine)
+
+**Success Metrics**: 80%+ of alert users also use portfolio features, 50%+ of users set portfolio-based alerts
+
+---
+
+#### 4.5.2 Feature: Tax + Portfolio Integration
+
+**Feature ID**: F-027
+**EPIC**: EPIC-7 (Cross-EPIC Integration)
+**Priority**: P0 (Critical)
+**Effort**: 2 weeks
+**Story Points**: 8
+
+**Description**: Seamless integration between Tax and Portfolio features. Portfolio transactions automatically sync to tax reporting, P&L calculations use tax cost basis.
+
+**User Story**: As a DeFi user, I want my portfolio transactions to automatically sync to tax reporting, so I don't have to manually import transactions.
+
+**Key Capabilities**:
+- Auto-sync portfolio transactions to tax reporting
+- Tax cost basis integration with P&L calculations
+- Tax-optimized portfolio rebalancing suggestions
+- Unified tax + portfolio reports
+
+**Success Metrics**: 90%+ of tax users also use portfolio features, 95%+ transaction sync accuracy
+
+---
+
+#### 4.5.3 Feature: Trading + Portfolio Integration
+
+**Feature ID**: F-028
+**EPIC**: EPIC-7 (Cross-EPIC Integration)
+**Priority**: P0 (Critical)
+**Effort**: 1 week
+**Story Points**: 5
+
+**Description**: Seamless integration between Trading and Portfolio features. Trading strategies can access portfolio data, executed trades automatically update portfolio.
+
+**User Story**: As a DeFi trader, I want my trading strategies to access my portfolio data and automatically update my portfolio, so I have a unified view.
+
+**Key Capabilities**:
+- Trading strategies access portfolio data (positions, balances, P&L)
+- Executed trades auto-update portfolio
+- Portfolio-based trading limits (max position size, max risk)
+- Unified trading + portfolio dashboard
+
+**Success Metrics**: 70%+ of trading users also use portfolio features, 100% trade sync accuracy
+
+---
+
+#### 4.5.4 Feature: Security + Portfolio Integration
+
+**Feature ID**: F-029
+**EPIC**: EPIC-7 (Cross-EPIC Integration)
+**Priority**: P1 (High)
+**Effort**: 1 week
+**Story Points**: 2
+
+**Description**: Seamless integration between Security and Portfolio features. Portfolio displays security scores for all positions, security alerts trigger portfolio actions.
+
+**User Story**: As a DeFi user, I want to see security scores for all my portfolio positions, so I can identify risky positions.
+
+**Key Capabilities**:
+- Security scores displayed in portfolio (per position, overall)
+- Security alerts trigger portfolio actions (flag risky positions, suggest exits)
+- Portfolio risk analysis (aggregate security score)
+- Unified security + portfolio dashboard
+
+**Success Metrics**: 60%+ of security users also use portfolio features, 40%+ of users act on security alerts
+
+---
+
+#### 4.5.5 Feature: Analytics + All EPICs Integration
+
+**Feature ID**: F-030
+**EPIC**: EPIC-7 (Cross-EPIC Integration)
+**Priority**: P1 (High)
+**Effort**: 1 week
+**Story Points**: 2
+
+**Description**: Seamless integration between Analytics and all other EPICs. Analytics can access data from all features (alerts, portfolio, tax, trading, security).
+
+**User Story**: As a power user, I want analytics to access data from all features, so I can create comprehensive custom dashboards.
+
+**Key Capabilities**:
+- Analytics access to all feature data (alerts, portfolio, tax, trading, security)
+- Cross-feature analytics (e.g., alert effectiveness vs portfolio performance)
+- Unified analytics dashboard
+- Custom analytics queries across all features
+
+**Success Metrics**: 50%+ of analytics users use data from 3+ features, 30%+ create cross-feature dashboards
+
+---
+
+#### 4.5.6 Feature: CI/CD Pipeline
+
+**Feature ID**: F-031
+**EPIC**: EPIC-8 (DevOps & Infrastructure)
+**Priority**: P0 (Critical)
+**Effort**: 3 weeks
+**Story Points**: 15
+
+**Description**: Automated CI/CD pipeline for continuous integration, testing, and deployment. Includes GitHub Actions workflows, automated testing, security scanning, and blue-green deployments.
+
+**Key Capabilities**:
+- GitHub Actions CI/CD workflows
+- Automated testing (unit, integration, E2E)
+- Security scanning (Checkov, tfsec, Snyk)
+- Blue-green deployments (zero downtime)
+- Automated rollback on errors
+- Deployment approvals (staging → production)
+
+**Success Metrics**: 100% automated deployments, <5 minutes deployment time, 99%+ deployment success rate
+
+---
+
+#### 4.5.7 Feature: Database Management
+
+**Feature ID**: F-032
+**EPIC**: EPIC-8 (DevOps & Infrastructure)
+**Priority**: P0 (Critical)
+**Effort**: 3 weeks
+**Story Points**: 15
+
+**Description**: Comprehensive database management including schema migrations, backups, monitoring, and optimization. Supports PostgreSQL 15+ with read replicas and automated failover.
+
+**Key Capabilities**:
+- Automated schema migrations (Flyway/Liquibase)
+- Automated backups (daily, 30-day retention)
+- Database monitoring (query performance, slow queries)
+- Read replicas (3+ replicas for scaling)
+- Automated failover (RDS Multi-AZ)
+- Query optimization (indexes, materialized views)
+
+**Success Metrics**: 99.99% database uptime, <100ms query latency (p95), zero data loss
+
+---
+
+#### 4.5.8 Feature: Infrastructure as Code
+
+**Feature ID**: F-033
+**EPIC**: EPIC-8 (DevOps & Infrastructure)
+**Priority**: P0 (Critical)
+**Effort**: 2 weeks
+**Story Points**: 10
+
+**Description**: Infrastructure as Code (IaC) using AWS CDK for all infrastructure resources. Enables version control, automated provisioning, and multi-region deployment.
+
+**Key Capabilities**:
+- AWS CDK infrastructure definitions (TypeScript)
+- Multi-region deployment (us-east-1, eu-west-1, ap-southeast-1)
+- Automated provisioning (CloudFormation)
+- Infrastructure versioning (Git)
+- Security scanning (Checkov)
+- Cost optimization (Spot Instances, Reserved Instances)
+
+**Success Metrics**: 100% infrastructure as code, <30 minutes provisioning time, zero manual infrastructure changes
+
+---
+
+#### 4.5.9 Feature: Monitoring & Alerting
+
+**Feature ID**: F-034
+**EPIC**: EPIC-8 (DevOps & Infrastructure)
+**Priority**: P0 (Critical)
+**Effort**: 2 weeks
+**Story Points**: 10
+
+**Description**: Comprehensive monitoring and alerting for all infrastructure and application metrics. Includes Datadog APM, CloudWatch Logs, and PagerDuty integration.
+
+**Key Capabilities**:
+- Application monitoring (Datadog APM)
+- Infrastructure monitoring (CloudWatch)
+- Log aggregation (CloudWatch Logs)
+- Custom dashboards (system health, business metrics)
+- Alerting (PagerDuty, Slack, email)
+- On-call rotation (PagerDuty)
+
+**Success Metrics**: 100% infrastructure coverage, <1 minute alert latency, 95%+ alert accuracy
+
+---
+
+#### 4.5.10 Feature: API Documentation
+
+**Feature ID**: F-035
+**EPIC**: EPIC-9 (Documentation)
+**Priority**: P1 (High)
+**Effort**: 2 weeks
+**Story Points**: 10
+
+**Description**: Comprehensive API documentation using OpenAPI 3.0 specification. Includes interactive API explorer, code samples, and authentication guides.
+
+**Key Capabilities**:
+- OpenAPI 3.0 specification (all endpoints)
+- Interactive API explorer (Swagger UI)
+- Code samples (JavaScript, Python, cURL)
+- Authentication guides (API keys, OAuth 2.0)
+- Rate limiting documentation
+- Versioning documentation (v1, v2)
+
+**Success Metrics**: 100% API coverage, 90%+ developer satisfaction, <5 support tickets/week
+
+---
+
+#### 4.5.11 Feature: User Documentation
+
+**Feature ID**: F-036
+**EPIC**: EPIC-9 (Documentation)
+**Priority**: P1 (High)
+**Effort**: 2 weeks
+**Story Points**: 10
+
+**Description**: Comprehensive user documentation including getting started guides, feature tutorials, FAQs, and troubleshooting guides.
+
+**Key Capabilities**:
+- Getting started guides (onboarding)
+- Feature tutorials (step-by-step guides)
+- FAQs (common questions)
+- Troubleshooting guides (common issues)
+- Video tutorials (YouTube)
+- Search functionality (Algolia)
+
+**Success Metrics**: 80%+ user self-service rate, 90%+ documentation satisfaction, <10 support tickets/week
+
+---
+
+#### 4.5.12 Feature: Developer Documentation
+
+**Feature ID**: F-037
+**EPIC**: EPIC-9 (Documentation)
+**Priority**: P1 (High)
+**Effort**: 1 week
+**Story Points**: 5
+
+**Description**: Developer documentation including architecture guides, deployment guides, and runbooks for on-call engineers.
+
+**Key Capabilities**:
+- Architecture documentation (system design, data flow)
+- Deployment guides (CI/CD, infrastructure)
+- Runbooks (incident response, troubleshooting)
+- Code documentation (JSDoc, Python docstrings)
+- Contributing guides (for open-source components)
+
+**Success Metrics**: 100% runbook coverage, <30 minutes incident resolution time, 90%+ developer satisfaction
+
+---
+
+#### 4.5.13 Feature: Alert Infrastructure
+
+**Feature ID**: F-038
+**EPIC**: EPIC-1 (Alerts & Notifications - Infrastructure)
+**Priority**: P0 (Critical)
+**Effort**: 2 weeks
+**Story Points**: 10
+
+**Description**: Core alert infrastructure including event bus, alert engine, notification service, and delivery channels. Supports 100,000+ alerts/minute with <5s latency.
+
+**Key Capabilities**:
+- Event bus (AWS EventBridge, SQS)
+- Alert engine (rule evaluation, deduplication)
+- Notification service (email, SMS, push, webhook)
+- Delivery channels (SendGrid, Twilio, FCM, Slack)
+- Rate limiting (per user, per channel)
+- Retry logic (exponential backoff)
+
+**Success Metrics**: 100,000+ alerts/minute throughput, <5s alert latency, 99.9%+ delivery success rate
+
+---
+
+#### 4.5.14 Feature: Real-Time Data Pipeline
+
+**Feature ID**: F-039
+**EPIC**: EPIC-1 (Alerts & Notifications - Infrastructure)
+**Priority**: P0 (Critical)
+**Effort**: 3 weeks
+**Story Points**: 15
+
+**Description**: Real-time data pipeline for ingesting blockchain data from 100+ chains. Supports 10,000+ transactions/second with <5s latency.
+
+**Key Capabilities**:
+- Multi-chain data ingestion (100+ chains)
+- Real-time processing (Apache Kafka, AWS Kinesis)
+- Data normalization (unified schema)
+- Data enrichment (token prices, metadata)
+- Data storage (PostgreSQL, DynamoDB)
+- Data quality monitoring (data validation, anomaly detection)
+
+**Success Metrics**: 10,000+ tx/second throughput, <5s data latency, 99.99%+ data accuracy
+
+---
+
 ## 5. Non-Functional Requirements
 
 ### 5.1 Performance Requirements
