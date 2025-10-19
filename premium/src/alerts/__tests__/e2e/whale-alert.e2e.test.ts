@@ -152,10 +152,9 @@ describe('Whale Alert E2E Tests', () => {
       const updateData = {
         name: 'Updated E2E Whale Alert',
         conditions: {
-          chain: 'ethereum',
-          token: 'USDT',
-          threshold_usd: 2000000, // Updated threshold
-          auto_disable: false,
+          chains: ['ethereum'],
+          tokens: ['USDT'],
+          min_amount_usd: 2000000, // Updated threshold
         },
       };
 
@@ -171,7 +170,7 @@ describe('Whale Alert E2E Tests', () => {
       const updateBody = JSON.parse(updateResponse.body);
       expect(updateBody.success).toBe(true);
       expect(updateBody.data.name).toBe(updateData.name);
-      expect(updateBody.data.conditions.threshold_usd).toBe(2000000);
+      expect(updateBody.data.conditions.min_amount_usd).toBe(2000000);
 
       // 5. TOGGLE whale alert (disable)
       const toggleEvent = mockEvent({

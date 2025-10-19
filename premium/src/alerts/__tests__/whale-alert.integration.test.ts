@@ -224,7 +224,7 @@ describe('Whale Alert Integration Tests', () => {
       expect(deleteResponse.statusCode).toBe(200);
       const deleteBody = JSON.parse(deleteResponse.body);
       expect(deleteBody.success).toBe(true);
-      expect(deleteBody.message).toBe('Alert rule deleted successfully');
+      expect(deleteBody.data.message).toBe('Alert rule deleted successfully');
     });
   });
 
