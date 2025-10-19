@@ -5,6 +5,7 @@
 
 import axios, { AxiosInstance } from 'axios';
 import { logger } from '../../common/utils/logger';
+import { alertHistoryService } from './alert-history.service';
 
 // ============================================================================
 // Types
@@ -17,7 +18,9 @@ export interface NotificationChannel {
 
 export interface NotificationPayload {
   alertId: string;
-  alertType: 'whale' | 'price';
+  alertType: 'whale' | 'price' | 'gas';
+  userId?: string; // Optional for backward compatibility
+  ruleId?: string; // Optional for backward compatibility
   title: string;
   message: string;
   data: Record<string, any>;
@@ -110,6 +113,42 @@ export class NotificationService {
 
     const channelResults = await Promise.all(promises);
     results.push(...channelResults);
+
+    // Create alert history entry (if userId and ruleId provided)
+    if (payload.userId && payload.ruleId) {
+      try {
+        const deliveryStatus: Record<string, string> = {};
+        const notificationChannels: string[] = [];
+        let allSuccess = true;
+        let anySuccess = false;
+
+        results.forEach(result => {
+          notificationChannels.push(result.channel);
+          deliveryStatus[result.channel] = result.success ? 'sent' : 'failed';
+          if (result.success) {
+            anySuccess = true;
+          } else {
+            allSuccess = false;
+          }
+        });
+
+        const notificationStatus = allSuccess ? 'sent' : (anySuccess ? 'partial' : 'failed');
+        const notificationError = results.filter(r => !r.success).map(r => `${r.channel}: ${r.error}`).join('; ') || undefined;
+
+        await alertHistoryService.createAlertHistory({
+          rule_id: payload.ruleId,
+          user_id: payload.userId,
+          event_data: payload.data,
+          notification_channels: notificationChannels,
+          notification_status: notificationStatus,
+          delivery_status: deliveryStatus,
+          notification_error: notificationError,
+        });
+      } catch (error: any) {
+        logger.error('Failed to create alert history', error, { alertId: payload.alertId });
+        // Don't throw - alert history creation failure shouldn't fail notification
+      }
+    }
 
     // Trigger callback for testing
     if (this.onNotificationComplete) {

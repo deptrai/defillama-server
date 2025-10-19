@@ -29,12 +29,14 @@ export interface GasAlert {
     chain: string;
     threshold_gwei: number;
     alert_type: 'below' | 'spike';
+    gas_type?: 'slow' | 'standard' | 'fast' | 'instant'; // Optional, defaults to 'standard'
   };
   actions: {
     channels: string[];
     webhook_url?: string;
     telegram_chat_id?: string;
     discord_webhook_url?: string;
+    email?: string; // Optional email address
   };
   enabled: boolean;
   throttle_minutes: number;
@@ -298,8 +300,27 @@ export class GasAlertService {
       WHERE user_id = ${userId}
         AND type = 'gas'
     `;
-    
+
     return parseInt(count);
+  }
+
+  /**
+   * Get active gas alerts for a specific chain
+   *
+   * @param chain - Chain name (ethereum, bsc, polygon, etc.)
+   * @returns Active gas alerts for the chain
+   */
+  async getActiveAlertsByChain(chain: string): Promise<GasAlert[]> {
+    const alerts = await this.db`
+      SELECT *
+      FROM alert_rules
+      WHERE type = 'gas'
+        AND enabled = true
+        AND conditions->>'chain' = ${chain}
+      ORDER BY created_at DESC
+    `;
+
+    return alerts.map((alert) => this.mapToAlert(alert));
   }
 
   /**

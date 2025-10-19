@@ -1,13 +1,14 @@
 import axios from 'axios';
 import Redis from 'ioredis';
 import { ethers } from 'ethers';
+import { gasAlertTriggerService } from './gas-alert-trigger.service';
 
 /**
  * Gas Price Monitor Service
- * 
+ *
  * Monitors gas prices across multiple EVM chains
  * Provides real-time gas price data with caching
- * 
+ *
  * Story 1.3.2: Monitor Gas Prices
  * Feature ID: F-003
  * EPIC-1: Smart Alerts & Notifications
@@ -311,6 +312,9 @@ export class GasPriceMonitorService {
           const gasPrices = await this.fetchGasPrices(chain);
           await this.saveToCache(chain, gasPrices, 10);
           await this.saveToHistory(chain, gasPrices);
+
+          // Check gas alerts for this chain
+          await gasAlertTriggerService.checkAlerts(chain, gasPrices);
         } catch (error) {
           console.error(`Failed to monitor gas prices for ${chain}:`, error);
         }
