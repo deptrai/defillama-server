@@ -135,31 +135,31 @@ export function validateCreateGasAlert(data: unknown): CreateGasAlertDto {
 }
 
 /**
- * Validate conditional fields
- * 
+ * Validate conditional fields for gas alerts
+ *
  * Ensures that required fields are present based on selected channels
  */
-export function validateConditionalFields(data: CreateGasAlertDto): {
+export function validateGasAlertConditionalFields(data: CreateGasAlertDto): {
   valid: boolean;
   errors: string[];
 } {
   const errors: string[] = [];
-  
+
   // Check webhook URL
   if (data.notificationChannels.includes('webhook') && !data.webhookUrl) {
     errors.push('webhookUrl is required when webhook channel is selected');
   }
-  
+
   // Check telegram chat ID
   if (data.notificationChannels.includes('telegram') && !data.telegramChatId) {
     errors.push('telegramChatId is required when telegram channel is selected');
   }
-  
+
   // Check discord webhook URL
   if (data.notificationChannels.includes('discord') && !data.discordWebhookUrl) {
     errors.push('discordWebhookUrl is required when discord channel is selected');
   }
-  
+
   return {
     valid: errors.length === 0,
     errors,

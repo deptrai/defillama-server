@@ -1,5 +1,5 @@
 import postgres from 'postgres';
-import { CreateGasAlertDto, UpdateGasAlertDto, validateConditionalFields } from '../dto';
+import { CreateGasAlertDto, UpdateGasAlertDto, validateGasAlertConditionalFields } from '../dto';
 
 /**
  * Gas Alert Service
@@ -59,7 +59,7 @@ export class GasAlertService {
    */
   async create(userId: string, data: CreateGasAlertDto): Promise<GasAlert> {
     // Validate conditional fields
-    const validation = validateConditionalFields(data);
+    const validation = validateGasAlertConditionalFields(data);
     if (!validation.valid) {
       throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
     }
