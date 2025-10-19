@@ -50,37 +50,45 @@ export const TEST_CONFIG = {
  */
 export async function setupNotificationTests(): Promise<void> {
   console.log('Setting up notification E2E tests...');
-  
-  // 1. Start mock servers
-  console.log('Starting mock servers...');
-  telegramMock = getTelegramMockServer(TEST_CONFIG.TELEGRAM_MOCK_PORT);
-  discordMock = getDiscordMockServer(TEST_CONFIG.DISCORD_MOCK_PORT);
-  webhookMock = getWebhookMockServer(TEST_CONFIG.WEBHOOK_MOCK_PORT);
-  
-  await Promise.all([
-    telegramMock.start(),
-    discordMock.start(),
-    webhookMock.start(),
-  ]);
-  
-  console.log('Mock servers started');
-  
-  // 2. Connect to test database
-  console.log('Connecting to test database...');
-  sql = postgres(TEST_CONFIG.TEST_DB_URL, {
-    max: 10,
-    idle_timeout: 20,
-    connect_timeout: 10,
-  });
-  
+
+  // 1. Start mock servers (only if not already started)
+  if (!telegramMock || !discordMock || !webhookMock) {
+    console.log('Starting mock servers...');
+    telegramMock = getTelegramMockServer(TEST_CONFIG.TELEGRAM_MOCK_PORT);
+    discordMock = getDiscordMockServer(TEST_CONFIG.DISCORD_MOCK_PORT);
+    webhookMock = getWebhookMockServer(TEST_CONFIG.WEBHOOK_MOCK_PORT);
+
+    await Promise.all([
+      telegramMock.start(),
+      discordMock.start(),
+      webhookMock.start(),
+    ]);
+
+    console.log('Mock servers started');
+  } else {
+    console.log('Mock servers already running, skipping startup');
+  }
+
+  // 2. Connect to test database (only if not already connected)
+  if (!sql) {
+    console.log('Connecting to test database...');
+    sql = postgres(TEST_CONFIG.TEST_DB_URL, {
+      max: 10,
+      idle_timeout: 20,
+      connect_timeout: 10,
+    });
+  } else {
+    console.log('Database already connected, skipping connection');
+  }
+
   // 3. Clean database
   console.log('Cleaning test database...');
   await cleanDatabase();
-  
+
   // 4. Seed test data
   console.log('Seeding test data...');
   await seedTestData();
-  
+
   console.log('Notification E2E tests setup complete');
 }
 
