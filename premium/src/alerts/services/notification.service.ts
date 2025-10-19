@@ -232,6 +232,7 @@ export class NotificationService {
             description: payload.message,
             color: payload.alertType === 'whale' ? 0x3498db : 0xe74c3c,
             timestamp: new Date().toISOString(),
+            fields: this.buildDiscordEmbedFields(payload),
           },
         ],
       });
@@ -320,6 +321,52 @@ export class NotificationService {
   private formatDiscordMessage(payload: NotificationPayload): string {
     const icon = payload.alertType === 'whale' ? '🐋' : '📊';
     return `${icon} **${payload.title}**`;
+  }
+
+  /**
+   * Build Discord embed fields based on alert type
+   */
+  private buildDiscordEmbedFields(payload: NotificationPayload): Array<{ name: string; value: string; inline: boolean }> {
+    const fields: Array<{ name: string; value: string; inline: boolean }> = [];
+
+    if (payload.alertType === 'whale') {
+      // Whale alert fields
+      if (payload.data.token) {
+        fields.push({ name: 'Token', value: payload.data.token, inline: true });
+      }
+      if (payload.data.amount) {
+        fields.push({ name: 'Amount', value: payload.data.amount.toLocaleString(), inline: true });
+      }
+      if (payload.data.chain) {
+        fields.push({ name: 'Chain', value: payload.data.chain, inline: true });
+      }
+      if (payload.data.from) {
+        fields.push({ name: 'From', value: `\`${payload.data.from}\``, inline: false });
+      }
+      if (payload.data.to) {
+        fields.push({ name: 'To', value: `\`${payload.data.to}\``, inline: false });
+      }
+      if (payload.data.txHash) {
+        fields.push({ name: 'Transaction', value: `\`${payload.data.txHash}\``, inline: false });
+      }
+    } else if (payload.alertType === 'price') {
+      // Price alert fields
+      if (payload.data.token) {
+        fields.push({ name: 'Token', value: payload.data.token, inline: true });
+      }
+      if (payload.data.currentPrice !== undefined) {
+        fields.push({ name: 'Current Price', value: `$${payload.data.currentPrice.toLocaleString()}`, inline: true });
+      }
+      if (payload.data.previousPrice !== undefined) {
+        fields.push({ name: 'Previous Price', value: `$${payload.data.previousPrice.toLocaleString()}`, inline: true });
+      }
+      if (payload.data.currentPrice !== undefined && payload.data.previousPrice !== undefined) {
+        const changePercent = ((payload.data.currentPrice - payload.data.previousPrice) / payload.data.previousPrice * 100).toFixed(2);
+        fields.push({ name: 'Change', value: `${changePercent}%`, inline: true });
+      }
+    }
+
+    return fields;
   }
 }
 
