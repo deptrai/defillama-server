@@ -1,0 +1,247 @@
+openapi: 3.0.3
+info:
+  title: DeFiLlama Gas API
+  description: Gas optimization and monitoring API
+  version: 2.0.0
+
+servers:
+  - url: https://api.defillama.com/v2
+    description: Production server
+
+tags:
+  - name: Gas
+    description: Gas optimization and monitoring
+
+paths:
+  /gas/current:
+    get:
+      tags: [Gas]
+      summary: Get current gas prices
+      operationId: getCurrentGasPrices
+      parameters:
+        - name: chains
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: Chains to get gas prices for (comma-separated)
+      responses:
+        '200':
+          description: Current gas prices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gas_prices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GasPrice'
+
+  /gas/history:
+    get:
+      tags: [Gas]
+      summary: Get gas price history
+      operationId: getGasHistory
+      parameters:
+        - name: chain
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [1h, 6h, 24h, 7d, 30d]
+            default: 24h
+      responses:
+        '200':
+          description: Gas price history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  history:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        timestamp:
+                          type: string
+                          format: date-time
+                        gas_price_gwei:
+                          type: number
+                        gas_price_usd:
+                          type: number
+
+  /gas/predictions:
+    get:
+      tags: [Gas]
+      summary: Get gas price predictions
+      operationId: getGasPredictions
+      parameters:
+        - name: chain
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Gas price predictions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  predictions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        time_window:
+                          type: string
+                          example: "next_1h"
+                        predicted_gas_gwei:
+                          type: number
+                        confidence:
+                          type: number
+                          description: Confidence level (0-1)
+
+  /gas/optimizer:
+    post:
+      tags: [Gas]
+      summary: Optimize transaction gas
+      operationId: optimizeGas
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - chain
+                - transaction
+              properties:
+                chain:
+                  type: string
+                transaction:
+                  type: object
+                  properties:
+                    to:
+                      type: string
+                    data:
+                      type: string
+                    value:
+                      type: string
+      responses:
+        '200':
+          description: Optimized gas parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recommended_gas_price_gwei:
+                    type: number
+                  estimated_gas_limit:
+                    type: number
+                  estimated_cost_usd:
+                    type: number
+                  optimal_time:
+                    type: string
+                    format: date-time
+                  savings_usd:
+                    type: number
+
+  /gas/simulator:
+    post:
+      tags: [Gas]
+      summary: Simulate transaction
+      operationId: simulateTransaction
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - chain
+                - transaction
+              properties:
+                chain:
+                  type: string
+                transaction:
+                  type: object
+                  properties:
+                    from:
+                      type: string
+                    to:
+                      type: string
+                    data:
+                      type: string
+                    value:
+                      type: string
+                    gas_price_gwei:
+                      type: number
+      responses:
+        '200':
+          description: Simulation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  gas_used:
+                    type: number
+                  gas_cost_usd:
+                    type: number
+                  return_data:
+                    type: string
+                  error:
+                    type: string
+                  state_changes:
+                    type: array
+                    items:
+                      type: object
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    GasPrice:
+      type: object
+      properties:
+        chain:
+          type: string
+        gas_price_gwei:
+          type: number
+        gas_price_usd:
+          type: number
+        slow:
+          type: number
+          description: Slow gas price (gwei)
+        standard:
+          type: number
+          description: Standard gas price (gwei)
+        fast:
+          type: number
+          description: Fast gas price (gwei)
+        instant:
+          type: number
+          description: Instant gas price (gwei)
+        timestamp:
+          type: string
+          format: date-time

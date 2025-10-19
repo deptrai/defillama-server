@@ -64,14 +64,14 @@
 
 | Story ID | Feature | Story Points | Status | File |
 |----------|---------|--------------|--------|------|
-| 3.1 | Multi-Wallet Portfolio Tracker | 21 | 📋 PLANNED | - |
-| 3.2 | P&L Calculator | 21 | 📋 PLANNED | - |
-| 3.3 | Impermanent Loss Tracker | 21 | 📋 PLANNED | - |
-| 3.4 | Liquidity Pool Alerts | 13 | 📋 PLANNED | - |
-| 3.5 | Portfolio Analytics | 21 | 📋 PLANNED | - |
-| 3.6 | Portfolio Alerts | 13 | 📋 PLANNED | - |
+| 3.1 | Multi-Chain Portfolio Aggregation | 21 | 📝 READY | [story-3-portfolio-management-epic.md](./story-3-portfolio-management-epic.md) |
+| 3.2 | Real-Time Portfolio Tracking | 21 | 📝 READY | (included in 3) |
+| 3.3 | Impermanent Loss Calculator | 21 | 📝 READY | (included in 3) |
+| 3.4 | Liquidity Pool Alerts | 13 | 📝 READY | (included in 3) |
+| 3.5 | Portfolio Analytics | 21 | 📝 READY | (included in 3) |
+| 3.6 | Portfolio Alerts | 13 | 📝 READY | (included in 3) |
 
-**Subtotal**: 110 points (0 detailed, 6 planned)
+**Subtotal**: 110 points (1 detailed file with 6 features)
 
 ---
 
@@ -176,8 +176,8 @@
 ### By Status
 - ✅ **COMPLETE**: 0 stories (0 points)
 - 🚧 **IN PROGRESS**: 0 stories (0 points)
-- 📝 **READY**: 9 stories (230 points) - EPIC-1 (8 stories, 150 points) + EPIC-2 (1 story, 80 points)
-- 📋 **PLANNED**: 30 stories (581 points) - Remaining features
+- 📝 **READY**: 10 stories (340 points) - EPIC-1 (8 stories, 150 points) + EPIC-2 (1 story, 80 points) + EPIC-3 (1 story, 110 points)
+- 📋 **PLANNED**: 29 stories (471 points) - Remaining features
 
 **Total**: 39 stories, 811 points
 
@@ -197,15 +197,21 @@
 
 ## Next Steps
 
-### Immediate (Week 1)
+### Immediate (Week 1) ✅ COMPLETE
 1. ✅ Create detailed stories for EPIC-1 features (8/8 done)
 2. ✅ Create detailed stories for EPIC-2 (Tax Reporting Suite) (1/1 done)
-3. ⏳ Expand OpenAPI spec to include Tax, Portfolio, Gas APIs
+3. ✅ Expand OpenAPI spec to include Tax, Portfolio, Gas APIs
 
-### Short-term (Month 1)
-1. Create detailed stories for EPIC-3 (Portfolio Management)
-2. Create API documentation
-3. Create testing documentation
+### Short-term (Month 1) ✅ COMPLETE
+1. ✅ Create detailed story for EPIC-3 (Portfolio Management, 1 comprehensive file with 6 features)
+2. ✅ Create API documentation (Portfolio API, Gas API)
+3. ✅ Create testing documentation (completed earlier)
+
+### Next Phase (Month 2)
+1. Create EPIC-4 story files (Gas & Trading Optimization, 9 features)
+2. Create EPIC-5 story files (Security & Risk Management, 4 features)
+3. Implement unit tests for EPIC-1 features
+4. Setup CI/CD pipeline
 
 ### Long-term (Quarter 1)
 1. Create detailed stories for EPIC 4-6
