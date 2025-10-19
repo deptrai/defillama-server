@@ -130,15 +130,20 @@ export class WebhookMockServer {
   }
 
   public async stop(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       if (this.server) {
         this.server.close((err) => {
           if (err) {
-            reject(err);
+            // Ignore "Server is not running" error
+            if (err.message && err.message.includes('Server is not running')) {
+              console.log('Webhook Mock Server already stopped');
+            } else {
+              console.warn('Error stopping Webhook Mock Server:', err.message);
+            }
           } else {
             console.log('Webhook Mock Server stopped');
-            resolve();
           }
+          resolve();
         });
       } else {
         resolve();

@@ -134,15 +134,20 @@ export class DiscordMockServer {
    * Stop the mock server
    */
   public async stop(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       if (this.server) {
         this.server.close((error) => {
           if (error) {
-            reject(error);
+            // Ignore "Server is not running" error
+            if (error.message && error.message.includes('Server is not running')) {
+              console.log('Discord Mock Server already stopped');
+            } else {
+              console.warn('Error stopping Discord Mock Server:', error.message);
+            }
           } else {
             console.log('Discord Mock Server stopped');
-            resolve();
           }
+          resolve();
         });
       } else {
         resolve();
