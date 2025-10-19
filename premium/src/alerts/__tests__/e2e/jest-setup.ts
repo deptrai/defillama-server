@@ -3,10 +3,19 @@
  * Runs before each test file
  *
  * Purpose:
+ * - Load environment variables from .env.test
  * - Set environment variables
  * - Configure test timeout
  * - Reset mock servers before each test file (for test isolation)
  */
+
+// Load environment variables from .env.test
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load .env.test file from premium directory
+const envPath = path.resolve(__dirname, '../../../../../.env.test');
+dotenv.config({ path: envPath });
 
 // Set environment variables for E2E tests
 process.env.NODE_ENV = 'test';
@@ -16,6 +25,9 @@ if (!process.env.TEST_DB && !process.env.PREMIUM_DB) {
   console.warn('⚠️  WARNING: Neither TEST_DB nor PREMIUM_DB environment variable is set!');
   console.warn('⚠️  E2E tests will fail without a database connection.');
   console.warn('⚠️  Please set TEST_DB or PREMIUM_DB environment variable.');
+  console.warn(`⚠️  Tried to load from: ${envPath}`);
+} else {
+  console.log(`✅ Database connection configured: ${process.env.TEST_DB || process.env.PREMIUM_DB}`);
 }
 
 // Increase test timeout for E2E tests
